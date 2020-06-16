@@ -68,6 +68,18 @@ workflow sequenceAnalysisNanopolish {
 
       }
 
+      if (params.ncov) {
+        Channel.fromPath("${params.ncov}")
+              .set{ ch_ncov }
+
+        runNcovTools(ch_ncov, 
+                      articDownloadScheme.out.reffasta, 
+                      articDownloadScheme.out.ncov_amplicon, 
+                      articMinIONNanopolish.out[0].toList()
+                                                  .flatten()
+                                                  .toList())
+      }
+
       if (params.irida) {
        Channel.fromPath("${params.irida}")
               .set{ ch_irida }
