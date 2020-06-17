@@ -25,6 +25,8 @@ process runNcovTools {
 
     //conda 'environments/ncovtools.yml'
 
+    label 'ncovtools'
+
     input:
     file(config)
     file(reference)
@@ -41,7 +43,7 @@ process runNcovTools {
     mkdir ./ncov-tools/run
     mv ${params.prefix}* ./ncov-tools/run
     cd ncov-tools
-    snakemake -s qc/Snakefile all_qc_sequencing --cores 6
+    snakemake -s qc/Snakefile all_qc_sequencing --cores 8
     mv ./plots/* ../
     """
 }
