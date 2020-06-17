@@ -1,5 +1,5 @@
 # path to the top-level directory containing the analysis results
-data_root: ./run/
+data_root: ./run
 
 # optionally the plots can have a "run name" prefix. If this is not defined the prefix will be "default"
 run_name: nml
