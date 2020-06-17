@@ -8,6 +8,7 @@ dependencies:
   - augur
   - pysam
   - r-base=3.6.1
+  - r-argparse
   - iqtree<2
   - bioconductor-ggtree=2.0.0
   - r-patchwork=1.0.0
