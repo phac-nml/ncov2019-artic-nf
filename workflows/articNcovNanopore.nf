@@ -17,6 +17,7 @@ include {bamToCram} from '../modules/out.nf'
 
 include {collateSamples} from '../modules/upload.nf'
 
+include {runNcovTools} from '../modules/nml.nf'
 include {generateIridaReport} from '../modules/nml.nf'
 
 
