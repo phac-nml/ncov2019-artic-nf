@@ -10,6 +10,7 @@ process articDownloadScheme{
     output:
     path "scheme/**/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
     path "scheme/**/${params.schemeVersion}/${params.scheme}.bed" , emit: bed
+    path "scheme/**/${params.schemeVersion}/ncov-qc_resende.bed" , emit: ncov_amplicon
     path "scheme" , emit: scheme
 
     script:

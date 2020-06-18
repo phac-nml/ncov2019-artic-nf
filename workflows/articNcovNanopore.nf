@@ -17,6 +17,7 @@ include {bamToCram} from '../modules/out.nf'
 
 include {collateSamples} from '../modules/upload.nf'
 
+include {runNcovTools} from '../modules/nml.nf'
 include {generateIridaReport} from '../modules/nml.nf'
 
 
@@ -66,6 +67,18 @@ workflow sequenceAnalysisNanopolish {
         bamToCram(qc.pass.map{ it[0] } 
                         .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
 
+      }
+
+      if (params.ncov) {
+        Channel.fromPath("${params.ncov}")
+              .set{ ch_ncov }
+
+        runNcovTools(ch_ncov, 
+                      articDownloadScheme.out.reffasta, 
+                      articDownloadScheme.out.ncov_amplicon, 
+                      articMinIONNanopolish.out[0].toList()
+                                                  .flatten()
+                                                  .toList())
       }
 
       if (params.irida) {

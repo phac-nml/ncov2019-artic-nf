@@ -18,3 +18,32 @@ process generateIridaReport {
     irida_samples.py --sample_info ${samplecsv} --prefix ${params.prefix} --sample_dir irida_upload
     """
 }
+
+process runNcovTools {
+
+    publishDir "${params.outdir}/irida_upload", pattern: "*.pdf", mode: "copy"
+
+    //conda 'environments/ncovtools.yml'
+
+    label 'ncovtools'
+
+    input:
+    file(config)
+    file(reference)
+    file(amplicon)
+    file(nanopolishresults)
+
+    output:
+    file("*.pdf")
+
+    script:
+    """
+    git clone https://github.com/jts/ncov-tools.git
+    mv ${config} ${reference} ${amplicon} ./ncov-tools
+    mkdir ./ncov-tools/run
+    mv ${params.prefix}* ./ncov-tools/run
+    cd ncov-tools
+    snakemake -s qc/Snakefile all_qc_sequencing --cores 8
+    mv ./plots/* ../
+    """
+}
