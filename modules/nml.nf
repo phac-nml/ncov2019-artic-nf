@@ -1,8 +1,28 @@
+process renameSamples {
+
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
+
+    //conda 'environments/extras.txt'
+    // Only with --irida flag
+
+    input:
+    tuple file(fastq), file(samplecsv)
+
+    output:
+    file('*.fastq')
+
+    script:
+    """
+    rename.py --fastq ${fastq} --sample_csv ${samplecsv} --prefix ${params.prefix}
+    """
+}
+
 process generateIridaReport {
 
     publishDir "${params.outdir}", pattern: "irida_upload", mode: "copy"
 
     //conda 'environments/extras.txt'
+    // Only with --irida flag
 
     input:
     file(fastq)
