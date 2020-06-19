@@ -68,6 +68,7 @@ process runNcovTools {
     mv ${params.prefix}* ./ncov-tools/run
     cd ncov-tools
     snakemake -s qc/Snakefile all_qc_sequencing --cores 8
+    snakemake -s qc/Snakefile all_qc_analysis --cores 8
     mv ./plots/* ../
     """
 }
