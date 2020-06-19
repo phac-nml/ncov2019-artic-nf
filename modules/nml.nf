@@ -5,6 +5,8 @@ process renameSamples {
     //conda 'environments/extras.txt'
     // Only with --irida flag
 
+    label 'smallmem'
+
     input:
     tuple file(fastq), file(samplecsv)
 
@@ -13,7 +15,7 @@ process renameSamples {
 
     script:
     """
-    rename.py --fastq ${fastq} --sample_csv ${samplecsv} --prefix ${params.prefix}
+    irida_samples.py --fastq ${fastq} --prefix ${params.prefix} --sample_info ${samplecsv}
     """
 }
 
@@ -24,8 +26,10 @@ process generateIridaReport {
     //conda 'environments/extras.txt'
     // Only with --irida flag
 
+    label 'smallmem'
+
     input:
-    file(fastq)
+    file(fastqs)
     file(samplecsv)
 
     output:
@@ -34,7 +38,7 @@ process generateIridaReport {
     script:
     """
     mkdir irida_upload
-    mv ${fastq} irida_upload
+    mv ${fastqs} irida_upload
     irida_samples.py --sample_info ${samplecsv} --prefix ${params.prefix} --sample_dir irida_upload
     """
 }
