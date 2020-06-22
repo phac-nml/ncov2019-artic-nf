@@ -14,8 +14,15 @@ def init_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--sample_dir',
-        required=True,
-        help='Nextflow sample directory'
+        required=False,
+        default=False,
+        help='Path to barcoded fastq sample directory to output SampleList.csv for the directory'
+    )
+    parser.add_argument(
+        '--fastq',
+        required=False,
+        default=False,
+        help='Path to single fastq input file'
     )
     parser.add_argument(
         '--sample_info',
@@ -38,7 +45,7 @@ def init_parser():
     return parser
 
 
-def parse_sample_csv(sample_csv, prefix, sample_dir):
+def parse_sample_csv(sample_csv, prefix, sample_dir, fastq):
     '''
     Take input sampleinfo.csv file and turn it into a usable format
     '''
@@ -79,28 +86,42 @@ def parse_sample_csv(sample_csv, prefix, sample_dir):
             new_file_name = '{}.fastq'.format(current_line_list[0])
             
 
-            # Check that File is found in output dir
-            file_path = '{}/{}'.format(sample_dir, file_name)
-            new_file_path = '{}/{}'.format(sample_dir, new_file_name)
-            if os.path.exists(file_path):
-                subprocess.run('mv {} {}'.format(file_path, new_file_path), shell=True)
+            # Directory input with SampleList.csv output
+            if sample_dir:
 
+                # Check that File is found and rename it
+                file_path = '{}/{}'.format(sample_dir, file_name)
+                new_file_path = '{}/{}'.format(sample_dir, new_file_name)
+                if os.path.exists(file_path):
+                    subprocess.run('mv {} {}'.format(file_path, new_file_path), shell=True)
+
+                else:
+                    print('WARN: File {} not found in {}'.format(file_name, sample_dir))
+                    continue
+
+
+                # Set DataFrame for easy output csv
+                df_out.at[index, 'Sample_Name'] = current_line_list[0] # Name from input sample info file
+                df_out.at[index, 'Project_ID'] = current_line_list[3] # Project number from sample info file
+                df_out.at[index, 'File_Forward'] = new_file_name
+
+            # Fastq rename
             else:
-                print('WARN: File {} not found in {}'.format(file_name, sample_dir))
-                continue
+                if str(fastq) == file_name:
+                    if os.path.exists(file_name):
+                        subprocess.run('mv {} {}'.format(fastq, new_file_name), shell=True)
+                        return None # Exit program as it should match only once
 
-
-            # Set DataFrame for easy output csv
-            df_out.at[index, 'Sample_Name'] = current_line_list[0] # Name from input sample info file
-            df_out.at[index, 'Project_ID'] = current_line_list[3] # Project number from sample info file
-            df_out.at[index, 'File_Forward'] = new_file_name
-
+                    else:    
+                        print('ERROR: No file found matching {} in current directory. Exiting'.format(fastq))
+                        quit()
     return df_out
 
 
 def main():
     '''
-    Main script
+    - Create Irida SampleList.csv with input directory
+    - Rename singular fastq file with fastq input
     '''
     
     # Init Parser and set arguments
@@ -109,7 +130,23 @@ def main():
 
     sample_csv = args.sample_info
     prefix = args.prefix
-    sample_dir = args.sample_dir
+
+    # Inputs
+    if args.sample_dir and args.fastq:
+        print('ERROR: Please specify only one input of either --sample_dir or --fastq')
+        quit()
+
+    elif args.sample_dir:
+        sample_dir = args.sample_dir
+        fastq = False
+    
+    elif args.fastq:
+        fastq = args.fastq
+        sample_dir = False
+
+    else:
+        print('ERROR: No input specified. Please specify either --sample_dir or --fastq')
+        quit()
 
 
     # Start processing inputs
@@ -120,14 +157,16 @@ def main():
 
     else: # Nanopore data is single end
 
-        df_out = parse_sample_csv(sample_csv, prefix, sample_dir)
+        df_out = parse_sample_csv(sample_csv, prefix, sample_dir, fastq)
         
 
         # Output
-        with open('{}/SampleList.csv'.format(sample_dir), 'w') as handle:
-            handle.write('[Data]\n')
-        
-        df_out.to_csv('{}/SampleList.csv'.format(sample_dir), mode='a', header=True, index=False)
+        if args.sample_dir:
+            with open('{}/SampleList.csv'.format(sample_dir), 'w') as handle:
+                handle.write('[Data]\n')
+            
+            df_out.to_csv('{}/SampleList.csv'.format(sample_dir), mode='a', header=True, index=False)
+
 
 
 if __name__ == "__main__":

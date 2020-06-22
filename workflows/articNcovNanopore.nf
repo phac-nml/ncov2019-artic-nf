@@ -17,6 +17,7 @@ include {bamToCram} from '../modules/out.nf'
 
 include {collateSamples} from '../modules/upload.nf'
 
+include {renameSamples} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
 include {generateIridaReport} from '../modules/nml.nf'
 
@@ -37,10 +38,26 @@ workflow sequenceAnalysisNanopolish {
       
       articGuppyPlex(ch_runFastqDirs.flatten())
 
-      articMinIONNanopolish(articGuppyPlex.out.fastq
+      if (params.irida) {
+       Channel.fromPath("${params.irida}")
+              .set{ ch_irida }
+
+       renameSamples(articGuppyPlex.out.fastq
+                                       .combine(ch_irida))
+
+       articMinIONNanopolish(renameSamples.out
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
+
+       generateIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+      }
+      else {
+       articMinIONNanopolish(articGuppyPlex.out.fastq
+                                          .combine(articDownloadScheme.out.scheme)
+                                          .combine(ch_fast5Pass)
+                                          .combine(ch_seqSummary))
+      }
 
       articRemoveUnmappedReads(articMinIONNanopolish.out.mapped)
 
@@ -80,12 +97,6 @@ workflow sequenceAnalysisNanopolish {
                                                   .flatten()
                                                   .toList())
       }
-
-      if (params.irida) {
-       Channel.fromPath("${params.irida}")
-              .set{ ch_irida }
-       generateIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
-     }
 
     emit:
       qc_pass = collateSamples.out
@@ -156,4 +167,3 @@ workflow articNcovNanopore {
         CLIMBrsync(sequenceAnalysis.out.qc_pass, ch_CLIMBkey )
       }
 }
-
