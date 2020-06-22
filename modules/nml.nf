@@ -45,7 +45,7 @@ process generateIridaReport {
 
 process runNcovTools {
 
-    publishDir "${params.outdir}/irida_upload", pattern: "*.pdf", mode: "copy"
+    publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
 
