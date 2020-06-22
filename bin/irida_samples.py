@@ -60,10 +60,10 @@ def parse_sample_csv(sample_csv, prefix, sample_dir, fastq):
             if index == 0:
                 continue
             
-            current_line_list = line.strip().split(',') # Order is [Name, run, barcode, project_id]
+            current_line_list = line.strip().split(',') # Order is [Name, run, barcode, project_id, ct]
 
-            if len(current_line_list) != 4:
-                print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [Name, Run, Barcode, Project_id]'.format(index + 1, sample_csv))
+            if len(current_line_list) != 5:
+                print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [Name, Run, Barcode, Project_id, ct]'.format(index + 1, sample_csv))
                 quit()
 
 
