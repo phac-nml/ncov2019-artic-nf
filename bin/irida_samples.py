@@ -163,9 +163,10 @@ def main():
         # Output
         if args.sample_dir:
             with open('{}/SampleList.csv'.format(sample_dir), 'w') as handle:
-                handle.write('[DATA]\n')
+                handle.write('[Data]\n')
             
             df_out.to_csv('{}/SampleList.csv'.format(sample_dir), mode='a', header=True, index=False)
+
 
 
 if __name__ == "__main__":
