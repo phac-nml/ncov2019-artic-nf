@@ -65,8 +65,9 @@ process runNcovTools {
     """
     git clone https://github.com/jts/ncov-tools.git
     mv ${config} ${reference} ${amplicon} ./ncov-tools
+    mv ${metadata} ./ncov-tools/metadata.tsv
     mkdir ./ncov-tools/run
-    mv *.sorted.bam *.consensus.fasta ${metadata} ./ncov-tools/run
+    mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
     cd ncov-tools
     snakemake -s qc/Snakefile all_qc_sequencing --cores 8
     snakemake -s qc/Snakefile all_qc_analysis --cores 8

@@ -1,14 +1,14 @@
 # path to the top-level directory containing the analysis results
-data_root: ./run
+data_root: run
 
 # optionally the plots can have a "run name" prefix. If this is not defined the prefix will be "default"
 run_name: nml
 
 # path to the file containing the amplicon regions (not the primer sites, the actual amplicons)
-amplicon_bed: ./ncov-qc_resende.bed
+amplicon_bed: ncov-qc_resende.bed
 
 # path to the nCov reference genome
-reference_genome: ./nCoV-2019.reference.fasta
+reference_genome: nCoV-2019.reference.fasta
 
 # the naming convention for the bam files
 # this can use the variables {data_root} (as above) and {sample}
@@ -25,7 +25,7 @@ consensus_pattern: "{data_root}/{sample}.consensus.fasta"
 # some plots can by annotated with external metadata. this
 # file contains the metadata in simple tab-delimited format
 # one column must be 'sample'
-metadata: ./run/*.tsv
+metadata: metadata.tsv
 
 #
 # set this flag to true to include lineage assignments with pangolin in the output plots
