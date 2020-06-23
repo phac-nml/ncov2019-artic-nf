@@ -27,7 +27,7 @@ def init_parser():
     parser.add_argument(
         '--sample_info',
         required=True,
-        help='Sampleinfo.csv file path'
+        help='File path to tab separated sampleinfo file with format [Name, Run, Barcode, Project_id, ct]'
     )
     parser.add_argument(
         '--prefix',
@@ -45,38 +45,43 @@ def init_parser():
     return parser
 
 
-def parse_sample_csv(sample_csv, prefix, sample_dir, fastq):
+def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
     '''
-    Take input sampleinfo.csv file and turn it into a usable format
+    Take input sampleinfo file and turn it into a usable format
     '''
 
     # Set up dataframe
     df_out = pd.DataFrame(columns=['Sample_Name', 'Project_ID', 'File_Forward', 'File_Reverse'])
 
     # Open file and populate df
-    with open(sample_csv) as input_handle:
+    with open(sample_tsv) as input_handle:
         for index, line in enumerate(input_handle):
+            
+            current_line_list = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
 
             if index == 0:
-                continue
-            
-            current_line_list = line.strip().split(',') # Order is [Name, run, barcode, project_id, ct]
+                if str(current_line_list[0]) != 'sample':
+                    print('ERROR: First column of the header line must be called "sample". Exiting')
+                    quit() 
+                else:
+                    continue
+
 
             if len(current_line_list) != 5:
-                print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [Name, Run, Barcode, Project_id, ct]'.format(index + 1, sample_csv))
+                print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [sample, run, barcode, project_id, ct]'.format(index + 1, sample_tsv))
                 quit()
 
 
             # Set correct file name and check on barcode formatting
             if int(current_line_list[2]) not in range(1,25):
-                print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_csv))
+                print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
                 quit()
 
             if len(current_line_list[2]) != 2: # Checking that barcode is 2 digits
                 barcode = '0{}'.format(current_line_list[2])
 
                 if len(barcode) != 2: # If its somehow not still...
-                    print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_csv))
+                    print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
                     quit()
             
             else:
@@ -128,7 +133,7 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
 
-    sample_csv = args.sample_info
+    sample_tsv = args.sample_info
     prefix = args.prefix
 
     # Inputs
@@ -157,7 +162,7 @@ def main():
 
     else: # Nanopore data is single end
 
-        df_out = parse_sample_csv(sample_csv, prefix, sample_dir, fastq)
+        df_out = parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq)
         
 
         # Output

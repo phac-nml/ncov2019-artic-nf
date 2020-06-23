@@ -95,7 +95,8 @@ workflow sequenceAnalysisNanopolish {
                       articDownloadScheme.out.ncov_amplicon, 
                       articMinIONNanopolish.out[0].toList()
                                                   .flatten()
-                                                  .toList())
+                                                  .toList(),
+                      ch_irida)
       }
 
     emit:

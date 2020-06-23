@@ -25,7 +25,7 @@ consensus_pattern: "{data_root}/{sample}.consensus.fasta"
 # some plots can by annotated with external metadata. this
 # file contains the metadata in simple tab-delimited format
 # one column must be 'sample'
-#metadata: metadata.tsv
+metadata: ./run/*.tsv
 
 #
 # set this flag to true to include lineage assignments with pangolin in the output plots
