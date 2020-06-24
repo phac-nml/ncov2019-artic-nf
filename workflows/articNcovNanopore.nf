@@ -53,6 +53,9 @@ workflow sequenceAnalysisNanopolish {
        generateIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
       }
       else {
+       Channel.fromPath("${params.irida}")
+              .set{ ch_irida }
+
        articMinIONNanopolish(articGuppyPlex.out.fastq
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
