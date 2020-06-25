@@ -43,7 +43,8 @@ def printHelp() {
       --outCram               Output cram instead of bam files (Default: false)
 
       --ncov                  Path to ncov-tools config file (Default: baseDir/extra_data/config.yaml, disabled by setting to false)
-      --irida                 Path to Irida sample list csv file (Default: false)
+      --irida                 Path to Irida sample_list.tsv file to rename data and upload to Irida (Default: false)
+                              Sample_list.tsv should be formated as [sample, run, barcode, project_id, ct]
  
   Illumina workflow options:
     Mandatory:

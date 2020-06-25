@@ -56,19 +56,37 @@ process runNcovTools {
     file(reference)
     file(amplicon)
     file(nanopolishresults)
+    file(metadata)
 
     output:
     file("*.pdf")
 
     script:
-    """
-    git clone https://github.com/jts/ncov-tools.git
-    mv ${config} ${reference} ${amplicon} ./ncov-tools
-    mkdir ./ncov-tools/run
-    mv *.* ./ncov-tools/run
-    cd ncov-tools
-    snakemake -s qc/Snakefile all_qc_sequencing --cores 8
-    snakemake -s qc/Snakefile all_qc_analysis --cores 8
-    mv ./plots/* ../
-    """
+    
+    if ( params.irida )
+    
+        """
+        git clone https://github.com/jts/ncov-tools.git
+        mv ${config} ${reference} ${amplicon} ./ncov-tools
+        mv ${metadata} ./ncov-tools/metadata.tsv
+        mkdir ./ncov-tools/run
+        mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
+        cd ncov-tools
+        snakemake -s qc/Snakefile all_qc_sequencing --cores 8
+        snakemake -s qc/Snakefile all_qc_analysis --cores 8
+        mv ./plots/* ../
+        """
+    
+    else
+        """
+        git clone https://github.com/jts/ncov-tools.git
+        sed -i -e 's/^metadata/#metadata/' ${config} 
+        mv ${config} ${reference} ${amplicon} ./ncov-tools
+        mkdir ./ncov-tools/run
+        mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
+        cd ncov-tools
+        snakemake -s qc/Snakefile all_qc_sequencing --cores 8
+        snakemake -s qc/Snakefile all_qc_analysis --cores 8
+        mv ./plots/* ../
+        """
 }
