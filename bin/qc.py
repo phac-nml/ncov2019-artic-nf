@@ -2,7 +2,6 @@
 
 from Bio import SeqIO
 import csv
-import math
 import subprocess
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -48,7 +47,7 @@ def read_depth_file(bamfile):
     for ln in out.decode('utf-8').split("\n"):
        if ln:
           pos_depth.append(ln.split("\t"))
-    
+
     return pos_depth
 
 
@@ -65,7 +64,7 @@ def get_depth_coverage(pos_depth, ref_length):
     for contig, pos, depth in pos_depth:
         depth_total = depth_total + int(depth)
 
-    return math.ceil(depth_total/ref_length)
+    return round(depth_total/ref_length)
 
 def get_N_positions(fasta):
     n_pos =  [i for i, letter in enumerate(fasta.seq.lower()) if letter == 'n']
