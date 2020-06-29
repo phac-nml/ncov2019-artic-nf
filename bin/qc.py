@@ -2,6 +2,7 @@
 
 from Bio import SeqIO
 import csv
+import math
 import subprocess
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -64,7 +65,7 @@ def get_depth_coverage(pos_depth, ref_length):
     for contig, pos, depth in pos_depth:
         depth_total = depth_total + int(depth)
 
-    return depth_total/ref_length 
+    return math.ceil(depth_total/ref_length)
 
 def get_N_positions(fasta):
     n_pos =  [i for i, letter in enumerate(fasta.seq.lower()) if letter == 'n']
@@ -155,7 +156,7 @@ def go(args):
                 'pct_N_bases' : "{:.2f}".format(pct_N_bases),
           'pct_covered_bases' : "{:.2f}".format(pct_covered_bases), 
            'longest_no_N_run' : largest_N_gap,
-             'depth_coverage' : "{:.2f}".format(depth_coverage),
+             'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
                        'fasta': args.fasta, 
                         'bam' : args.bam,
