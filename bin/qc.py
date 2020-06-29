@@ -47,7 +47,7 @@ def read_depth_file(bamfile):
     for ln in out.decode('utf-8').split("\n"):
        if ln:
           pos_depth.append(ln.split("\t"))
-    
+
     return pos_depth
 
 
@@ -58,6 +58,13 @@ def get_covered_pos(pos_depth, min_depth):
             counter = counter + 1
     
     return counter
+
+def get_depth_coverage(pos_depth, ref_length):
+    depth_total = 0
+    for contig, pos, depth in pos_depth:
+        depth_total = depth_total + int(depth)
+
+    return round(depth_total/ref_length)
 
 def get_N_positions(fasta):
     n_pos =  [i for i, letter in enumerate(fasta.seq.lower()) if letter == 'n']
@@ -70,7 +77,7 @@ def get_pct_N_bases(fasta):
 
     pct_N_bases = count_N / len(fasta.seq) * 100
 
-    return pct_N_bases
+    return pct_N_bases, count_N
 
 def get_largest_N_gap(fasta):
     n_pos = get_N_positions(fasta)
@@ -119,6 +126,8 @@ def go(args):
 
     depth_covered_bases = get_covered_pos(depth_pos, depth)
 
+    depth_coverage = get_depth_coverage(depth_pos, ref_length)
+
     pct_covered_bases = depth_covered_bases / ref_length * 100
 
     ## Number of aligned reads calculaton
@@ -133,7 +142,7 @@ def go(args):
 
     if len(fasta.seq) != 0:
 
-        pct_N_bases = get_pct_N_bases(fasta)
+        pct_N_bases, count_N = get_pct_N_bases(fasta)
         largest_N_gap = get_largest_N_gap(fasta)
 
     	# QC PASS / FAIL
@@ -142,9 +151,11 @@ def go(args):
 
 
     qc_line = { 'sample_name' : args.sample,
+                    'count_N' : count_N,
                 'pct_N_bases' : "{:.2f}".format(pct_N_bases),
           'pct_covered_bases' : "{:.2f}".format(pct_covered_bases), 
            'longest_no_N_run' : largest_N_gap,
+             'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
                        'fasta': args.fasta, 
                         'bam' : args.bam,
