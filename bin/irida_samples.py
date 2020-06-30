@@ -55,6 +55,10 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
 
     # Open file and populate df
     with open(sample_tsv) as input_handle:
+
+        file_info_list = []
+        file_names_set = set()
+
         for index, line in enumerate(input_handle):
             
             current_line_list = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
@@ -88,38 +92,57 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
                 barcode = current_line_list[2]
 
             file_name = '{}_barcode{}.fastq'.format(prefix, barcode)
-            new_file_name = '{}.fastq'.format(current_line_list[0])
-            
+            current_line_list[2] = barcode
 
-            # Directory input with SampleList.csv output
-            if sample_dir:
-
-                # Check that File is found and rename it
-                file_path = '{}/{}'.format(sample_dir, file_name)
-                new_file_path = '{}/{}'.format(sample_dir, new_file_name)
-                if os.path.exists(file_path):
-                    subprocess.run('mv {} {}'.format(file_path, new_file_path), shell=True)
-
-                else:
-                    print('WARN: File {} not found in {}'.format(file_name, sample_dir))
-                    continue
+            file_info_list.append(current_line_list)
+            file_names_set.add(file_name)
 
 
-                # Set DataFrame for easy output csv
-                df_out.at[index, 'Sample_Name'] = current_line_list[0] # Name from input sample info file
-                df_out.at[index, 'Project_ID'] = current_line_list[3] # Project number from sample info file
-                df_out.at[index, 'File_Forward'] = new_file_name
+    for index, sample_list in enumerate(file_info_list): # Order is [sample, run, barcode, project_id, ct]
+        
+        file_name = '{}_barcode{}.fastq'.format(prefix, sample_list[2])
+        new_file_name = '{}.fastq'.format(sample_list[0])
 
-            # Fastq rename
+        # Directory input we have SampleList.csv output
+        if sample_dir:
+
+            # Check that File is found and rename it
+            file_path = '{}/{}'.format(sample_dir, file_name)
+            new_file_path = '{}/{}'.format(sample_dir, new_file_name)
+            if os.path.exists(file_path):
+                subprocess.run('mv {} {}'.format(file_path, new_file_path), shell=True)
+
             else:
-                if str(fastq) == file_name:
-                    if os.path.exists(file_name):
-                        subprocess.run('mv {} {}'.format(fastq, new_file_name), shell=True)
-                        return None # Exit program as it should match only once
+                print('WARN: File {} not found in {}'.format(file_name, sample_dir))
+                continue
 
-                    else:    
-                        print('ERROR: No file found matching {} in current directory. Exiting'.format(fastq))
-                        quit()
+
+            # Set DataFrame for easy output csv
+            df_out.at[index, 'Sample_Name'] = sample_list[0] # Name from input sample info file
+            df_out.at[index, 'Project_ID'] = sample_list[3] # Project number from sample info file
+            df_out.at[index, 'File_Forward'] = new_file_name
+
+        # Fastq rename
+        else:
+            if str(fastq) not in file_names_set:
+                if os.path.exists(fastq):
+                    subprocess.run('mv {} extra_{}'.format(fastq, fastq), shell=True)
+                    return None
+                
+                else:    
+                    print('ERROR: No file founda matching {} in current directory. Exiting'.format(fastq))
+                    quit()
+
+
+            elif str(fastq) == file_name:
+                if os.path.exists(file_name):
+                    subprocess.run('mv {} {}'.format(fastq, new_file_name), shell=True)
+                    return None # Exit program as it should match only once
+
+                else:    
+                    print('ERROR: No file found matching {} in current directory. Exiting'.format(fastq))
+                    quit()
+
     return df_out
 
 
