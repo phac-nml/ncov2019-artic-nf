@@ -45,7 +45,7 @@ workflow sequenceAnalysisNanopolish {
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
-       articMinIONNanopolish(renameSamples.out
+       articMinIONNanopolish(renameSamples.out.filter{ it.size()>0 }
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
@@ -56,7 +56,7 @@ workflow sequenceAnalysisNanopolish {
        Channel.fromPath("${params.irida}")
               .set{ ch_irida }
 
-       articMinIONNanopolish(articGuppyPlex.out.fastq
+       articMinIONNanopolish(articGuppyPlex.out.fastq.filter{ it.size()>0 }
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
