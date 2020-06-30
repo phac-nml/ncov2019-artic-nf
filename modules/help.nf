@@ -43,10 +43,13 @@ def printHelp() {
       --outCram               Output cram instead of bam files (Default: false)
       --minReadsPerBarcode    Minimum number of reads accepted for a single barcode when supplying deplexed Fastq
                               files as input. Barcodes having fewer reads are ignored. (Default: 100)
+<<<<<<< HEAD
 
       --ncov                  Path to ncov-tools config file (Default: baseDir/extra_data/config.yaml, disabled by setting to false)
       --irida                 Path to Irida sample_list.tsv file to rename data and upload to Irida (Default: false)
                               Sample_list.tsv should be formated as [sample, run, barcode, project_id, ct]
+=======
+>>>>>>> e4256eabd38b98ba905f3eb275accd28824c48bb
  
   Illumina workflow options:
     Mandatory:
