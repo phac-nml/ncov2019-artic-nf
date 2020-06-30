@@ -130,7 +130,7 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
                     return None
                 
                 else:    
-                    print('ERROR: No file founda matching {} in current directory. Exiting'.format(fastq))
+                    print('ERROR: No file found matching {} in current directory. Exiting'.format(fastq))
                     quit()
 
 
