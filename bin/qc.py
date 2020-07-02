@@ -3,6 +3,7 @@
 from Bio import SeqIO
 import csv
 import subprocess
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import shlex
@@ -113,6 +114,17 @@ def get_num_reads(bamfile):
     what = shlex.split(command)
 
     return subprocess.check_output(what).decode().strip()
+
+def get_lineage(pangolin_csv, sample_name):
+    with open(pangolin_csv, 'r') as input_handle:
+        reader = csv.reader(input_handle)
+
+        for row in reader: # Row format is ['taxon', 'lineage', 'SH-alrt', 'UFbootstrap', 'lineages_version', 'status', 'note']
+
+            if re.search(sample_name, row[0]):
+                return str(row[1])
+    
+    return 'Unknown'
     
 def go(args):
     if args.illumina:
@@ -149,6 +161,12 @@ def go(args):
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
+    if args.pangolin:
+        lineage = get_lineage(args.pangolin, args.sample)
+    
+    else:
+        lineage = 'Unknown'
+
 
     qc_line = { 'sample_name' : args.sample,
                     'count_N' : count_N,
@@ -157,6 +175,7 @@ def go(args):
            'longest_no_N_run' : largest_N_gap,
              'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
+                    'lineage' : lineage,
                        'fasta': args.fasta, 
                         'bam' : args.bam,
                     'qc_pass' : qc_pass}
@@ -183,6 +202,7 @@ def main():
     parser.add_argument('--ref', required=True)
     parser.add_argument('--bam', required=True)
     parser.add_argument('--fasta', required=True)
+    parser.add_argument('--pangolin', required=False)
 
     args = parser.parse_args()
     go(args)

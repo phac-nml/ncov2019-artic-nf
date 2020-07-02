@@ -64,9 +64,23 @@ workflow sequenceAnalysisNanopolish {
 
       articRemoveUnmappedReads(articMinIONNanopolish.out.mapped)
 
+
+      Channel.fromPath("${params.ncov}")
+             .set{ ch_ncov }
+
+      runNcovTools(ch_ncov, 
+                      articDownloadScheme.out.reffasta, 
+                      articDownloadScheme.out.ncov_amplicon, 
+                      articMinIONNanopolish.out[0].toList()
+                                                  .flatten()
+                                                  .toList(),
+                      ch_irida)
+
+
       makeQCCSV(articMinIONNanopolish.out.ptrim
                                      .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
-                                     .combine(articDownloadScheme.out.reffasta))
+                                     .combine(articDownloadScheme.out.reffasta)
+                                     .combine(runNcovTools.out.lineage))
 
       makeQCCSV.out.csv.splitCsv()
                        .unique()
@@ -87,19 +101,6 @@ workflow sequenceAnalysisNanopolish {
         bamToCram(qc.pass.map{ it[0] } 
                         .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
 
-      }
-
-      if (params.ncov) {
-        Channel.fromPath("${params.ncov}")
-              .set{ ch_ncov }
-
-        runNcovTools(ch_ncov, 
-                      articDownloadScheme.out.reffasta, 
-                      articDownloadScheme.out.ncov_amplicon, 
-                      articMinIONNanopolish.out[0].toList()
-                                                  .flatten()
-                                                  .toList(),
-                      ch_irida)
       }
 
     emit:

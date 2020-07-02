@@ -61,6 +61,8 @@ process runNcovTools {
     output:
     file("*.pdf")
 
+    path "*.csv" , emit: lineage
+
     script:
     
     if ( params.irida )
@@ -75,6 +77,7 @@ process runNcovTools {
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
         mv ./plots/* ../
+        mv ./lineages/* ../
         """
     
     else
@@ -88,5 +91,6 @@ process runNcovTools {
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
         mv ./plots/* ../
+        mv ./lineages/* ../
         """
 }
