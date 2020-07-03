@@ -6,7 +6,7 @@ process makeQCCSV {
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple sampleName, path(bam), path(fasta), path(ref)
+    tuple sampleName, path(bam), path(fasta), path(ref), path(lineage)
 
     output:
     path "${params.prefix}.${sampleName}.qc.csv", emit: csv
@@ -20,7 +20,7 @@ process makeQCCSV {
     }
 
     """
-    qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta}
+    qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage}
     """
 }
 
