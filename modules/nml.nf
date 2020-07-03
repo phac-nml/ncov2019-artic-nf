@@ -15,13 +15,13 @@ process renameSamples {
 
     script:
     """
-    irida_samples.py --fastq ${fastq} --prefix ${params.prefix} --sample_info ${samplecsv}
+    irida_fastq.py --fastq ${fastq} --prefix ${params.prefix} --sample_info ${samplecsv}
     """
 }
 
-process generateIridaReport {
+process generateFastqIridaReport {
 
-    publishDir "${params.outdir}", pattern: "irida_upload", mode: "copy"
+    publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"
 
     //conda 'environments/extras.txt'
     // Only with --irida flag
@@ -30,16 +30,40 @@ process generateIridaReport {
 
     input:
     file(fastqs)
-    file(samplecsv)
+    file(sampletsv)
 
     output:
-    path("irida_upload")
+    path("irida_fastq")
 
     script:
     """
-    mkdir irida_upload
-    mv ${fastqs} irida_upload
-    irida_samples.py --sample_info ${samplecsv} --prefix ${params.prefix} --sample_dir irida_upload
+    mkdir irida_fastq
+    mv ${fastqs} irida_fastq
+    irida_fastq.py --sample_info ${sampletsv} --prefix ${params.prefix} --sample_dir irida_fastq
+    """
+}
+
+process generateFastaIridaReport {
+
+    publishDir "${params.outdir}", pattern: "irida_consensus", mode: "copy"
+
+    //conda 'environments/extras.txt'
+    // Only with --irida flag
+
+    label 'smallmem'
+
+    input:
+    file(fastas)
+    file(sampletsv)
+
+    output:
+    path("irida_consensus")
+
+    script:
+    """
+    mkdir irida_consensus
+    mv *.consensus.fasta irida_consensus
+    irida_fasta.py --sample_info ${sampletsv} --sample_dir irida_consensus
     """
 }
 

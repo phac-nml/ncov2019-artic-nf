@@ -19,7 +19,8 @@ include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
-include {generateIridaReport} from '../modules/nml.nf'
+include {generateFastqIridaReport} from '../modules/nml.nf'
+include {generateFastaIridaReport} from '../modules/nml.nf'
 
 
 // import subworkflows
@@ -50,7 +51,12 @@ workflow sequenceAnalysisNanopolish {
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
 
-       generateIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+       generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+
+       generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.toList()
+                                                                         .flatten()
+                                                                         .toList()
+                                                                         , ch_irida)
       }
       else {
        Channel.fromPath("${params.irida}")
