@@ -53,10 +53,8 @@ workflow sequenceAnalysisNanopolish {
 
        generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
 
-       generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.toList()
-                                                                         .flatten()
-                                                                         .toList()
-                                                                         , ch_irida)
+       generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
+                                ch_irida)
       }
       else {
        Channel.fromPath("${params.irida}")
@@ -77,9 +75,7 @@ workflow sequenceAnalysisNanopolish {
       runNcovTools(ch_ncov, 
                       articDownloadScheme.out.reffasta, 
                       articDownloadScheme.out.ncov_amplicon, 
-                      articMinIONNanopolish.out[0].toList()
-                                                  .flatten()
-                                                  .toList(),
+                      articMinIONNanopolish.out[0].collect(),
                       ch_irida)
 
 
