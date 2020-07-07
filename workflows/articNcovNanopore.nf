@@ -12,6 +12,7 @@ include {articRemoveUnmappedReads} from '../modules/artic.nf'
 
 include {makeQCCSV} from '../modules/qc.nf'
 include {writeQCSummaryCSV} from '../modules/qc.nf'
+include {checkBlanks} from '../modules/qc.nf'
 
 include {bamToCram} from '../modules/out.nf'
 
@@ -88,12 +89,18 @@ workflow sequenceAnalysisNanopolish {
                        .unique()
                        .branch {
                            header: it[-1] == 'qc_pass'
-                           fail: it[-1] == 'FALSE'
-                           pass: it[-1] == 'TRUE'
+                           fail: it[-1] == 'False'
+                           pass: it[-1] == 'True'
                        }
                        .set { qc }
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
+
+     if (params.negative_control) {
+
+      checkBlanks(params.negative_control, writeQCSummaryCSV.out)
+
+     }
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
