@@ -89,8 +89,8 @@ workflow sequenceAnalysisNanopolish {
                        .unique()
                        .branch {
                            header: it[-1] == 'qc_pass'
-                           fail: it[-1] == 'False'
-                           pass: it[-1] == 'True'
+                           fail: it[-1] == 'FALSE'
+                           pass: it[-1] == 'TRUE'
                        }
                        .set { qc }
 

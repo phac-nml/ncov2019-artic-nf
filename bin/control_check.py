@@ -29,7 +29,7 @@ def check_controls(qc_csv, negative_names):
     qc_df =  pd.read_csv(qc_csv)
     spot = qc_df.shape[1] -1 # Want second last position to add control check
 
-    for index, sample_name in enumerate(qc_df['sample'].tolist()):
+    for index, sample_name in enumerate(qc_df['sample_name'].tolist()):
         if sample_name in negative_name_list and qc_df['qc_pass'][index] == True:
         
             qc_df.insert(spot, 'control', 'FAIL')
@@ -49,7 +49,7 @@ def main():
 
     qc_df = check_controls(qc_csv, negative_names)
 
-    qc_df.to_csv('out.csv', header=True, index=False)
+    qc_df.to_csv('final_{}'.format(qc_csv), header=True, index=False)
 
 
 if __name__ == "__main__":

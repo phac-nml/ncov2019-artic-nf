@@ -47,7 +47,7 @@ process writeQCSummaryCSV {
 
 process checkBlanks {
 
-    publishDir "${params.outdir}", pattern: "out.csv", mode: 'copy'
+    publishDir "${params.outdir}", pattern: "*.csv", mode: 'copy'
 
     tag { params.prefix }
 
@@ -59,7 +59,7 @@ process checkBlanks {
 
 
     output:
-    file("out.csv")
+    file("*.csv")
 
     script:
     """

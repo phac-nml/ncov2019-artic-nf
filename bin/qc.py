@@ -150,7 +150,7 @@ def go(args):
 
     pct_N_bases   = 0
     largest_N_gap = 0
-    qc_pass       = "False"
+    qc_pass       = "FALSE"
 
     if len(fasta.seq) != 0:
 
@@ -159,7 +159,7 @@ def go(args):
 
     	# QC PASS / FAIL
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
-                qc_pass = "True"
+                qc_pass = "TRUE"
 
     if args.pangolin:
         lineage = get_lineage(args.pangolin, args.sample)
@@ -168,7 +168,7 @@ def go(args):
         lineage = 'Unknown'
 
 
-    qc_line = {      'sample' : args.sample,
+    qc_line = { 'sample_name' : args.sample,
                     'count_N' : count_N,
                 'pct_N_bases' : "{:.2f}".format(pct_N_bases),
           'pct_covered_bases' : "{:.2f}".format(pct_covered_bases), 
