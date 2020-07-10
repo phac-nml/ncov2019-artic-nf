@@ -176,8 +176,10 @@ def go(args):
              'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
-                       'fasta': args.fasta, 
+                      'fasta' : args.fasta, 
                         'bam' : args.bam,
+                'script_name' : args.name,
+                   'revision' : args.revision,
                     'qc_pass' : qc_pass}
 
 
@@ -202,7 +204,9 @@ def main():
     parser.add_argument('--ref', required=True)
     parser.add_argument('--bam', required=True)
     parser.add_argument('--fasta', required=True)
-    parser.add_argument('--pangolin', required=False)
+    parser.add_argument('--pangolin', required=True)
+    parser.add_argument('--name', required=True)
+    parser.add_argument('--revision', required=True)
 
     args = parser.parse_args()
     go(args)
