@@ -19,16 +19,18 @@ process makeQCCSV {
        qcSetting = "--nanopore"
     }
 
+    def rev = workflow.revision ?: workflow.commitId ?: workflow.scriptId
+
     if ( params.irida )
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --run_name ${sample_sheet} --revision $workflow.revision
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --run_name ${sample_sheet} --revision ${rev}
         """
     
     else
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --revision $workflow.revision
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --revision ${rev}
         """
 }
 

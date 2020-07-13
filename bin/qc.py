@@ -196,6 +196,7 @@ def go(args):
                       'fasta' : args.fasta, 
                         'bam' : args.bam,
                    'run_name' : run_name,
+                'script_name' : 'ncov2019-artic-nf',
                    'revision' : args.revision,
                     'qc_pass' : qc_pass}
 
