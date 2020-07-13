@@ -6,7 +6,7 @@ process makeQCCSV {
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple sampleName, path(bam), path(fasta), path(ref), path(lineage)
+    tuple sampleName, path(bam), path(fasta), path(ref), path(lineage), path(sample_sheet)
 
     output:
     path "${params.prefix}.${sampleName}.qc.csv", emit: csv
@@ -19,9 +19,17 @@ process makeQCCSV {
        qcSetting = "--nanopore"
     }
 
-    """
-    qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --name $workflow.repository --revision $workflow.revision
-    """
+    if ( params.irida )
+
+        """
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --run_name ${sample_sheet} --revision $workflow.revision
+        """
+    
+    else
+
+        """
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --revision $workflow.revision
+        """
 }
 
 
