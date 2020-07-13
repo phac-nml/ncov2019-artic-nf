@@ -125,6 +125,17 @@ def get_lineage(pangolin_csv, sample_name):
                 return str(row[1])
     
     return 'Unknown'
+
+def get_run_name(sample_tsv, sample_name):
+    with open(sample_tsv) as input_handle:
+
+        for line in input_handle:
+            row = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
+
+            if re.search(sample_name, row[0]):
+                return str(row[1])
+
+    return 'Unknown'
     
 def go(args):
     if args.illumina:
@@ -167,6 +178,12 @@ def go(args):
     else:
         lineage = 'Unknown'
 
+    if args.run_name:
+        run_name = get_run_name(args.run_name, args.sample)
+    
+    else:
+        run_name = 'N/A'
+
 
     qc_line = { 'sample_name' : args.sample,
                     'count_N' : count_N,
@@ -176,8 +193,11 @@ def go(args):
              'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
-                       'fasta': args.fasta, 
+                      'fasta' : args.fasta, 
                         'bam' : args.bam,
+                   'run_name' : run_name,
+                'script_name' : 'nml-ncov2019-artic-nf',
+                   'revision' : args.revision,
                     'qc_pass' : qc_pass}
 
 
@@ -202,7 +222,9 @@ def main():
     parser.add_argument('--ref', required=True)
     parser.add_argument('--bam', required=True)
     parser.add_argument('--fasta', required=True)
-    parser.add_argument('--pangolin', required=False)
+    parser.add_argument('--pangolin', required=True)
+    parser.add_argument('--revision', required=True)
+    parser.add_argument('--run_name', required=False)
 
     args = parser.parse_args()
     go(args)
