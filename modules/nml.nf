@@ -118,3 +118,21 @@ process runNcovTools {
         mv ./lineages/* ../
         """
 }
+
+process uploadIrida {
+
+    //conda 'environments/irida_uploader.yml'
+
+    label 'Upload'
+
+    input:
+    path(fastq_folder)
+    path(consensus_folder)
+    file(irida_config)
+
+    script:
+    """
+    irida-uploader --config ${irida_config} -d ${fastq_folder}
+    irida-uploader --config ${irida_config} -d ${consensus_folder}
+    """
+}

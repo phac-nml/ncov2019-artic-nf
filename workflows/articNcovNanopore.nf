@@ -18,9 +18,10 @@ include {bamToCram} from '../modules/out.nf'
 include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
-include {runNcovTools} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
+include {runNcovTools} from '../modules/nml.nf'
+include {uploadIrida} from '../modules/nml.nf'
 
 
 // import subworkflows
@@ -105,6 +106,15 @@ workflow sequenceAnalysisNanopolish {
                         .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
 
       }
+
+     if (params.irida) {
+       if (params.upload_irida) {
+         Channel.fromPath("${params.upload_irida}")
+             .set{ ch_upload }
+
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload)
+       }
+     }
 
     emit:
       qc_pass = collateSamples.out
