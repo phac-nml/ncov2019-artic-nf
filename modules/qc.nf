@@ -19,7 +19,7 @@ process makeQCCSV {
        qcSetting = "--nanopore"
     }
 
-    def rev = workflow.revision ?: workflow.commitId ?: workflow.scriptId
+    def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
 
     if ( params.irida )
 
