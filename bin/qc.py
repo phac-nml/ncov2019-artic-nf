@@ -190,6 +190,7 @@ def go(args):
 
     qc_line = { 'sample_name' : args.sample,
                  'project_id' : project_id,
+                    'barcode' : barcode,
                     'count_N' : count_N,
                 'pct_N_bases' : "{:.2f}".format(pct_N_bases),
           'pct_covered_bases' : "{:.2f}".format(pct_covered_bases), 
@@ -198,7 +199,6 @@ def go(args):
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
                          'ct' : ct,
-                    'barcode' : barcode,
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
                    'revision' : args.revision,
