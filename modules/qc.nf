@@ -24,7 +24,7 @@ process makeQCCSV {
     if ( params.irida )
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --run_name ${sample_sheet} --revision ${rev}
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --sample_sheet ${sample_sheet} --revision ${rev}
         """
     
     else
