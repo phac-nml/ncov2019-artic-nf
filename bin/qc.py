@@ -117,9 +117,9 @@ def get_num_reads(bamfile):
     return subprocess.check_output(what).decode().strip()
 
 def get_variants(variants_vcf, variants_list=[]):
-    with open(variants_vcf, 'r') as input_handle:
-        for rec in vcf.Reader(input_handle):
-            variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
+    vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
+    for rec in vcf_reader:
+        variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
     
     variants = (';'.join(variants_list))
 

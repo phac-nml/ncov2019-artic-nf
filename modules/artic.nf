@@ -105,7 +105,7 @@ process articMinIONNanopolish {
     tuple sampleName, file("${sampleName}.primertrimmed.rg.sorted.bam"), emit: ptrim
     tuple sampleName, file("${sampleName}.sorted.bam"), emit: mapped
     tuple sampleName, file("${sampleName}.consensus.fasta"), emit: consensus_fasta
-    tuple sampleName, file("${sampleName}.pass.vcf"), emit: vcf
+    tuple sampleName, file("${sampleName}.pass.vcf.gz"), emit: vcf
 
     script:
     // Make an identifier from the fastq filename
@@ -135,8 +135,6 @@ process articMinIONNanopolish {
     --sequencing-summary ${seqSummary} \
     ${params.scheme}/${params.schemeVersion} \
     ${sampleName}
-
-    gunzip ${sampleName}.pass.vcf.gz
     """
 }
 
