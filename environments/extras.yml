@@ -8,3 +8,4 @@ dependencies:
   - pandas
   - samtools
   - libxcb
+  - pyvcf
