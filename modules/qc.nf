@@ -6,7 +6,7 @@ process makeQCCSV {
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple sampleName, path(bam), path(fasta), path(ref), path(lineage), path(sample_sheet)
+    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(sample_sheet)
 
     output:
     path "${params.prefix}.${sampleName}.qc.csv", emit: csv
@@ -24,13 +24,13 @@ process makeQCCSV {
     if ( params.irida )
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --sample_sheet ${sample_sheet} --revision ${rev}
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --vcf ${vcf} --sample_sheet ${sample_sheet} --revision ${rev}
         """
     
     else
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --revision ${rev}
+        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --vcf ${vcf} --revision ${rev}
         """
 }
 

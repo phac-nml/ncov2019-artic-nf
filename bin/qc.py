@@ -3,6 +3,7 @@
 from Bio import SeqIO
 import csv
 import subprocess
+import vcf
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -115,6 +116,18 @@ def get_num_reads(bamfile):
 
     return subprocess.check_output(what).decode().strip()
 
+def get_variants(variants_vcf, variants_list=[]):
+    with open(variants_vcf, 'r') as input_handle:
+        for rec in vcf.Reader(input_handle):
+            variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
+    
+    variants = (';'.join(variants_list))
+
+    if variants == '':
+        return 'None'
+        
+    return variants
+
 def get_lineage(pangolin_csv, sample_name):
     with open(pangolin_csv, 'r') as input_handle:
         reader = csv.reader(input_handle)
@@ -172,6 +185,8 @@ def go(args):
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
+    variants = get_variants(args.vcf)
+
     if args.pangolin:
         lineage = get_lineage(args.pangolin, args.sample)
     
@@ -198,6 +213,7 @@ def go(args):
              'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
+                   'variants' : variants,
                          'ct' : ct,
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
@@ -229,6 +245,7 @@ def main():
     parser.add_argument('--pangolin', required=True)
     parser.add_argument('--revision', required=True)
     parser.add_argument('--sample_sheet', required=False)
+    parser.add_argument('--vcf', required=True)
 
     args = parser.parse_args()
     go(args)

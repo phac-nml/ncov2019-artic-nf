@@ -81,6 +81,7 @@ workflow sequenceAnalysisNanopolish {
 
       makeQCCSV(articMinIONNanopolish.out.ptrim
                                      .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
+                                     .join(articMinIONNanopolish.out.vcf, by: 0)
                                      .combine(articDownloadScheme.out.reffasta)
                                      .combine(runNcovTools.out.lineage)
                                      .combine(ch_irida))
