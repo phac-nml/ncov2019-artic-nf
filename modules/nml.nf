@@ -19,6 +19,42 @@ process renameSamples {
     """
 }
 
+process fewReadsIN {
+
+    label 'smallmem'
+
+    publishDir "${params.outdir}/", pattern: "READ_NUMBER_FILTERED_OUT.txt", mode: "copy"
+
+    input:
+    path(fastq_dir)
+
+    output:
+    file('READ_NUMBER_FILTERED_OUT.txt')
+
+    script:
+    """
+    ls -d */ > READ_NUMBER_FILTERED_OUT.txt
+    """
+}
+
+process zeroReadsFiltered {
+
+    label 'smallmem'
+
+    publishDir "${params.outdir}/", pattern: "READ_LENGTH_FILTERED_OUT.txt", mode: "copy"
+
+    input:
+    path(fastq)
+
+    output:
+    file('READ_LENGTH_FILTERED_OUT.txt')
+
+    script:
+    """
+    ls *.fastq > READ_LENGTH_FILTERED_OUT.txt
+    """
+}
+
 process generateFastqIridaReport {
 
     publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"

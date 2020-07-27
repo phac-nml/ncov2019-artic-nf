@@ -18,6 +18,7 @@ include {bamToCram} from '../modules/out.nf'
 include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
+include {zeroReadsFiltered} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
@@ -46,6 +47,8 @@ workflow sequenceAnalysisNanopolish {
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
+       zeroReadsFiltered(renameSamples.out.filter{ it.size()==0 }.collect())
+
        articMinIONNanopolish(renameSamples.out.filter{ it.size()>0 }
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
@@ -59,6 +62,8 @@ workflow sequenceAnalysisNanopolish {
       else {
        Channel.fromPath("${params.irida}")
               .set{ ch_irida }
+
+       zeroReadsFiltered(articGuppyPlex.out.fastq.filter{ it.size()==0 }.collect())
 
        articMinIONNanopolish(articGuppyPlex.out.fastq.filter{ it.size()>0 }
                                           .combine(articDownloadScheme.out.scheme)
