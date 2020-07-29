@@ -3,6 +3,7 @@
 from Bio import SeqIO
 import csv
 import subprocess
+import vcf
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -115,6 +116,18 @@ def get_num_reads(bamfile):
 
     return subprocess.check_output(what).decode().strip()
 
+def get_variants(variants_vcf, variants_list=[]):
+    vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
+    for rec in vcf_reader:
+        variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
+    
+    variants = (';'.join(variants_list))
+
+    if variants == '':
+        return 'None'
+        
+    return variants
+
 def get_lineage(pangolin_csv, sample_name):
     with open(pangolin_csv, 'r') as input_handle:
         reader = csv.reader(input_handle)
@@ -126,16 +139,16 @@ def get_lineage(pangolin_csv, sample_name):
     
     return 'Unknown'
 
-def get_run_name(sample_tsv, sample_name):
+def get_samplesheet_info(sample_tsv, sample_name):
     with open(sample_tsv) as input_handle:
 
         for line in input_handle:
             row = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
 
             if re.search(sample_name, row[0]):
-                return str(row[1])
+                return str(row[1]), str(row[2]), str(row[3]), str(row[4])
 
-    return 'Unknown'
+    return 'Unknown', 'Unknown', 'Unknown', 'Unknown'
     
 def go(args):
     if args.illumina:
@@ -172,20 +185,27 @@ def go(args):
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
+    variants = get_variants(args.vcf)
+
     if args.pangolin:
         lineage = get_lineage(args.pangolin, args.sample)
     
     else:
         lineage = 'Unknown'
 
-    if args.run_name:
-        run_name = get_run_name(args.run_name, args.sample)
+    if args.sample_sheet:
+        run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
     
     else:
         run_name = 'N/A'
+        barcode = re.search(r'\d+', args.sample).group(0)
+        project_id = 'N/A' 
+        ct = 'N/A'
 
 
     qc_line = { 'sample_name' : args.sample,
+                 'project_id' : project_id,
+                    'barcode' : barcode,
                     'count_N' : count_N,
                 'pct_N_bases' : "{:.2f}".format(pct_N_bases),
           'pct_covered_bases' : "{:.2f}".format(pct_covered_bases), 
@@ -193,8 +213,8 @@ def go(args):
              'depth_coverage' : depth_coverage,
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
-                      'fasta' : args.fasta, 
-                        'bam' : args.bam,
+                   'variants' : variants,
+                         'ct' : ct,
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
                    'revision' : args.revision,
@@ -224,7 +244,8 @@ def main():
     parser.add_argument('--fasta', required=True)
     parser.add_argument('--pangolin', required=True)
     parser.add_argument('--revision', required=True)
-    parser.add_argument('--run_name', required=False)
+    parser.add_argument('--sample_sheet', required=False)
+    parser.add_argument('--vcf', required=True)
 
     args = parser.parse_args()
     go(args)
