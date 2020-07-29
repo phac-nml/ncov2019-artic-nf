@@ -112,7 +112,7 @@ workflow sequenceAnalysisNanopolish {
          Channel.fromPath("${params.upload_irida}")
              .set{ ch_upload }
 
-         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload)
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, writeQCSummaryCSV.out)
        }
      }
 

@@ -129,10 +129,12 @@ process uploadIrida {
     path(fastq_folder)
     path(consensus_folder)
     file(irida_config)
+    file(metadata_csv)
 
     script:
     """
     irida-uploader --config ${irida_config} -d ${fastq_folder}
     irida-uploader --config ${irida_config} -d ${consensus_folder}
+    upload.py --config ${irida_config} --metadata ${metadata_csv}
     """
 }
