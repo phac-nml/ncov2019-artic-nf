@@ -6,6 +6,6 @@ dependencies:
   - biopython
   - matplotlib
   - pandas
-  - samtools
+  - samtools=1.10-0
   - libxcb
   - pyvcf
