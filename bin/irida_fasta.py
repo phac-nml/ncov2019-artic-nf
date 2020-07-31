@@ -43,8 +43,13 @@ def generate_samplelist(sample_tsv, directory):
                     continue
             
             if len(current_line_list) != 5:
-                print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [sample, run, barcode, project_id, ct]'.format(index + 1, sample_tsv))
-                quit()
+                if len(current_line_list) == 6 and current_line_list[5] == '':
+                    del current_line_list[5]
+
+                else:
+                    print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [sample, run, barcode, project_id, ct]'.format(index + 1, sample_tsv))
+                    print(current_line_list)
+                    quit()
 
 
             # File Checking
