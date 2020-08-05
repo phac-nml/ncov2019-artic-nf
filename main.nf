@@ -5,7 +5,7 @@ nextflow.preview.dsl = 2
 
 // include modules
 include printHelp from './modules/help.nf'
-include fewReadsIN from './modules/nml.nf'
+include accountNoReadsInput from './modules/nml.nf'
 
 // import subworkflows
 include {articNcovNanopore} from './workflows/articNcovNanopore.nf' 
@@ -114,7 +114,7 @@ workflow {
                             count > params.minReadsPerBarcode
                    }.set{ ch_fastqDirs }
             
-            fewReadsIN(ch_badfastqDirs.collect())
+            accountNoReadsInput(ch_badfastqDirs.collect())
 
        } else if ( nanoporeNoBarcode ){
             // No, no barcodes

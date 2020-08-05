@@ -19,39 +19,39 @@ process renameSamples {
     """
 }
 
-process fewReadsIN {
+process accountNoReadsInput {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "READ_NUMBER_FILTERED_OUT.txt", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.txt", mode: "copy"
 
     input:
     path(fastq_dir)
 
     output:
-    file('READ_NUMBER_FILTERED_OUT.txt')
+    file('samples_failing_no_input_reads.txt')
 
     script:
     """
-    ls -d */ > READ_NUMBER_FILTERED_OUT.txt
+    ls -d */ > samples_failing_no_input_reads.txt
     """
 }
 
-process zeroReadsFiltered {
+process accountReadFilterFailures {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "READ_LENGTH_FILTERED_OUT.txt", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.txt", mode: "copy"
 
     input:
     path(fastq)
 
     output:
-    file('READ_LENGTH_FILTERED_OUT.txt')
+    file('samples_failing_read_filter.txt')
 
     script:
     """
-    ls *.fastq > READ_LENGTH_FILTERED_OUT.txt
+    ls *.fastq > samples_failing_read_filter.txt
     """
 }
 
