@@ -27,6 +27,7 @@ def init_parser():
 def generate_samplelist(sample_tsv, directory):
 
     df_out = pd.DataFrame(columns=['Sample_Name', 'Project_ID', 'File_Forward', 'File_Reverse'])
+    input_format = ['sample', 'run', 'barcode', 'project_id', 'ct']
 
     with open(sample_tsv) as input_handle:
 
@@ -34,22 +35,33 @@ def generate_samplelist(sample_tsv, directory):
 
             current_line_list = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
 
-            # Error Checking Formatting
+
+            # Error checking for formatting
             if index == 0:
-                if str(current_line_list[0]) != 'sample':
-                    print('ERROR: First column of the header line must be called "sample". Exiting')
-                    quit() 
-                else:
-                    continue
-            
-            if len(current_line_list) != 5:
-                if len(current_line_list) == 6 and current_line_list[5] == '':
-                    del current_line_list[5]
+                if len(current_line_list) != 5:
+                    if len(current_line_list) <= 4:
+                        print('ERROR: Header formated incorrectly. Please address this by matching the format: {}'.format(input_format))
+                        quit()
+
+                    del current_line_list[5:len(current_line_list)]
+
+                if current_line_list != input_format:
+                    print('ERROR: Header formated incorrectly. Please address this by matching the format: {}'.format(input_format))
+                    quit()
 
                 else:
-                    print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [sample, run, barcode, project_id, ct]'.format(index + 1, sample_tsv))
-                    print(current_line_list)
+                    continue
+
+            # For all rows, check if they are 5 
+            if len(current_line_list) == 5:
+                pass
+
+            else:
+                if len(current_line_list) <= 4:
+                    print('ERROR: Line {} is formatted incorrectly! Please address this by matching the format: {}'.format(index + 1, input_format))
                     quit()
+
+                del current_line_list[5:len(current_line_list)]
 
 
             # File Checking
