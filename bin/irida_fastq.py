@@ -69,13 +69,15 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
             if index == 0:
                 if len(current_line_list) != 5:
                     if len(current_line_list) <= 4:
-                        print('ERROR: Header formated incorrectly. Please address this by matching the format: {}'.format(input_format))
+                        print('ERROR: Header formated incorrectly. Please address this by matching the format {} for the first columns'.format(input_format))
                         quit()
 
+                    # Trim other rows to allow pipeline to continue if it passes other checks
+                    # Allows end users to have additional information if they match the first 5 columns correctly
                     del current_line_list[5:len(current_line_list)]
 
                 if current_line_list != input_format:
-                    print('ERROR: Header formated incorrectly. Please address this by matching the format: {}'.format(input_format))
+                    print('ERROR: Header formated incorrectly. Please address this by matching the format {} for the first columns'.format(input_format))
                     quit()
 
                 else:
@@ -87,9 +89,10 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
 
             else:
                 if len(current_line_list) <= 4:
-                    print('ERROR: Line {} is formatted incorrectly! Please address this by matching the format: {}'.format(index + 1, input_format))
+                    print('ERROR: Line {} is formatted incorrectly! Please address this by matching the format {} for the first columns'.format(index + 1, input_format))
                     quit()
 
+                # Same as above, cut off extra data if there is any
                 del current_line_list[5:len(current_line_list)]
 
 
