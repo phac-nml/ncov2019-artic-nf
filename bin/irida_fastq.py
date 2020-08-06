@@ -52,6 +52,7 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
 
     # Set up dataframe
     df_out = pd.DataFrame(columns=['Sample_Name', 'Project_ID', 'File_Forward', 'File_Reverse'])
+    input_format = ['sample', 'run', 'barcode', 'project_id', 'ct']
 
     # Open file and populate df
     with open(sample_tsv) as input_handle:
@@ -63,17 +64,36 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
             
             current_line_list = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
 
+
+            # Error checking for formatting
             if index == 0:
-                if str(current_line_list[0]) != 'sample':
-                    print('ERROR: First column of the header line must be called "sample". Exiting')
-                    quit() 
+                if len(current_line_list) != 5:
+                    if len(current_line_list) <= 4:
+                        print('ERROR: Header formated incorrectly. Please address this by matching the format {} for the first columns'.format(input_format))
+                        quit()
+
+                    # Trim other rows to allow pipeline to continue if it passes other checks
+                    # Allows end users to have additional information if they match the first 5 columns correctly
+                    del current_line_list[5:len(current_line_list)]
+
+                if current_line_list != input_format:
+                    print('ERROR: Header formated incorrectly. Please address this by matching the format {} for the first columns'.format(input_format))
+                    quit()
+
                 else:
                     continue
 
+            # For all rows, check if they are 5 
+            if len(current_line_list) == 5:
+                pass
 
-            if len(current_line_list) != 5:
-                print('ERROR: Line {} of file {} is formatted incorrectly! Please address this by matching the format: [sample, run, barcode, project_id, ct]'.format(index + 1, sample_tsv))
-                quit()
+            else:
+                if len(current_line_list) <= 4:
+                    print('ERROR: Line {} is formatted incorrectly! Please address this by matching the format {} for the first columns'.format(index + 1, input_format))
+                    quit()
+
+                # Same as above, cut off extra data if there is any
+                del current_line_list[5:len(current_line_list)]
 
 
             # Set correct file name and check on barcode formatting
@@ -103,7 +123,7 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
         file_name = '{}_barcode{}.fastq'.format(prefix, sample_list[2])
         new_file_name = '{}.fastq'.format(sample_list[0])
 
-        # Directory input we have SampleList.csv output
+        # For directory input we create SampleList.csv as the output and must make it
         if sample_dir:
 
             # Check that File is found and rename it
@@ -116,23 +136,22 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
                 print('WARN: File {} not found in {}'.format(file_name, sample_dir))
                 continue
 
-
             # Set DataFrame for easy output csv
             df_out.at[index, 'Sample_Name'] = sample_list[0] # Name from input sample info file
             df_out.at[index, 'Project_ID'] = sample_list[3] # Project number from sample info file
             df_out.at[index, 'File_Forward'] = new_file_name
 
-        # Fastq rename
+
+        # Else we just rename the singular input fastq file
         else:
             if str(fastq) not in file_names_set:
                 if os.path.exists(fastq):
                     subprocess.run('mv {} extra_{}'.format(fastq, fastq), shell=True)
-                    return None
+                    return None # Exit program as it should match only once
                 
                 else:    
                     print('ERROR: No file found matching {} in current directory. Exiting'.format(fastq))
                     quit()
-
 
             elif str(fastq) == file_name:
                 if os.path.exists(file_name):

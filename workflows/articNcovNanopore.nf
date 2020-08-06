@@ -18,6 +18,8 @@ include {bamToCram} from '../modules/out.nf'
 include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
+include {accountReadFilterFailures} from '../modules/nml.nf'
+include {runNcovTools} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
@@ -47,6 +49,8 @@ workflow sequenceAnalysisNanopolish {
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
+       accountReadFilterFailures(renameSamples.out.filter{ it.size()==0 }.collect())
+
        articMinIONNanopolish(renameSamples.out.filter{ it.size()>0 }
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
@@ -60,6 +64,8 @@ workflow sequenceAnalysisNanopolish {
       else {
        Channel.fromPath("${params.irida}")
               .set{ ch_irida }
+
+       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.size()==0 }.collect())
 
        articMinIONNanopolish(articGuppyPlex.out.fastq.filter{ it.size()>0 }
                                           .combine(articDownloadScheme.out.scheme)
@@ -103,8 +109,8 @@ workflow sequenceAnalysisNanopolish {
                            .join(articRemoveUnmappedReads.out))
 
      if (params.outCram) {
-        bamToCram(qc.pass.map{ it[0] } 
-                        .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
+        bamToCram(articMinIONNanopolish.out.ptrim.map{ it[0] } 
+                        .join (articDownloadScheme.out.reffasta.combine(ch_preparedRef.map{ it[0] })) )
 
       }
 
@@ -154,6 +160,11 @@ workflow sequenceAnalysisMedaka {
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
                            .join(articRemoveUnmappedReads.out))
 
+     if (params.outCram) {
+        bamToCram(articMinIONMedaka.out.ptrim.map{ it[0] } 
+                        .join (articDownloadScheme.out.reffasta.combine(ch_preparedRef.map{ it[0] })) )
+
+      }
     emit:
       qc_pass = collateSamples.out
 

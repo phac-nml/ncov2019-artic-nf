@@ -19,6 +19,42 @@ process renameSamples {
     """
 }
 
+process accountNoReadsInput {
+
+    label 'smallmem'
+
+    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.txt", mode: "copy"
+
+    input:
+    path(fastq_dir)
+
+    output:
+    file('samples_failing_no_input_reads.txt')
+
+    script:
+    """
+    ls -d */ > samples_failing_no_input_reads.txt
+    """
+}
+
+process accountReadFilterFailures {
+
+    label 'smallmem'
+
+    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.txt", mode: "copy"
+
+    input:
+    path(fastq)
+
+    output:
+    file('samples_failing_read_filter.txt')
+
+    script:
+    """
+    ls *.fastq > samples_failing_read_filter.txt
+    """
+}
+
 process generateFastqIridaReport {
 
     publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"
