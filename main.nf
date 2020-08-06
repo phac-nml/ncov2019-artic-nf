@@ -5,6 +5,7 @@ nextflow.preview.dsl = 2
 
 // include modules
 include printHelp from './modules/help.nf'
+include accountNoReadsInput from './modules/nml.nf'
 
 // import subworkflows
 include {articNcovNanopore} from './workflows/articNcovNanopore.nf' 
@@ -99,8 +100,22 @@ workflow {
                                     count += x.countFastq()
                                 }
                             }
+                            count <= params.minReadsPerBarcode
+                   }.set{ ch_badfastqDirs }
+            Channel.fromPath( nanoporeBarcodeDirs )
+                   .filter( ~/.*barcode[0-9]{1,4}$/ )
+                   .filter{ d ->
+                            def count = 0
+                            for (x in d.listFiles()) {
+                                if (x.isFile()) {
+                                    count += x.countFastq()
+                                }
+                            }
                             count > params.minReadsPerBarcode
                    }.set{ ch_fastqDirs }
+            
+            accountNoReadsInput(ch_badfastqDirs.collect())
+
        } else if ( nanoporeNoBarcode ){
             // No, no barcodes
             Channel.fromPath( "${params.basecalled_fastq}", type: 'dir', maxDepth: 1 )
