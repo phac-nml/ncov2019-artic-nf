@@ -31,3 +31,9 @@ metadata: metadata.tsv
 # set this flag to true to include lineage assignments with pangolin in the output plots
 #
 assign_lineages: true
+
+#
+# this flag should identify the sequencing platform used, valid options are:
+# `illumina` or `oxford-nanopore`
+#
+platform: oxford-nanopore

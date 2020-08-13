@@ -139,6 +139,16 @@ def get_lineage(pangolin_csv, sample_name):
     
     return 'Unknown'
 
+def pass_ncovtools(ncovtools_tsv, sample_name):
+    with open(ncovtools_tsv) as input_handle:
+
+        for line in input_handle:
+            row = line.strip('\n').split('\t') # Order is [sample, ..., qc_pass/qc_fail]
+
+            if re.search(sample_name, row[0]):
+                return str(row[-1])
+
+
 def get_samplesheet_info(sample_tsv, sample_name):
     with open(sample_tsv) as input_handle:
 
@@ -182,16 +192,14 @@ def go(args):
         largest_N_gap = get_largest_N_gap(fasta)
 
     	# QC PASS / FAIL
-        if largest_N_gap >= 10000 or pct_N_bases < 50.0:
+        if (largest_N_gap >= 10000 or pct_N_bases < 50.0) and pass_ncovtools(args.ncovtools, args.sample) == 'PASS':
                 qc_pass = "TRUE"
 
+    # Vcf passing variants
     variants = get_variants(args.vcf)
 
-    if args.pangolin:
-        lineage = get_lineage(args.pangolin, args.sample)
-    
-    else:
-        lineage = 'Unknown'
+    # Pangolin Lineages
+    lineage = get_lineage(args.pangolin, args.sample)
 
     if args.sample_sheet:
         run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
@@ -243,6 +251,7 @@ def main():
     parser.add_argument('--bam', required=True)
     parser.add_argument('--fasta', required=True)
     parser.add_argument('--pangolin', required=True)
+    parser.add_argument('--ncovtools', required=True)
     parser.add_argument('--revision', required=True)
     parser.add_argument('--sample_sheet', required=False)
     parser.add_argument('--vcf', required=True)

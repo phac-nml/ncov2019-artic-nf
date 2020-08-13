@@ -106,6 +106,7 @@ process generateFastaIridaReport {
 process runNcovTools {
 
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
+    publishDir "${params.outdir}", pattern: "*.tsv", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
 
@@ -123,6 +124,8 @@ process runNcovTools {
 
     path "*.csv" , emit: lineage
 
+    path "*.tsv" , emit: ncovtools_qc
+
     script:
     
     if ( params.irida )
@@ -132,12 +135,14 @@ process runNcovTools {
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mv ${metadata} ./ncov-tools/metadata.tsv
         mkdir ./ncov-tools/run
-        mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
+        mv *.* ./ncov-tools/run
         cd ncov-tools
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
+        snakemake -s qc/Snakefile all_qc_summary --cores 1
         mv ./plots/* ../
         mv ./lineages/* ../
+        mv ./qc_analysis/*_summary_qc.tsv ../
         """
     
     else
@@ -146,11 +151,13 @@ process runNcovTools {
         sed -i -e 's/^metadata/#metadata/' ${config} 
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mkdir ./ncov-tools/run
-        mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
+        mv *.* ./ncov-tools/run
         cd ncov-tools
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
+        snakemake -s qc/Snakefile all_qc_summary --cores 1
         mv ./plots/* ../
         mv ./lineages/* ../
+        mv ./qc_analysis/*_summary_qc.tsv ../
         """
 }
