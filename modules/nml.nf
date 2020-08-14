@@ -106,7 +106,7 @@ process generateFastaIridaReport {
 process runNcovTools {
 
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
-    publishDir "${params.outdir}", pattern: "*.tsv", mode: "copy"
+    publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
 
@@ -122,9 +122,10 @@ process runNcovTools {
     output:
     file("*.pdf")
 
-    path "*.csv" , emit: lineage
+    path "ncov-tools/lineages/*.csv" , emit: lineage
 
-    path "*.tsv" , emit: ncovtools_qc
+    path "*_summary_qc.tsv" , emit: ncovtools_qc
+    path "*.tsv"
 
     script:
     
@@ -132,6 +133,7 @@ process runNcovTools {
     
         """
         git clone https://github.com/jts/ncov-tools.git
+        sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mv ${metadata} ./ncov-tools/metadata.tsv
         mkdir ./ncov-tools/run
@@ -140,15 +142,16 @@ process runNcovTools {
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
         snakemake -s qc/Snakefile all_qc_summary --cores 1
-        mv ./plots/* ../
-        mv ./lineages/* ../
-        mv ./qc_analysis/*_summary_qc.tsv ../
+        snakemake -s qc/Snakefile qc_analysis/runname_mixture_report.tsv --cores 4
+        mv ./plots/*.pdf ../
+        mv ./qc_analysis/*.tsv ../
         """
     
     else
         """
         git clone https://github.com/jts/ncov-tools.git
-        sed -i -e 's/^metadata/#metadata/' ${config} 
+        sed -i -e 's/^metadata/#metadata/' ${config}
+        sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mkdir ./ncov-tools/run
         mv *.* ./ncov-tools/run
@@ -156,8 +159,8 @@ process runNcovTools {
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
         snakemake -s qc/Snakefile all_qc_summary --cores 1
-        mv ./plots/* ../
-        mv ./lineages/* ../
-        mv ./qc_analysis/*_summary_qc.tsv ../
+        snakemake -s qc/Snakefile qc_analysis/runname_mixture_report.tsv --cores 4
+        mv ./plots/*.pdf ../
+        mv ./qc_analysis/*.tsv ../
         """
 }

@@ -37,3 +37,8 @@ assign_lineages: true
 # `illumina` or `oxford-nanopore`
 #
 platform: oxford-nanopore
+
+#
+# set the names of the negative controls
+#
+# negative_control_samples: [ "Negative1", "Negative2" ]

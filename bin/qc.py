@@ -139,7 +139,7 @@ def get_lineage(pangolin_csv, sample_name):
     
     return 'Unknown'
 
-def pass_ncovtools(ncovtools_tsv, sample_name):
+def get_ncovtools_qc(ncovtools_tsv, sample_name):
     with open(ncovtools_tsv) as input_handle:
 
         for line in input_handle:
@@ -192,7 +192,7 @@ def go(args):
         largest_N_gap = get_largest_N_gap(fasta)
 
     	# QC PASS / FAIL
-        if (largest_N_gap >= 10000 or pct_N_bases < 50.0) and pass_ncovtools(args.ncovtools, args.sample) == 'PASS':
+        if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
     # Vcf passing variants
@@ -200,6 +200,9 @@ def go(args):
 
     # Pangolin Lineages
     lineage = get_lineage(args.pangolin, args.sample)
+
+    # ncov-tools
+    ncov_tools_status = get_ncovtools_qc(args.ncovtools, args.sample).replace(',', '|')
 
     if args.sample_sheet:
         run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
@@ -226,6 +229,7 @@ def go(args):
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
                    'revision' : args.revision,
+              'ncov-tools-qc' : ncov_tools_status,
                     'qc_pass' : qc_pass}
 
 
