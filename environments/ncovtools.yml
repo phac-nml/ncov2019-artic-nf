@@ -3,7 +3,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - snakemake<5.11.0
+  - snakemake
   - mafft
   - augur
   - pysam
@@ -18,10 +18,11 @@ dependencies:
   - newick_utils
   - pip=19.3.1
   - biopython
-  - numpy>1.15.4
+  - numpy=1.19.1
   - minimap2
   - pip:
       - dendropy>=4.4.0
+      - pyvcf
       - git+https://github.com/hCoV-2019/pangolin.git
       - git+https://github.com/cov-ert/datafunk.git
       - git+https://github.com/cov-lineages/pangoLEARN.git
