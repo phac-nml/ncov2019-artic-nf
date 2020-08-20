@@ -89,7 +89,8 @@ workflow sequenceAnalysisNanopolish {
                                      .join(articMinIONNanopolish.out.vcf, by: 0)
                                      .combine(articDownloadScheme.out.reffasta)
                                      .combine(runNcovTools.out.lineage)
-                                     .combine(ch_irida))
+                                     .combine(ch_irida),
+                params.pcr_primers)
 
       makeQCCSV.out.csv.splitCsv()
                        .unique()

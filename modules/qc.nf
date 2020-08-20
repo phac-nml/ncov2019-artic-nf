@@ -7,6 +7,7 @@ process makeQCCSV {
 
     input:
     tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(sample_sheet)
+    path(pcr_bed)
 
     output:
     path "${params.prefix}.${sampleName}.qc.csv", emit: csv
@@ -24,13 +25,32 @@ process makeQCCSV {
     if ( params.irida )
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --vcf ${vcf} --sample_sheet ${sample_sheet} --revision ${rev}
+        qc.py ${qcSetting} \
+        --outfile ${params.prefix}.${sampleName}.qc.csv \
+        --sample ${sampleName} \
+        --ref ${ref} \
+        --bam ${bam} \
+        --fasta ${fasta} \
+        --pangolin ${lineage} \
+        --vcf ${vcf} \
+        --sample_sheet ${sample_sheet} \
+        --revision ${rev} \
+        --pcr_bed ${pcr_bed}
         """
     
     else
 
         """
-        qc.py ${qcSetting} --outfile ${params.prefix}.${sampleName}.qc.csv --sample ${sampleName} --ref ${ref} --bam ${bam} --fasta ${fasta} --pangolin ${lineage} --vcf ${vcf} --revision ${rev}
+        qc.py ${qcSetting} \
+        --outfile ${params.prefix}.${sampleName}.qc.csv \
+        --sample ${sampleName} \
+        --ref ${ref} \
+        --bam ${bam} \
+        --fasta ${fasta} \
+        --pangolin ${lineage} \
+        --vcf ${vcf} \
+        --revision ${rev} \
+        --pcr_bed ${pcr_bed}
         """
 }
 
