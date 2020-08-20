@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from Bio import SeqIO
+from pybedtools import BedTool
 import csv
 import subprocess
 import vcf
@@ -116,17 +117,38 @@ def get_num_reads(bamfile):
 
     return subprocess.check_output(what).decode().strip()
 
-def get_variants(variants_vcf, variants_list=[]):
+def get_variants(variants_vcf, variants_list=[], locations=[]):
     vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
     for rec in vcf_reader:
         variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
+        locations.append(rec.POS)
+
     
     variants = (';'.join(variants_list))
 
     if variants == '':
-        return 'None'
+        return 'None', None
         
-    return variants
+    return variants, locations
+
+def find_primer_mutations(pcr_bed, vcf_locations, primer_mutations=[]):
+    if vcf_locations is None:
+        return 'None'
+    
+    input_bed = BedTool(pcr_bed)
+
+    for gene in input_bed:
+        location = range(gene.start, gene.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
+
+        for variant_pos in vcf_locations:
+            if variant_pos in location:
+                primer_mutations.append('Variant position {} overlaps PCR primer {}'.format(variant_pos, gene.name))
+    
+    if primer_mutations != []:
+        statement = '; '.join(primer_mutations)
+        return 'Warning: {}'.format(statement)
+
+    return 'None'
 
 def get_lineage(pangolin_csv, sample_name):
     with open(pangolin_csv, 'r') as input_handle:
@@ -156,7 +178,7 @@ def get_samplesheet_info(sample_tsv, sample_name):
             row = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
 
             if re.search(sample_name, row[0]):
-                return str(row[1]), str(row[2]), str(row[3]), str(row[4])
+                return str(row[1]), str(row[2]), str(row[3]), str(row[4]) # [run, barcode, project_id, ct]
 
     return 'Unknown', 'Unknown', 'Unknown', 'Unknown'
     
@@ -196,7 +218,10 @@ def go(args):
                 qc_pass = "TRUE"
 
     # Vcf passing variants
-    variants = get_variants(args.vcf)
+    variants, variant_locations = get_variants(args.vcf)
+
+    # Find any overlap of variants in the pcr primer regions
+    primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
     # Pangolin Lineages
     lineage = get_lineage(args.pangolin, args.sample)
@@ -225,6 +250,7 @@ def go(args):
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
                    'variants' : variants,
+       'pcr_primer_mutations' : primer_statement,
                          'ct' : ct,
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
@@ -257,8 +283,9 @@ def main():
     parser.add_argument('--pangolin', required=True)
     parser.add_argument('--ncovtools', required=True)
     parser.add_argument('--revision', required=True)
-    parser.add_argument('--sample_sheet', required=False)
     parser.add_argument('--vcf', required=True)
+    parser.add_argument('--pcr_bed', required=True)
+    parser.add_argument('--sample_sheet', required=False)
 
     args = parser.parse_args()
     go(args)
