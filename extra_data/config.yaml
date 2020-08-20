@@ -45,4 +45,4 @@ platform: oxford-nanopore
 #
 # set the names of the negative controls
 #
-negative_control_samples: [ "blank", "Negative-control", "Ext_Negative", "Negative_control2", "Water", "Negative_control", "Negative-PCR-blank", "NTC-water-blank", "Negative-ctrl", "Negative_ctrl" ]
+negative_control_samples: [ "blank", "Negative_ctrl", "NTC-Water-blank" ]

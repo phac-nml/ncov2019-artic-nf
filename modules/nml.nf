@@ -127,12 +127,22 @@ process runNcovTools {
     path "*_summary_qc.tsv" , emit: ncovtools_qc
 
     script:
+
+    negativeControlGrep = params.negative_control.join('\\|')
     
     if ( params.irida )
-    
+
         """
         git clone https://github.com/jts/ncov-tools.git
         sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
+
+        if grep -q "${negativeControlGrep}" ${metadata}
+        then
+            echo 'Found negative control'
+        else
+            sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
+        fi
+
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mv ${metadata} ./ncov-tools/metadata.tsv
         mkdir ./ncov-tools/run
