@@ -45,4 +45,4 @@ platform: oxford-nanopore
 #
 # set the names of the negative controls
 #
-negative_control_samples: [ "blank", "Negative_ctrl", "NTC-Water-blank" ]
+negative_control_samples: [ "Negative_ctrl", "NTC-Water-blank", "Negative_control", "Negative-control", "Negative-ctrl" ]
