@@ -5,7 +5,7 @@ data_root: run
 run_name: nml
 
 # path to the file containing the amplicon regions (not the primer sites, the actual amplicons)
-amplicon_bed: ncov-qc_resende.bed
+amplicon_bed: input_amplicon.bed
 
 # path to the nCov reference genome
 reference_genome: nCoV-2019.reference.fasta

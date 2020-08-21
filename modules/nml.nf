@@ -143,7 +143,8 @@ process runNcovTools {
             sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
         fi
 
-        mv ${config} ${reference} ${amplicon} ./ncov-tools
+        mv ${amplicon} ./ncov-tools/input_amplicon.bed
+        mv ${config} ${reference} ./ncov-tools
         mv ${metadata} ./ncov-tools/metadata.tsv
         mkdir ./ncov-tools/run
         mv *.* ./ncov-tools/run
@@ -162,7 +163,8 @@ process runNcovTools {
         sed -i -e 's/^metadata/#metadata/' ${config}
         sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
         sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
-        mv ${config} ${reference} ${amplicon} ./ncov-tools
+        mv ${amplicon} ./ncov-tools/input_amplicon.bed
+        mv ${config} ${reference} ./ncov-tools
         mkdir ./ncov-tools/run
         mv *.* ./ncov-tools/run
         cd ncov-tools
