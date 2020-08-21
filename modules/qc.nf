@@ -6,7 +6,8 @@ process makeQCCSV {
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(sample_sheet)
+
+    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncovtools), path(sample_sheet)
     path(pcr_bed)
 
     output:
@@ -32,6 +33,7 @@ process makeQCCSV {
         --bam ${bam} \
         --fasta ${fasta} \
         --pangolin ${lineage} \
+        --ncovtools ${ncovtools} \
         --vcf ${vcf} \
         --sample_sheet ${sample_sheet} \
         --revision ${rev} \
@@ -48,6 +50,7 @@ process makeQCCSV {
         --bam ${bam} \
         --fasta ${fasta} \
         --pangolin ${lineage} \
+        --ncovtools ${ncovtools} \
         --vcf ${vcf} \
         --revision ${rev} \
         --pcr_bed ${pcr_bed}

@@ -161,6 +161,16 @@ def get_lineage(pangolin_csv, sample_name):
     
     return 'Unknown'
 
+def get_ncovtools_qc(ncovtools_tsv, sample_name):
+    with open(ncovtools_tsv) as input_handle:
+
+        for line in input_handle:
+            row = line.strip('\n').split('\t') # Order is [sample, ..., qc_pass/qc_fail]
+
+            if re.search(sample_name, row[0]):
+                return str(row[-1])
+
+
 def get_samplesheet_info(sample_tsv, sample_name):
     with open(sample_tsv) as input_handle:
 
@@ -207,15 +217,17 @@ def go(args):
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
+    # Vcf passing variants
     variants, variant_locations = get_variants(args.vcf)
 
+    # Find any overlap of variants in the pcr primer regions
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
-    if args.pangolin:
-        lineage = get_lineage(args.pangolin, args.sample)
-    
-    else:
-        lineage = 'Unknown'
+    # Pangolin Lineages
+    lineage = get_lineage(args.pangolin, args.sample)
+
+    # ncov-tools
+    ncov_tools_status = get_ncovtools_qc(args.ncovtools, args.sample).replace(',', '|')
 
     if args.sample_sheet:
         run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
@@ -243,6 +255,7 @@ def go(args):
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
                    'revision' : args.revision,
+              'ncov-tools-qc' : ncov_tools_status,
                     'qc_pass' : qc_pass}
 
 
@@ -268,6 +281,7 @@ def main():
     parser.add_argument('--bam', required=True)
     parser.add_argument('--fasta', required=True)
     parser.add_argument('--pangolin', required=True)
+    parser.add_argument('--ncovtools', required=True)
     parser.add_argument('--revision', required=True)
     parser.add_argument('--vcf', required=True)
     parser.add_argument('--pcr_bed', required=True)

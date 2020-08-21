@@ -106,6 +106,7 @@ process generateFastaIridaReport {
 process runNcovTools {
 
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
+    publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
 
@@ -120,37 +121,56 @@ process runNcovTools {
 
     output:
     file("*.pdf")
+    path "*.tsv"
 
-    path "*.csv" , emit: lineage
+    path "ncov-tools/lineages/*.csv" , emit: lineage
+    path "*_summary_qc.tsv" , emit: ncovtools_qc
 
     script:
+
+    negativeControlGrep = params.negative_control.join('\\|')
     
     if ( params.irida )
-    
+
         """
         git clone https://github.com/jts/ncov-tools.git
+        sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
+
+        if grep -q "${negativeControlGrep}" ${metadata}
+        then
+            echo 'Found negative control'
+        else
+            sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
+        fi
+
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mv ${metadata} ./ncov-tools/metadata.tsv
         mkdir ./ncov-tools/run
-        mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
+        mv *.* ./ncov-tools/run
         cd ncov-tools
+        samtools faidx ${reference}
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
-        mv ./plots/* ../
-        mv ./lineages/* ../
+        snakemake -s qc/Snakefile all_qc_reports --cores 4
+        mv ./plots/*.pdf ../
+        mv ./qc_reports/*.tsv ../
         """
     
     else
         """
         git clone https://github.com/jts/ncov-tools.git
-        sed -i -e 's/^metadata/#metadata/' ${config} 
+        sed -i -e 's/^metadata/#metadata/' ${config}
+        sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
+        sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
         mv ${config} ${reference} ${amplicon} ./ncov-tools
         mkdir ./ncov-tools/run
-        mv *.sorted.bam *.consensus.fasta ./ncov-tools/run
+        mv *.* ./ncov-tools/run
         cd ncov-tools
+        samtools faidx ${reference}
         snakemake -s qc/Snakefile all_qc_sequencing --cores 8
         snakemake -s qc/Snakefile all_qc_analysis --cores 8
-        mv ./plots/* ../
-        mv ./lineages/* ../
+        snakemake -s qc/Snakefile all_qc_reports --cores 4
+        mv ./plots/*.pdf ../
+        mv ./qc_reports/*.tsv ../
         """
 }

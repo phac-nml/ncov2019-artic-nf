@@ -18,6 +18,10 @@ bam_pattern: "{data_root}/{sample}.sorted.bam"
 # the naming convention for the consensus sequences
 consensus_pattern: "{data_root}/{sample}.consensus.fasta"
 
+# the naming convention for the variants file, NF illumina runs typically use
+# "{data_root}/{sample}.variants.tsv and oxford nanopore runs use "{data_root}/{sample}.pass.vcf.gz"
+variants_pattern: "{data_root}/{sample}.pass.vcf.gz"
+
 # when building a tree of the consensus genomes you can optionally include other sequences
 # in the tree by providing a fasta file here
 #tree_include_consensus: some_genomes_from_gisaid.fasta
@@ -31,3 +35,14 @@ metadata: metadata.tsv
 # set this flag to true to include lineage assignments with pangolin in the output plots
 #
 assign_lineages: true
+
+#
+# this flag should identify the sequencing platform used, valid options are:
+# `illumina` or `oxford-nanopore`
+#
+platform: oxford-nanopore
+
+#
+# set the names of the negative controls
+#
+negative_control_samples: [ "Negative_ctrl", "NTC-Water-blank", "Negative_control", "Negative-control", "Negative-ctrl" ]
