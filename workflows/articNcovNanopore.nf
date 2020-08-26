@@ -81,6 +81,7 @@ workflow sequenceAnalysisNanopolish {
                       articDownloadScheme.out.reffasta, 
                       articDownloadScheme.out.ncov_amplicon, 
                       articMinIONNanopolish.out[0].collect(),
+                      articDownloadScheme.out.bed,
                       ch_irida)
 
 

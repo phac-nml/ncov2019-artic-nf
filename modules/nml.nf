@@ -117,6 +117,7 @@ process runNcovTools {
     file(reference)
     file(amplicon)
     file(nanopolishresults)
+    file(bed)
     file(metadata)
 
     output:
@@ -144,7 +145,7 @@ process runNcovTools {
         fi
 
         mv ${amplicon} ./ncov-tools/input_amplicon.bed
-        mv ${config} ${reference} ./ncov-tools
+        mv ${config} ${reference} ${bed} ./ncov-tools
         mv ${metadata} ./ncov-tools/metadata.tsv
         mkdir ./ncov-tools/run
         mv *.* ./ncov-tools/run
@@ -164,7 +165,7 @@ process runNcovTools {
         sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
         sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
         mv ${amplicon} ./ncov-tools/input_amplicon.bed
-        mv ${config} ${reference} ./ncov-tools
+        mv ${config} ${reference} ${bed} ./ncov-tools
         mkdir ./ncov-tools/run
         mv *.* ./ncov-tools/run
         cd ncov-tools
