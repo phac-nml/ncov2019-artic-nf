@@ -7,6 +7,19 @@ run_name: nml
 # path to the file containing the amplicon regions (not the primer sites, the actual amplicons)
 amplicon_bed: input_amplicon.bed
 
+# path to the BED file containing the primers, this should follow the format downloaded from
+# the ARTIC primer
+primer_bed: nCoV-2019.bed
+
+# list the type of amplicon BED file that will be created from the "primer_bed".  This can include:
+# full -- amplicons including primers and overlaps listed in the primer BED file
+# no_primers -- amplicons including overlaps but with primers removed
+# unique_amplicons -- distinct amplicons regions with primers and overlapping regions removed
+bed_type: unique_amplicons
+
+# offset for the amplicons and primers
+offset: 0
+
 # path to the nCov reference genome
 reference_genome: nCoV-2019.reference.fasta
 
@@ -45,4 +58,4 @@ platform: oxford-nanopore
 #
 # set the names of the negative controls
 #
-negative_control_samples: [ "Negative_ctrl", "NTC-Water-blank", "Negative_control", "Negative-control", "Negative-ctrl" ]
+negative_control_samples: [ "Negative_ctrl", "NTC-Water-blank", "Negative_control", "Negative-control", "Negative-ctrl", "Negative_ctrl-1", "Negative_ctrl-2" ]
