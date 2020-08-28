@@ -250,7 +250,7 @@ def go(args):
           'num_aligned_reads' : num_reads,
                     'lineage' : lineage,
                    'variants' : variants,
-       'pcr_primer_mutations' : primer_statement,
+'diagnostic_primer_mutations' : primer_statement,
                          'ct' : ct,
                    'run_name' : run_name,
                 'script_name' : 'nml-ncov2019-artic-nf',
