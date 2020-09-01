@@ -129,13 +129,11 @@ process runNcovTools {
     path "nml_negative_control_report.tsv" , emit: ncovtools_negative
 
     script:
-
-    negativeControlGrep = params.negative_control.join('\\|')
     
     if ( params.irida )
 
         """
-        bash run_ncovtools.sh ${negativeControlGrep} ${config} ${amplicon} ${reference} ${bed} ${metadata}
+        bash run_ncovtools.sh ${params.negative_control} ${config} ${amplicon} ${reference} ${bed} ${metadata}
         """
 
     else
