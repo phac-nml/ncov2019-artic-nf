@@ -280,13 +280,6 @@ def go(args):
 
     qc_df = pd.DataFrame.from_dict(qc_line)
 
-    ## Old ##
-    # with open(args.outfile, 'w') as csvfile:
-    #     header = qc_line.keys()
-    #     writer = csv.DictWriter(csvfile, fieldnames=header)
-    #     writer.writeheader()
-    #     writer.writerow(qc_line)
-
     data_frames = [qc_df, summary_df, negative_df]
 
     # Merge all dataframes together
