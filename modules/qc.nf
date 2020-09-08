@@ -7,7 +7,7 @@ process makeQCCSV {
 
     input:
 
-    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncovtools), path(sample_sheet)
+    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(sample_sheet)
     path(pcr_bed)
 
     output:
@@ -33,13 +33,14 @@ process makeQCCSV {
         --bam ${bam} \
         --fasta ${fasta} \
         --pangolin ${lineage} \
-        --ncovtools ${ncovtools} \
+        --ncov_summary ${ncov_summary} \
+        --ncov_negative ${ncov_negative} \
         --vcf ${vcf} \
         --sample_sheet ${sample_sheet} \
         --revision ${rev} \
         --pcr_bed ${pcr_bed}
         """
-    
+
     else
 
         """
@@ -50,7 +51,8 @@ process makeQCCSV {
         --bam ${bam} \
         --fasta ${fasta} \
         --pangolin ${lineage} \
-        --ncovtools ${ncovtools} \
+        --ncov_summary ${ncov_summary} \
+        --ncov_negative ${ncov_negative} \
         --vcf ${vcf} \
         --revision ${rev} \
         --pcr_bed ${pcr_bed}

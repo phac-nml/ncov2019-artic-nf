@@ -91,13 +91,14 @@ workflow sequenceAnalysisNanopolish {
                                      .combine(articDownloadScheme.out.reffasta)
                                      .combine(runNcovTools.out.lineage)
                                      .combine(runNcovTools.out.ncovtools_qc)
+                                     .combine(runNcovTools.out.ncovtools_negative)
                                      .combine(ch_irida),
                 params.pcr_primers)
 
       makeQCCSV.out.csv.splitCsv()
                        .unique()
                        .branch {
-                           header: it[-1] == 'qc_pass'
+                           header: it[-1] == 'nextflow_qc_pass'
                            fail: it[-1] == 'FALSE'
                            pass: it[-1] == 'TRUE'
                        }

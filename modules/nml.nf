@@ -109,6 +109,7 @@ process runNcovTools {
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
+    // Make conda env with mamba or it will error (takes 3+ hours without)
 
     label 'ncovtools'
 
@@ -120,6 +121,8 @@ process runNcovTools {
     file(bed)
     file(metadata)
 
+    // Currently have the nml_* outputs hardcoded as the config has the run name as nml
+    // If you change the ncov-tools config change them as well in all instances below
     output:
     file("*.pdf")
     path "*.tsv"
@@ -130,6 +133,8 @@ process runNcovTools {
 
     script:
     
+    // Different with IRIDA param due to files being renamed and the addition of metadata
+    // Touch nml_negative_control as it isn't always made and we need it even if its blank
     if ( params.irida )
 
         """

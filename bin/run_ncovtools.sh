@@ -19,8 +19,8 @@ sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
 # Else, we comment out the negative controls if its not found
 if $(ls | grep -q "${negativeControlGrep}")
 then
-    run=$(awk '{if(NR==2){ print $2; }}' < ${config})
-    sed -i -e 's/PlaceHolder/${run}/' ${config}
+    run=$(awk '{if(NR==2){ print $2; }}' < $metadata)
+    sed -i -e "s/PLACEHOLDER/$run/g" $config
 else
     sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
 fi
