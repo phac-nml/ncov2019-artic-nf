@@ -177,6 +177,7 @@ def parse_ncov_tsv(file_in, sample, negative=False):
         return negative_df
 
     # If these get changed in the input just replace the new file name here
+    # First column is the file name
     if negative:
         new_columns = df.columns.values
         new_columns[0] = 'sample'
@@ -187,6 +188,7 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     for index, name in enumerate(df[file_column].tolist()):
         if re.search(sample, name):
             df.loc[index, file_column] = sample
+            df.fillna('NA', inplace=True)
             return df.iloc[[index]]
     
     # If sample is not a negative control need to keep columns
@@ -260,21 +262,21 @@ def go(args):
         run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
     
     else:
-        run_name = 'N/A'
+        run_name = 'NA'
         barcode = re.search(r'\d+', args.sample).group(0)
-        project_id = 'N/A' 
-        ct = 'N/A'
+        project_id = 'NA' 
+        ct = 'NA'
 
 
-    qc_line = {      'sample' : args.sample,
-                 'project_id' : project_id,
-                    'barcode' : barcode,
-                    'lineage' : lineage,
-                   'variants' : variants,
-'diagnostic_primer_mutations' : primer_statement,
-                   'run_name' : run_name,
-                'script_name' : 'nml-ncov2019-artic-nf',
-                   'revision' : args.revision}
+    qc_line = {      'sample' : [args.sample],
+                 'project_id' : [project_id],
+                    'barcode' : [barcode],
+                    'lineage' : [lineage],
+                   'variants' : [variants],
+'diagnostic_primer_mutations' : [primer_statement],
+             'run_identifier' : [run_name],
+                'script_name' : ['nml-ncov2019-artic-nf'],
+                   'revision' : [args.revision]}
 
     qc_df = pd.DataFrame.from_dict(qc_line)
 
@@ -288,16 +290,16 @@ def go(args):
     data_frames = [qc_df, summary_df, negative_df]
 
     # Merge all dataframes together
-    out_df = reduce(lambda left,right: pd.merge(left,right,on=['sample'], how='inner'), data_frames)
+    out_df = reduce(lambda left,right: pd.merge(left,right,on='sample', how='left'), data_frames)
 
     # Remove comma's as some of the ncov-tools fields have commas :(
-    out_df = out_df.apply(lambda x: x.str.replace(',',';'))
+    out_df.replace(',',';', regex=True, inplace=True)
 
     # Add final column as the nextflow_qc_pass designation to not error rest of pipeline till I figure it out to change it
     out_df['nextflow_qc_pass'] = qc_pass
 
     # Output
-    out_df.to_csv(args.outfile)
+    out_df.to_csv(args.outfile, sep=',', index=False)
     N_density = sliding_window_N_density(fasta)
     make_qc_plot(depth_pos, N_density, args.sample)
 
