@@ -1,7 +1,10 @@
-# ncov2019-artic-nf
-A Nextflow pipeline for running the ARTIC network's fieldbioinformatics tools (https://github.com/artic-network/fieldbioinformatics), with a focus on ncov2019 
+# NML ncov2019-artic-nf
+A Nextflow pipeline for running the ARTIC network's fieldbioinformatics tools (https://github.com/artic-network/fieldbioinformatics), with a focus on ncov2019 for the users at the NML
 
-WARNING - THIS REPO IS UNDER ACTIVE DEVELOPMENT AND ITS BEHAVIOUR MAY CHANGE AT **ANY** TIME. 
+**IMPORTANT:** If running this pipeline set a cache directory with `--cache 'path_to_cache'` as generation of the ncov-tools env is extremly painful. If you don't do this, the default is set to an NML internal drive and will most likely error out. 
+
+
+**WARNING** - THIS REPO IS UNDER ACTIVE DEVELOPMENT AND ITS BEHAVIOUR MAY CHANGE AT **ANY** TIME. 
 
 PLEASE ENSURE THAT YOU READ BOTH THE README AND THE CONFIG FILE AND UNDERSTAND THE EFFECT OF THE OPTIONS ON YOUR DATA! 
 
@@ -14,6 +17,73 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
  
 
 #### Quick-start
+
+### Nanopolish Nanopore data at the NML
+A few changes have been made to optimize running this pipeline for the NML but the basics should work with no issues other than there being slightly modified qc output files and the need to set a cache/set-up ncov-tools before running the pipeline.
+
+**IMPORTANT:** If running this pipeline set a cache directory with `--cache 'path/to/cacheDir'` as generation of the ncov-tools env is extremly painful. If you don't do this, the default is set to an NML internal drive and will most likely error out. 
+
+The ncov-tools environment will be automatically installed on the first run of the pipeline but may error out due to it taking too long to process. To counteract this, you can set up the ncov-tools environment with the following command `mamba env create -f=./ncov-tools/environment.yml -p path/to/cacheDir/ncovtools-<hash>` once you know the hash that nextflow wants.
+
+**Running**
+
+Basic command:
+`nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt`
+
+Command with optional arguments:
+`nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt --irida /path/to/samplesheet.tsv`
+
+To run the `--irida` argument, you must include a samplesheet in TSV format that looks as such:
+
+| sample | run | barcode | project_id | ct | date |
+|-|-|-|-|-|-|
+| Sample_name1 | run_name | 14 | 1422 | 23.33 | 2020-08-22 |
+
+```
+where:
+    - sample     --> Contains the wanted sample name
+    - run        --> Contains the wanted run name
+    - barcode    --> Number from 1-24 that matches the sample name to the barcode
+    - project_id --> Any number (if uploading to IRIDA put the IRIDA project)
+    - ct         --> ct number for ncov-tools (or NA if no ct number)
+    - date       --> Sampling date for ncov-tools (yyyy-mm-dd)
+```
+*Make sure there are no spaces in the samplesheet if including it or it will cause an error*
+
+**Additions**
+
+- Re-Naming of Samples (if given a `samplesheet`)
+- Automation of running [ncov-tools](https://github.com/jts/ncov-tools) on the data
+    - If you want to include metadata you will have to pass the argument `--irida /path/to/samplesheet.tsv` as seen above
+    - If you want negative control check to run you will have to format the negative control name in the `samplesheet.tsv` as seen and explained below
+- Singular qc csv file
+- Outputs files to show samples with no / too few reads that are filtered out
+- Automated upload to IRIDA (in progress)
+
+**Changes**
+
+- Default scheme used is Resende2kb scheme
+- Default [primer-scheme repo](https://github.com/phac-nml/primer-schemes)
+- Default fragment size is 1600 min, 2400 max
+
+**Limitations**
+
+Connecting ncov-tools to the pipeline means that the ncov-tools config file has to be mostly set before running. In an attempt to make automation easier, the negative control names are set before and the format must be followed to get this check to work. In the future, we hope to set-up a flag where you can set your negative control names but for now this is the easiest way to get all our users to run the pipeline. Sorry...
+
+To get negative controls to work, names must be formatted as such where the `<run_name>` can be whatever you set it to in the `samplesheet.tsv`:
+```
+<run_name>-negative_ctrl
+<run_name>-negative_ctrl-1
+<run_name>-negative_ctrl-2
+<run_name>-negative_ctrl-3
+negative_ctrl
+negative_ctrl-1
+negative_ctrl-2
+negative_ctrl-3
+```
+
+---------------
+
 ##### Illumina
 `nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --illumina --prefix "output_file_prefix" --directory /path/to/reads`
 
@@ -24,12 +94,16 @@ For production use at large scale, where you will run the workflow many times, y
 
 Alternatively you can avoid just the cloning of the scheme repository to remain on a fixed revision of it over time by passing --schemeRepoURL /path/to/own/clone/of/github.com/artic-network/artic-ncov2019. This removes any internet access from the workflow except for the optional upload steps.
 
+---------------
+
 ##### Nanopore
 ###### Nanopolish
 `nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt`
 
 ###### Medaka
  `nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --medaka --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt`
+
+---------------
 
 #### Installation
 An up-to-date version of Nextflow is required because the pipeline is written in DSL2. Following the instructions at https://www.nextflow.io/ to download and install Nextflow should get you a recent-enough version. 
@@ -54,6 +128,8 @@ Common configuration options are set in `conf/base.config`. Workflow specific co
 ##### Options
 - `--outdir` sets the output directory.
 - `--bwa` to swap to bwa for mapping (nanopore only).
+
+---------------
 
 ##### Workflows
 
