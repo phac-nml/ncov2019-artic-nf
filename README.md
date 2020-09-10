@@ -38,6 +38,8 @@ To run the `--irida` argument, you must include a samplesheet in TSV format that
 | sample | run | barcode | project_id | ct | date |
 |-|-|-|-|-|-|
 | Sample_name1 | run_name | 14 | 1422 | 23.33 | 2020-08-22 |
+| Sample_name2 | run_name | 15 | 1422 | 22.53 | 2020-08-22 |
+
 
 ```
 where:
