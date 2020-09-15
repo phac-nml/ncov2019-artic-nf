@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from Bio import SeqIO
+from functools import reduce
+from pybedtools import BedTool
 import csv
 import subprocess
 import vcf
@@ -94,7 +96,6 @@ def get_ref_length(ref):
     record = SeqIO.read(ref, "fasta")
     return len(record.seq)
 
-
 def sliding_window_N_density(sequence, window=10):
 
     sliding_window_n_density = []
@@ -116,17 +117,38 @@ def get_num_reads(bamfile):
 
     return subprocess.check_output(what).decode().strip()
 
-def get_variants(variants_vcf, variants_list=[]):
+def get_variants(variants_vcf, variants_list=[], locations=[]):
     vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
     for rec in vcf_reader:
         variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
+        locations.append(rec.POS)
+
     
     variants = (';'.join(variants_list))
 
     if variants == '':
-        return 'None'
+        return 'None', None
         
-    return variants
+    return variants, locations
+
+def find_primer_mutations(pcr_bed, vcf_locations, primer_mutations=[]):
+    if vcf_locations is None:
+        return 'None'
+    
+    input_bed = BedTool(pcr_bed)
+
+    for gene in input_bed:
+        location = range(gene.start, gene.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
+
+        for variant_pos in vcf_locations:
+            if variant_pos in location:
+                primer_mutations.append('Variant position {} overlaps PCR primer {}'.format(variant_pos, gene.name))
+    
+    if primer_mutations != []:
+        statement = '; '.join(primer_mutations)
+        return 'Warning: {}'.format(statement)
+
+    return 'None'
 
 def get_lineage(pangolin_csv, sample_name):
     with open(pangolin_csv, 'r') as input_handle:
@@ -139,6 +161,43 @@ def get_lineage(pangolin_csv, sample_name):
     
     return 'Unknown'
 
+def parse_ncov_tsv(file_in, sample, negative=False):
+
+    # Try to read file (as negative control may not have data in it)
+    try:
+        df = pd.read_csv(file_in, sep='\t')
+
+    # If no data, we set up how it should be and then pass it through
+    # Could also make is such that runs without negative ctrls just don't have the columns
+    except pd.errors.EmptyDataError:
+        negative_df = pd.DataFrame(columns=['sample', 'qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected'])
+        negative_df.loc[1, 'sample'] = sample
+        negative_df.fillna('NA', inplace=True)
+    
+        return negative_df
+
+    # If these get changed in the input just replace the new file name here
+    # First column is the file name
+    if negative:
+        new_columns = df.columns.values
+        new_columns[0] = 'sample'
+        df.columns = new_columns
+
+    file_column = 'sample'
+
+    for index, name in enumerate(df[file_column].tolist()):
+        if re.search(sample, name):
+            df.loc[index, file_column] = sample
+            df.fillna('NA', inplace=True)
+            return df.iloc[[index]]
+    
+    # If sample is not a negative control need to keep columns
+    negative_df = pd.DataFrame(columns=new_columns)
+    negative_df.loc[1, file_column] = sample
+    negative_df.fillna('NA', inplace=True)
+    
+    return negative_df
+
 def get_samplesheet_info(sample_tsv, sample_name):
     with open(sample_tsv) as input_handle:
 
@@ -146,7 +205,7 @@ def get_samplesheet_info(sample_tsv, sample_name):
             row = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
 
             if re.search(sample_name, row[0]):
-                return str(row[1]), str(row[2]), str(row[3]), str(row[4])
+                return str(row[1]), str(row[2]), str(row[3]), str(row[4]) # [run, barcode, project_id, ct]
 
     return 'Unknown', 'Unknown', 'Unknown', 'Unknown'
     
@@ -185,48 +244,55 @@ def go(args):
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
-    variants = get_variants(args.vcf)
+    ## Added checks ##
+    # Vcf passing variants
+    variants, variant_locations = get_variants(args.vcf)
 
-    if args.pangolin:
-        lineage = get_lineage(args.pangolin, args.sample)
-    
-    else:
-        lineage = 'Unknown'
+    # Find any overlap of variants in the pcr primer regions
+    primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
+
+    # Pangolin Lineages
+    lineage = get_lineage(args.pangolin, args.sample)
+
+    # NCOV-Tools Results
+    summary_df = parse_ncov_tsv(args.ncov_summary, args.sample)
+    negative_df = parse_ncov_tsv(args.ncov_negative, args.sample, negative=True)
 
     if args.sample_sheet:
         run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
     
     else:
-        run_name = 'N/A'
+        run_name = 'NA'
         barcode = re.search(r'\d+', args.sample).group(0)
-        project_id = 'N/A' 
-        ct = 'N/A'
+        project_id = 'NA' 
+        ct = 'NA'
 
 
-    qc_line = { 'sample_name' : args.sample,
-                 'project_id' : project_id,
-                    'barcode' : barcode,
-                    'count_N' : count_N,
-                'pct_N_bases' : "{:.2f}".format(pct_N_bases),
-          'pct_covered_bases' : "{:.2f}".format(pct_covered_bases), 
-           'longest_no_N_run' : largest_N_gap,
-             'depth_coverage' : depth_coverage,
-          'num_aligned_reads' : num_reads,
-                    'lineage' : lineage,
-                   'variants' : variants,
-                         'ct' : ct,
-                   'run_name' : run_name,
-                'script_name' : 'nml-ncov2019-artic-nf',
-                   'revision' : args.revision,
-                    'qc_pass' : qc_pass}
+    qc_line = {      'sample' : [args.sample],
+                 'project_id' : [project_id],
+                    'barcode' : [barcode],
+                    'lineage' : [lineage],
+                   'variants' : [variants],
+'diagnostic_primer_mutations' : [primer_statement],
+             'run_identifier' : [run_name],
+                'script_name' : ['nml-ncov2019-artic-nf'],
+                   'revision' : [args.revision]}
 
+    qc_df = pd.DataFrame.from_dict(qc_line)
 
-    with open(args.outfile, 'w') as csvfile:
-        header = qc_line.keys()
-        writer = csv.DictWriter(csvfile, fieldnames=header)
-        writer.writeheader()
-        writer.writerow(qc_line)
+    data_frames = [qc_df, summary_df, negative_df]
 
+    # Merge all dataframes together
+    out_df = reduce(lambda left,right: pd.merge(left,right,on='sample', how='left'), data_frames)
+
+    # Remove comma's as some of the ncov-tools fields have commas :(
+    out_df.replace(',',';', regex=True, inplace=True)
+
+    # Add final column as the nextflow_qc_pass designation to not error rest of pipeline till I figure it out to change it
+    out_df['nextflow_qc_pass'] = qc_pass
+
+    # Output
+    out_df.to_csv(args.outfile, sep=',', index=False)
     N_density = sliding_window_N_density(fasta)
     make_qc_plot(depth_pos, N_density, args.sample)
 
@@ -243,9 +309,12 @@ def main():
     parser.add_argument('--bam', required=True)
     parser.add_argument('--fasta', required=True)
     parser.add_argument('--pangolin', required=True)
+    parser.add_argument('--ncov_summary', required=True)
+    parser.add_argument('--ncov_negative', required=True)
     parser.add_argument('--revision', required=True)
-    parser.add_argument('--sample_sheet', required=False)
     parser.add_argument('--vcf', required=True)
+    parser.add_argument('--pcr_bed', required=True)
+    parser.add_argument('--sample_sheet', required=False)
 
     args = parser.parse_args()
     go(args)
