@@ -19,9 +19,9 @@ include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
 include {accountReadFilterFailures} from '../modules/nml.nf'
-include {runNcovTools} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
+include {generateFast5IridaReport} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
 include {uploadIrida} from '../modules/nml.nf'
 
@@ -57,6 +57,8 @@ workflow sequenceAnalysisNanopolish {
                                           .combine(ch_seqSummary))
 
        generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+
+       generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
        generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
                                 ch_irida)

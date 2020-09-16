@@ -5,7 +5,7 @@ process articDownloadScheme{
 
     label 'internet'
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "scheme", mode: "copy"
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${params.schemeDir}", mode: "copy"
 
     output:
     path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
