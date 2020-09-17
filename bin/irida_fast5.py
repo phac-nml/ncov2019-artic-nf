@@ -85,7 +85,7 @@ def generate_samplelist(sample_tsv, directory, output_dir):
                 if len(barcode) != 2: # If its somehow not still...
                     print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
                     quit()
-            
+
             else:
                 barcode = current_line_list[2]
 
@@ -126,7 +126,8 @@ def generate_samplelist(sample_tsv, directory, output_dir):
                     for cmd in sed_cmd_list:
                         subprocess.run(cmd, shell=True)
 
-                    subprocess.run('tar -czvhf {}/{}.tar.gz *.fast5 filename_mapping.txt && rm *.fast5 filename_mapping.txt'.format(output_dir, current_line_list[0]), shell=True)
+                    subprocess.run('echo "read_id\tfilename" > {}_sequencing_summary.txt && cat  filename_mapping.txt >> {}_sequencing_summary.txt'.format(current_line_list[0], current_line_list[0]), shell=True)
+                    subprocess.run('tar -cvh --use-compress-program=pigz -f {}/{}.tar.gz *.fast5 *_sequencing_summary.txt && rm *.fast5 *.txt'.format(output_dir, current_line_list[0]), shell=True)
 
 
                 df_out.at[index, 'Sample_Name'] = current_line_list[0] # Name from input sample info file
@@ -134,7 +135,7 @@ def generate_samplelist(sample_tsv, directory, output_dir):
                 df_out.at[index, 'File_Forward'] = '{}.tar.gz'.format(current_line_list[0]) # File name created by subprocess
 
             else:
-                #print('WARNING: No files found for barcode{}'.format(barcode))
+                print('WARNING: No files found for barcode{}'.format(barcode))
                 pass
 
     return df_out

@@ -110,7 +110,7 @@ process generateFast5IridaReport {
     //conda 'environments/extras.txt'
     // Only with --irida flag
 
-    label 'smallmem'
+    label 'fast5compress'
 
     input:
     path(fast5_dirs)
