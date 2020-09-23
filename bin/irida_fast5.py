@@ -118,7 +118,7 @@ def generate_samplelist(sample_tsv, directory, output_dir):
                     for cmd in sed_cmd_list:
                         subprocess.run(cmd, shell=True)
 
-                    subprocess.run('echo "read_id\tfilename" > {}_sequencing_summary.txt && cat  filename_mapping.txt >> {}_sequencing_summary.txt'.format(current_line_list[0], current_line_list[0]), shell=True)
+                    subprocess.run('cat  filename_mapping.txt >> {}_sequencing_summary.txt'.format(current_line_list[0]), shell=True)
                     subprocess.run('tar -cvh --use-compress-program=pigz -f {}/{}.tar.gz *.fast5 *_sequencing_summary.txt && rm *.fast5 *.txt'.format(output_dir, current_line_list[0]), shell=True)
 
 
