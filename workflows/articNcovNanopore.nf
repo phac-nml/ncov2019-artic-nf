@@ -58,8 +58,6 @@ workflow sequenceAnalysisNanopolish {
 
        generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
 
-       generateFast5IridaReport(ch_fast5Pass, ch_irida)
-
        generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
                                 ch_irida)
       }
@@ -125,7 +123,9 @@ workflow sequenceAnalysisNanopolish {
          Channel.fromPath("${params.upload_irida}")
              .set{ ch_upload }
 
-         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, writeQCSummaryCSV.out)
+         generateFast5IridaReport(ch_fast5Pass, ch_irida)
+
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, writeQCSummaryCSV.out)
        }
      }
 

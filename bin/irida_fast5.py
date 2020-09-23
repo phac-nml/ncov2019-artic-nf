@@ -75,16 +75,8 @@ def generate_samplelist(sample_tsv, directory, output_dir):
 
 
             # Set correct file name and check on barcode formatting
-            if int(current_line_list[2]) not in range(1,25):
-                print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
-                quit()
-
-            if len(current_line_list[2]) != 2: # Checking that barcode is 2 digits
+            if len(current_line_list[2]) < 2: # Checking that barcode is 2 digits
                 barcode = '0{}'.format(current_line_list[2])
-
-                if len(barcode) != 2: # If its somehow not still...
-                    print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
-                    quit()
 
             else:
                 barcode = current_line_list[2]
@@ -112,7 +104,7 @@ def generate_samplelist(sample_tsv, directory, output_dir):
 
                         # Set new file name with the correct number
                         # All files end with _## or _# and we need to keep that
-                        file_number = re.findall(r'_\d{1,2}', os.path.splitext(file_name)[0])[-1]
+                        file_number = re.findall(r'_\d+', os.path.splitext(file_name)[0])[-1]
                         new_file_name = '{}{}.fast5'.format(current_line_list[0], file_number)
                         subprocess.run('ln -s {}{} {}'.format(fast5_location, file_name, new_file_name), shell=True)
                         sed_cmd_list.append("sed -i -e 's/{}/{}/' filename_mapping.txt".format(file_name, new_file_name))

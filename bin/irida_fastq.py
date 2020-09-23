@@ -97,16 +97,8 @@ def parse_sample_tsv(sample_tsv, prefix, sample_dir, fastq):
 
 
             # Set correct file name and check on barcode formatting
-            if int(current_line_list[2]) not in range(1,25):
-                print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
-                quit()
-
-            if len(current_line_list[2]) != 2: # Checking that barcode is 2 digits
+            if len(current_line_list[2]) < 2: # Checking that barcode is 2 digits
                 barcode = '0{}'.format(current_line_list[2])
-
-                if len(barcode) != 2: # If its somehow not still...
-                    print('ERROR: Line {} of file {} does not contain an allowed barcode in range 1-24'.format(index + 1, sample_tsv))
-                    quit()
             
             else:
                 barcode = current_line_list[2]
