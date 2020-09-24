@@ -103,6 +103,28 @@ process generateFastaIridaReport {
     """
 }
 
+process generateFast5IridaReport {
+
+    publishDir "${params.outdir}", pattern: "irida_fast5", mode: "symlink"
+
+    //conda 'environments/extras.txt'
+    // Only with --irida flag
+
+    label 'fast5compress'
+
+    input:
+    path(fast5_dirs)
+    file(sampletsv)
+
+    output:
+    path("irida_fast5")
+
+    script:
+    """
+    irida_fast5.py --sample_info ${sampletsv} --sample_dir ${fast5_dirs} --output_dir irida_fast5
+    """
+}
+
 process runNcovTools {
 
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
@@ -161,4 +183,26 @@ process runNcovTools {
         cd ..
         touch nml_negative_control_report.tsv
         """
+}
+
+process uploadIrida {
+
+    //conda 'environments/irida_uploader.yml'
+
+    label 'Upload'
+
+    input:
+    path(fastq_folder)
+    path(consensus_folder)
+    path(fast5_folder)
+    file(irida_config)
+    file(metadata_csv)
+
+    script:
+    """
+    irida-uploader --config ${irida_config} -d ${fastq_folder}
+    irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
+    irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
+    upload.py --config ${irida_config} --metadata ${metadata_csv}
+    """
 }

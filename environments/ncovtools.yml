@@ -17,14 +17,16 @@ dependencies:
   - samtools
   - newick_utils
   - pip=19.3.1
-  - biopython
-  - numpy=1.19.1
   - minimap2
+  - poppler
+  - numpy=1.19.1
+  - biopython=1.77
+  - texlive-core
   - pip:
       - dendropy>=4.4.0
       - pyvcf
+      - git+https://github.com/hCoV-2019/lineages.git
       - git+https://github.com/hCoV-2019/pangolin.git
-      - git+https://github.com/cov-ert/datafunk.git
       - git+https://github.com/cov-lineages/pangoLEARN.git
-      - git+https://github.com/cov-lineages/lineages.git
-      - git+https://github.com/rdeborja/ncov_parser.git
+      - git+https://github.com/cov-ert/datafunk.git
+      - git+https://github.com/jts/ncov-tools.git#egg=ncov_parser&subdirectory=parser

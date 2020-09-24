@@ -19,9 +19,11 @@ include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
 include {accountReadFilterFailures} from '../modules/nml.nf'
-include {runNcovTools} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
+include {generateFast5IridaReport} from '../modules/nml.nf'
+include {runNcovTools} from '../modules/nml.nf'
+include {uploadIrida} from '../modules/nml.nf'
 
 
 // import subworkflows
@@ -115,6 +117,17 @@ workflow sequenceAnalysisNanopolish {
                         .join (articDownloadScheme.out.reffasta.combine(ch_preparedRef.map{ it[0] })) )
 
       }
+
+     if (params.irida) {
+       if (params.upload_irida) {
+         Channel.fromPath("${params.upload_irida}")
+             .set{ ch_upload }
+
+         generateFast5IridaReport(ch_fast5Pass, ch_irida)
+
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, writeQCSummaryCSV.out)
+       }
+     }
 
     emit:
       qc_pass = collateSamples.out

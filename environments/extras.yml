@@ -5,8 +5,10 @@ channels:
 dependencies:
   - biopython
   - matplotlib
+  - mafft
   - pandas
   - samtools
   - libxcb
+  - pigz
   - pyvcf
   - pybedtools
