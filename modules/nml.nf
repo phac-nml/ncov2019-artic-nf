@@ -125,6 +125,32 @@ process generateFast5IridaReport {
     """
 }
 
+process correctFailNs {
+
+    publishDir "${params.outdir}/corrected_consensus", pattern: "*.corrected.consensus.fasta", mode: "copy"
+
+    //conda 'environments/extras.yml'
+    // Experimental change to re-check N calls
+
+    label 'smallmem'
+
+    input:
+    tuple(sampleName, path(bamfile))
+    tuple(sampleName, path(bambai))
+    tuple(sampleName, path(consensus))
+    tuple(sampleName, path(fail_vcf))
+    file(reference)
+
+    output:
+    path "*.corrected.consensus.fasta", optional: true, emit: corrected_consensus
+
+    script:
+    """
+    gzip -f $fail_vcf
+    correct_n.py --bam $bamfile --consensus $consensus --reference $reference --fail_vcf ${fail_vcf}.gz --force
+    """
+}
+
 process runNcovTools {
 
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
@@ -147,7 +173,7 @@ process runNcovTools {
     // If you change the ncov-tools config change them as well in all instances below
     output:
     file("*.pdf")
-    path "*.tsv"
+    path("*.tsv")
 
     path "ncov-tools/lineages/*.csv" , emit: lineage
     path "nml_summary_qc.tsv" , emit: ncovtools_qc
@@ -204,5 +230,25 @@ process uploadIrida {
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
     irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
     upload.py --config ${irida_config} --metadata ${metadata_csv}
+    """
+}
+
+process uploadCorrectN{
+
+    //conda 'environments/irida_uploader.yml'
+
+    label 'Upload'
+
+    input:
+    path(fastas)
+    file(irida_config)
+    file(sampletsv)
+
+    script:
+    """
+    mkdir -p corrected_consensus
+    mv *.corrected.consensus.fasta corrected_consensus
+    irida_fasta.py --sample_info ${sampletsv} --sample_dir corrected_consensus
+    irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
     """
 }

@@ -271,6 +271,7 @@ def go(args):
     qc_line = {      'sample' : [args.sample],
                  'project_id' : [project_id],
                     'barcode' : [barcode],
+           'num_aligned_reads': [num_reads],
                     'lineage' : [lineage],
                    'variants' : [variants],
 'diagnostic_primer_mutations' : [primer_statement],

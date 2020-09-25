@@ -77,6 +77,15 @@ def generate_samplelist(sample_tsv, directory):
                 df_out.at[index, 'Project_ID'] = current_line_list[3]
                 df_out.at[index, 'File_Forward'] = '{}.consensus.fasta'.format(current_line_list[0])
 
+            file_path_corrected = '{}/{}.corrected.consensus.fasta'.format(directory, current_line_list[0])
+
+            if os.path.exists(file_path_corrected):
+
+                # Set DataFrame for easy output csv
+                df_out.at[index, 'Sample_Name'] = current_line_list[0]
+                df_out.at[index, 'Project_ID'] = current_line_list[3]
+                df_out.at[index, 'File_Forward'] = '{}.corrected.consensus.fasta'.format(current_line_list[0])
+
             else:
                 print('WARNING: File {}.consensus.fasta not found in {} directory.'.format(current_line_list[0], directory))
 
