@@ -78,6 +78,7 @@ def send_metadata(api_instance, metadata_csv):
             else:
                 # Create dictionary of each row for creation of dictionary to upload to irida
                 metadata = {}
+                passing = True
 
             for i in range(len(row)):
 
@@ -86,18 +87,25 @@ def send_metadata(api_instance, metadata_csv):
                     sample_name = row[i]
                 
                 elif i == 1 and re.search('project', header[1]):
+
+                    if row[i] == 'Unknown':
+                        passing = False
+                        break
+
                     # Get project id from row 2
                     project_id = row[i]
 
                 else:
                     # Put metadata into metadata dictionary for upload
                     metadata[header[i]] = row[i]
+            if passing:
+                upload_metadata = model.Metadata(metadata=metadata, project_id=project_id, sample_name=sample_name)
+                status = api_instance.send_metadata(upload_metadata, upload_metadata.project_id, upload_metadata.sample_name )
 
-            upload_metadata = model.Metadata(metadata=metadata, project_id=project_id, sample_name=sample_name)
+                print(status, '\n')
 
-            status = api_instance.send_metadata(upload_metadata, upload_metadata.project_id, upload_metadata.sample_name )
-
-            print(status, '\n')
+            else:
+                print('Unknown sample data for {}, moving to next sample'.format(sample_name))
 
 
 def main():
