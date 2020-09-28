@@ -4,5 +4,6 @@ channels:
   - defaults
 dependencies:
   - irida-uploader
+  - pandas
   - pip:
       - iridauploader

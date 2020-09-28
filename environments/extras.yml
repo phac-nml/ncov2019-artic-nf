@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - biopython
+  - bcftools
   - matplotlib
   - mafft
   - pandas

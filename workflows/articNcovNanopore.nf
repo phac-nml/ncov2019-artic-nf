@@ -22,8 +22,10 @@ include {accountReadFilterFailures} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
 include {generateFast5IridaReport} from '../modules/nml.nf'
+include {correctFailNs} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
 include {uploadIrida} from '../modules/nml.nf'
+include {uploadCorrectN} from '../modules/nml.nf'
 
 
 // import subworkflows
@@ -75,6 +77,14 @@ workflow sequenceAnalysisNanopolish {
 
       articRemoveUnmappedReads(articMinIONNanopolish.out.mapped)
 
+      if (params.correctN) {
+        correctFailNs(articMinIONNanopolish.out.ptrim,
+                          articMinIONNanopolish.out.ptrimbai,
+                          articMinIONNanopolish.out.consensus_fasta,
+                          articMinIONNanopolish.out.fail_vcf,
+                          articDownloadScheme.out.reffasta)
+
+      }
 
       Channel.fromPath("${params.ncov}")
              .set{ ch_ncov }
@@ -126,6 +136,12 @@ workflow sequenceAnalysisNanopolish {
          generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
          uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, writeQCSummaryCSV.out)
+
+         if (params.correctN) {
+           uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
+                          ch_upload,
+                          ch_irida)
+         }
        }
      }
 
