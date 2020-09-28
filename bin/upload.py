@@ -105,7 +105,7 @@ def send_metadata(api_instance, metadata_csv):
                 print(status, '\n')
 
             else:
-                print('Malformatted data for {}, moving to next sample'.format(sample_name))
+                print('Unknown sample data for {}, moving to next sample'.format(sample_name))
 
 
 def main():
