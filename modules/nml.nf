@@ -201,9 +201,9 @@ process runNcovTools {
         mv *.* ./ncov-tools/run
         cd ncov-tools
         samtools faidx ${reference}
-        snakemake -s qc/Snakefile all_qc_sequencing --cores 8
-        snakemake -s qc/Snakefile all_qc_analysis --cores 8
-        snakemake -s qc/Snakefile all_qc_reports --cores 4
+        snakemake -s workflow/Snakefile all_qc_sequencing --cores 8
+        snakemake -s workflow/Snakefile all_qc_analysis --cores 8
+        snakemake -s workflow/Snakefile all_qc_reports --cores 4
         mv ./plots/*.pdf ../
         mv ./qc_reports/*.tsv ../
         cd ..
