@@ -35,9 +35,9 @@ mv *.* ./ncov-tools/run
 # Go in, run the commands and generate the indexed reference sequence
 cd ncov-tools
 samtools faidx ${reference}
-snakemake -s qc/Snakefile all_qc_sequencing --cores 8
-snakemake -s qc/Snakefile all_qc_analysis --cores 8
-snakemake -s qc/Snakefile all_qc_reports --cores 4
+snakemake -s workflow/Snakefile all_qc_sequencing --cores 8
+snakemake -s workflow/Snakefile all_qc_analysis --cores 8
+snakemake -s workflow/Snakefile all_qc_reports --cores 4
 
 # Move files out so that they can be easily detected by nextflow
 mv ./plots/*.pdf ../
