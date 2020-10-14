@@ -51,9 +51,10 @@ workflow sequenceAnalysisNanopolish {
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
-       accountReadFilterFailures(renameSamples.out.filter{ it.size()==0 }.collect())
+       accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
 
-       articMinIONNanopolish(renameSamples.out.filter{ it.size()>0 }
+       articMinIONNanopolish(renameSamples.out
+                                          .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
@@ -67,9 +68,10 @@ workflow sequenceAnalysisNanopolish {
        Channel.fromPath("${params.irida}")
               .set{ ch_irida }
 
-       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.size()==0 }.collect())
+       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
 
-       articMinIONNanopolish(articGuppyPlex.out.fastq.filter{ it.size()>0 }
+       articMinIONNanopolish(articGuppyPlex.out.fastq
+                                          .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
@@ -160,6 +162,7 @@ workflow sequenceAnalysisMedaka {
       articGuppyPlex(ch_runFastqDirs.flatten())
 
       articMinIONMedaka(articGuppyPlex.out.fastq
+                                      .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
 
       articRemoveUnmappedReads(articMinIONMedaka.out.mapped)

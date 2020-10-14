@@ -4,8 +4,9 @@
 nextflow.preview.dsl = 2
 
 // include modules
-include printHelp from './modules/help.nf'
-include accountNoReadsInput from './modules/nml.nf'
+include {printHelp} from './modules/help.nf'
+include {accountNoReadsInput} from './modules/nml.nf'
+include {makeFastqSearchPath} from './modules/util.nf'
 
 // import subworkflows
 include {articNcovNanopore} from './workflows/articNcovNanopore.nf' 
@@ -79,7 +80,9 @@ workflow {
                   .set{ ch_cramFiles }
        }
        else {
-	   Channel.fromFilePairs( params.fastqSearchPath, flat: true)
+           fastqSearchPath = makeFastqSearchPath( params.illuminaPrefixes, params.illuminaSuffixes, params.fastq_exts )
+
+	   Channel.fromFilePairs( fastqSearchPath, flat: true)
 	          .filter{ !( it[0] =~ /Undetermined/ ) }
 	          .set{ ch_filePairs }
        }
