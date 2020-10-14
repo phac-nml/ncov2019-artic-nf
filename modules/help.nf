@@ -47,6 +47,8 @@ def printHelp() {
       --ncov                  Path to ncov-tools config file (Default: baseDir/extra_data/config.yaml)
       --irida                 Path to Irida sample_list.tsv file to rename data and upload to Irida (Default: false)
                               Sample_list.tsv should be formated as [sample, run, barcode, project_id, ct]
+      --upload_irida          Path to IRIDA instance config file to which the data will be uploaded to. Must be set
+                              with a --irida sample sheet to know which project the sample goes to
  
   Illumina workflow options:
     Mandatory:
