@@ -120,8 +120,14 @@ def get_num_reads(bamfile):
 def get_variants(variants_vcf, variants_list=[], locations=[]):
     vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
     for rec in vcf_reader:
-        variants_list.append('{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0]))
-        locations.append(rec.POS)
+        variant = '{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0])
+
+        # Checking for duplicate variants that have been an issue
+        if variant in variants_list:
+            pass
+        else:
+            variants_list.append(variant)
+            locations.append(rec.POS)
 
     
     variants = (';'.join(variants_list))
