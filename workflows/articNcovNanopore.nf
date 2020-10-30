@@ -96,7 +96,8 @@ workflow sequenceAnalysisNanopolish {
                       articDownloadScheme.out.ncov_amplicon, 
                       articMinIONNanopolish.out[0].collect(),
                       articDownloadScheme.out.bed,
-                      ch_irida)
+                      ch_irida,
+                      correctFailNs.out.corrected_consensus.collect())
 
 
       makeQCCSV(articMinIONNanopolish.out.ptrim

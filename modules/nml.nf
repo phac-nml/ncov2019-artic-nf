@@ -128,6 +128,7 @@ process generateFast5IridaReport {
 process correctFailNs {
 
     publishDir "${params.outdir}/corrected_consensus", pattern: "*.corrected.consensus.fasta", mode: "copy"
+    publishDir "${params.outdir}/corrected_consensus", pattern: "logs/*.log", mode: "copy"
 
     //conda 'environments/extras.yml'
     // Experimental change to re-check N calls
@@ -140,11 +141,14 @@ process correctFailNs {
 
     output:
     path "*.corrected.consensus.fasta", optional: true, emit: corrected_consensus
+    path "logs/*.log", optional: true, emit: logs
 
     script:
     """
     gzip -f $fail_vcf
     correct_n.py --bam $bamfile --consensus $consensus --reference $reference --fail_vcf ${fail_vcf}.gz --force
+    mkdir -p logs
+    mv *.log logs/
     """
 }
 
@@ -165,6 +169,7 @@ process runNcovTools {
     file(nanopolishresults)
     file(bed)
     file(metadata)
+    path(corrected_fastas)
 
     // Currently have the nml_* outputs hardcoded as the config has the run name as nml
     // If you change the ncov-tools config change them as well in all instances below
@@ -183,28 +188,12 @@ process runNcovTools {
     if ( params.irida )
 
         """
-        bash run_ncovtools.sh ${params.negative_control} ${config} ${amplicon} ${reference} ${bed} ${metadata}
+        bash run_ncovtools_metadata.sh ${params.negative_control} ${config} ${amplicon} ${reference} ${bed} ${metadata}
         """
 
     else
         """
-        git clone https://github.com/jts/ncov-tools.git
-        sed -i -e 's/^metadata/#metadata/' ${config}
-        sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
-        sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
-        mv ${amplicon} ./ncov-tools/input_amplicon.bed
-        mv ${config} ${reference} ${bed} ./ncov-tools
-        mkdir ./ncov-tools/run
-        mv *.* ./ncov-tools/run
-        cd ncov-tools
-        samtools faidx ${reference}
-        snakemake -s workflow/Snakefile all_qc_sequencing --cores 8
-        snakemake -s workflow/Snakefile all_qc_analysis --cores 8
-        snakemake -s workflow/Snakefile all_qc_reports --cores 4
-        mv ./plots/*.pdf ../
-        mv ./qc_reports/*.tsv ../
-        cd ..
-        touch nml_negative_control_report.tsv
+        bash run_ncovtools_no_metadata.sh ${config} ${amplicon} ${reference} ${bed}
         """
 }
 

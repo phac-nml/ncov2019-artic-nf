@@ -9,6 +9,17 @@ reference=$4
 bed=$5
 metadata=$6
 
+# Moves corrected consensus data to the right header name and replaces the non-corrected ones
+sed -i "s|-updated||" *.corrected.consensus.fasta
+
+# Overwrites the original consensus files so that we use the corrected ones
+for i in *.corrected.consensus.fasta
+    do
+        name="${i%%.*}"
+        echo $name
+        mv $i ${name}.consensus.fasta
+    done
+
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
 
@@ -35,9 +46,7 @@ mv *.* ./ncov-tools/run
 # Go in, run the commands and generate the indexed reference sequence
 cd ncov-tools
 samtools faidx ${reference}
-snakemake -s workflow/Snakefile all_qc_sequencing --cores 8
-snakemake -s workflow/Snakefile all_qc_analysis --cores 8
-snakemake -s workflow/Snakefile all_qc_reports --cores 4
+snakemake -s workflow/Snakefile all --cores 8
 
 # Move files out so that they can be easily detected by nextflow
 mv ./plots/*.pdf ../
