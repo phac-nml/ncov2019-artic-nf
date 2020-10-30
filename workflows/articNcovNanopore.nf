@@ -80,10 +80,10 @@ workflow sequenceAnalysisNanopolish {
       articRemoveUnmappedReads(articMinIONNanopolish.out.mapped)
 
       if (params.correctN) {
-        correctFailNs(articMinIONNanopolish.out.ptrim,
-                          articMinIONNanopolish.out.ptrimbai,
-                          articMinIONNanopolish.out.consensus_fasta,
-                          articMinIONNanopolish.out.fail_vcf,
+        correctFailNs(articMinIONNanopolish.out.ptrim
+                          .join(articMinIONNanopolish.out.ptrimbai, by:0)
+                          .join(articMinIONNanopolish.out.consensus_fasta, by:0)
+                          .join(articMinIONNanopolish.out.fail_vcf, by:0),
                           articDownloadScheme.out.reffasta)
 
       }

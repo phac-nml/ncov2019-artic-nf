@@ -135,10 +135,7 @@ process correctFailNs {
     label 'smallmem'
 
     input:
-    tuple(sampleName, path(bamfile))
-    tuple(sampleName, path(bambai))
-    tuple(sampleName, path(consensus))
-    tuple(sampleName, path(fail_vcf))
+    tuple(sampleName, path(bamfile), path(bambai), path(consensus), path(fail_vcf))
     file(reference)
 
     output:
