@@ -269,13 +269,23 @@ def get_ref_from_vcf(filtered_vcf, tracking_dict, out=[]):
     if tracking_dict:
         for rec in vcf_reader:
             # Create tuple of the locations corrected for differences in genome length from the deletion
-            # and the reference alleles that pass our selections
+            # and the reference alleles that pass our selections.
+            # If there is more than one base in REF, ignore as its an indel and that isn't supported at the moment
+            # It is an indel if it is longer than one as each base input is checked individually
             pos = tracking_dict[rec.POS]
+            if len(rec.REF) != 1:
+                print('WARNING: {} reference position was corrected to an indel of "{}". This correction is not supported. Correct manually or skip.\n'.format(pos, rec.REF))
+                continue
             out.append((pos, rec.REF))
 
     else:
         for rec in vcf_reader:
             # Create tuple of the location and the reference alleles that pass our selections criteria
+            # If there is more than one base in REF, ignore as its an indel and that isn't supported at the moment
+            # It is an indel if it is longer than one as each base input is checked individually
+            if len(rec.REF) != 1:
+                print('WARNING: {} reference position was corrected to an indel of "{}". This correction is not supported. Correct manually or skip.\n'.format(rec.POS, rec.REF))
+                continue
             out.append((rec.POS, rec.REF))
 
     return out
@@ -350,11 +360,11 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
         if len(n_locations) > args.max:
             print('WARNING greater than {} Ns detected. Change the "--max" command to at least "--max {}" to allow this analysis to run'.format(args.max, len(n_locations)))
             quit()
-        print('N locations include {}'.format(n_locations))
+        print('N locations include {}\n'.format(n_locations))
 
     else:
         n_locations, tracking_dict = find_fail_locations(args.fail_vcf, del_dict)
-        print('N locations include {}'.format(n_locations))
+        print('N locations include {}\n'.format(n_locations))
 
 
     # Generate command for bcftools mpileup targeting those sites
@@ -362,9 +372,9 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
   
     if cmd_input == '':
         if con_seq[300:29700].count('N') != 0: # temporary solution for this as we need to see if no internal N's or all N's
-            print('Sequence is all Ns, exiting')
+            print('Sequence is all Ns, exiting\n')
             quit()
-        print('No internal Ns in the input')
+        print('No internal Ns in the input\n')
         quit()
 
     try:
@@ -385,7 +395,7 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
     changes = get_ref_from_vcf('{}.filtered.vcf.gz'.format(sample_name), tracking_dict)
 
     if changes == []:
-        print('No N changes to be made based! Exiting, have a nice day :)')
+        print('No N changes to be made based! Exiting, have a nice day :)\n')
         quit()
     
     else:
