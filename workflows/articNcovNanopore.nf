@@ -12,6 +12,7 @@ include {articRemoveUnmappedReads} from '../modules/artic.nf'
 
 include {makeQCCSV} from '../modules/qc.nf'
 include {writeQCSummaryCSV} from '../modules/qc.nf'
+include {correctQCSummaryCSV} from '../modules/qc.nf'
 
 include {bamToCram} from '../modules/out.nf'
 
@@ -119,6 +120,8 @@ workflow sequenceAnalysisNanopolish {
                        .set { qc }
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
+
+     correctQCSummaryCSV(writeQCSummaryCSV.out)
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
