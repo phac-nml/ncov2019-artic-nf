@@ -36,10 +36,20 @@ else
     sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
 fi
 
+# Check for metadata file
+# If irida sample sheet is used, we will have some and will move it into ncov-tools folder
+# If not, then we will have false passed and will comment out the metadata line to allow ncov-tools to run
+if [ -f "$metadata" ];
+then
+    mv ${metadata} ./ncov-tools/metadata.tsv
+else
+    sed -i -e 's/^metadata/#metadata/' ${config}
+fi
+
+
 # Move files into the correct spots
 mv ${amplicon} ./ncov-tools/input_amplicon.bed
 mv ${config} ${reference} ${bed} ./ncov-tools
-mv ${metadata} ./ncov-tools/metadata.tsv
 mkdir ./ncov-tools/run
 mv *.* ./ncov-tools/run
 

@@ -182,19 +182,9 @@ process runNcovTools {
     path "nml_negative_control_report.tsv" , emit: ncovtools_negative
 
     script:
-    
-    // Different with IRIDA param due to files being renamed and the addition of metadata
-    // Touch nml_negative_control as it isn't always made and we need it even if its blank
-    if ( params.irida )
-
-        """
-        bash run_ncovtools_metadata.sh ${params.negative_control} ${config} ${amplicon} ${reference} ${bed} ${metadata}
-        """
-
-    else
-        """
-        bash run_ncovtools_no_metadata.sh ${config} ${amplicon} ${reference} ${bed}
-        """
+    """
+    bash run_ncovtools.sh ${params.negative_control} ${config} ${amplicon} ${reference} ${bed} ${metadata}
+    """
 }
 
 process uploadIrida {
