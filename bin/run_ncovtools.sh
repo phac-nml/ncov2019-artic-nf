@@ -9,6 +9,17 @@ reference=$4
 bed=$5
 metadata=$6
 
+# Moves corrected consensus data to the right header name and replaces the non-corrected ones
+sed -i "s|-updated||" *.corrected.consensus.fasta
+
+# Overwrites the original consensus files so that we use the corrected ones
+for i in *.corrected.consensus.fasta
+    do
+        name="${i%%.*}"
+        echo $name
+        mv $i ${name}.consensus.fasta
+    done
+
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
 
@@ -25,19 +36,27 @@ else
     sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
 fi
 
+# Check for metadata file
+# If irida sample sheet is used, we will have some and will move it into ncov-tools folder
+# If not, then we will have false passed and will comment out the metadata line to allow ncov-tools to run
+if [ -f "$metadata" ];
+then
+    mv ${metadata} ./ncov-tools/metadata.tsv
+else
+    sed -i -e 's/^metadata/#metadata/' ${config}
+fi
+
+
 # Move files into the correct spots
 mv ${amplicon} ./ncov-tools/input_amplicon.bed
 mv ${config} ${reference} ${bed} ./ncov-tools
-mv ${metadata} ./ncov-tools/metadata.tsv
 mkdir ./ncov-tools/run
 mv *.* ./ncov-tools/run
 
 # Go in, run the commands and generate the indexed reference sequence
 cd ncov-tools
 samtools faidx ${reference}
-snakemake -s workflow/Snakefile all_qc_sequencing --cores 8
-snakemake -s workflow/Snakefile all_qc_analysis --cores 8
-snakemake -s workflow/Snakefile all_qc_reports --cores 4
+snakemake -s workflow/Snakefile all --cores 8
 
 # Move files out so that they can be easily detected by nextflow
 mv ./plots/*.pdf ../

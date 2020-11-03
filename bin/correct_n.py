@@ -2,8 +2,10 @@
 
 import argparse
 import io
+import logging
 import os
 import subprocess
+import sys
 import tempfile
 import vcf
 
@@ -97,7 +99,7 @@ def correct_for_indels(ref_in, con_in, del_dict={}):
 
     # Generate list of the start and end (use +1 to get the full range)
     indel_groups = [[start, end+1] for start, end in zip(edges, edges)]
-    print('Deletion ranges include: {}'.format(indel_groups))
+    logging.info('Deletion ranges include: {}'.format(indel_groups))
 
     for group in indel_groups:
         # Generate a dictionary containing the deletion start sites as keys and the deletion length as values 
@@ -152,7 +154,7 @@ def find_all_n(consensus_seq, del_dict):
     last_non_n = _find_N(consensus_seq, start=False)
 
     if last_non_n < first_non_n:
-        print('ERROR: Maximum reference location is less than the first non-N character. \nExiting')
+        logging.error('ERROR: Maximum reference location is less than the first non-N character')
         quit()
 
     if del_dict != {}:
@@ -269,13 +271,23 @@ def get_ref_from_vcf(filtered_vcf, tracking_dict, out=[]):
     if tracking_dict:
         for rec in vcf_reader:
             # Create tuple of the locations corrected for differences in genome length from the deletion
-            # and the reference alleles that pass our selections
+            # and the reference alleles that pass our selections.
+            # If there is more than one base in REF, ignore as its an indel and that isn't supported at the moment
+            # It is an indel if it is longer than one as each base input is checked individually
             pos = tracking_dict[rec.POS]
+            if len(rec.REF) != 1:
+                logging.warning('{} reference position was corrected to an indel of "{}". This correction is not supported. Correct manually or skip.\n'.format(pos, rec.REF))
+                continue
             out.append((pos, rec.REF))
 
     else:
         for rec in vcf_reader:
             # Create tuple of the location and the reference alleles that pass our selections criteria
+            # If there is more than one base in REF, ignore as its an indel and that isn't supported at the moment
+            # It is an indel if it is longer than one as each base input is checked individually
+            if len(rec.REF) != 1:
+                logging.warning('{} reference position was corrected to an indel of "{}". This correction is not supported. Correct manually or skip.\n'.format(rec.POS, rec.REF))
+                continue
             out.append((rec.POS, rec.REF))
 
     return out
@@ -302,10 +314,12 @@ def generate_fasta(changes, consensus_seq, sample_name, con_name, ref_name):
         # change tuple structured as (Position, Reference Allele)
         # We -1 to the position to go back to index values from genomic ones to change the sequence
         if list_seq[change[0]-1] == 'N':
+            logging.info('{} at position {} changed to {}'.format(list_seq[change[0]-1], change[0]-1, change[1]))
             list_seq[change[0]-1] = change[1]
     
     new_seq = SeqRecord(Seq(''.join(list_seq)), id='{}-updated'.format(con_name), description=ref_name, name=sample_name)
 
+    logging.info('Generating fasta file called {}.corrected.consensus.fasta'.format(sample_name))
     with open('{}.corrected.consensus.fasta'.format(sample_name), 'w') as output_handle:
         SeqIO.write(new_seq, output_handle, 'fasta')
 
@@ -317,7 +331,15 @@ def main():
     ref_seq, ref_name = parse_fasta(args.reference)
     con_seq, con_name = parse_fasta(args.consensus)
     sample_name = os.path.splitext(Path(args.consensus).stem)[0]
-    print('\n', sample_name)
+
+    # Logging stuff
+    log_name = '{}.corrected.log'.format(sample_name)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s: %(message)s',
+        handlers=[logging.FileHandler(log_name), logging.StreamHandler()]
+        )
+    logging.info('Starting correction on {}'.format(sample_name))
 
 
     # Check for indels that will change locations
@@ -325,11 +347,11 @@ def main():
     del_dict = {}
 
     if len(ref_seq) < len(con_seq):
-        print('WARNING: Insertion detected. Insertions are unsupported at the moment sorry')
+        logging.error('Insertion detected. Insertions are unsupported at the moment sorry')
         quit()
 
     elif len(ref_seq) != len(con_seq):
-        print('''
+        logging.warning('''
 WARNING: Consensus sequence length ({}) does not match the reference sequence ({}).
 
 This means that there is an indel detected and this script is not fully
@@ -339,6 +361,7 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
             '''.format(len(con_seq), len(ref_seq)))
 
         if args.force:
+            logging.info('Forced')
             del_dict = correct_for_indels(args.reference, args.consensus)
         else:
             quit()
@@ -348,23 +371,23 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
         n_locations, tracking_dict = find_all_n(con_seq, del_dict)
 
         if len(n_locations) > args.max:
-            print('WARNING greater than {} Ns detected. Change the "--max" command to at least "--max {}" to allow this analysis to run'.format(args.max, len(n_locations)))
+            logging.error('WARNING: Greater than {} Ns detected. Change the "--max" command to at least "--max {}" to allow this analysis to run'.format(args.max, len(n_locations)))
             quit()
-        print('N locations include {}'.format(n_locations))
+        logging.info('N locations include {}'.format(n_locations))
 
     else:
         n_locations, tracking_dict = find_fail_locations(args.fail_vcf, del_dict)
-        print('N locations include {}'.format(n_locations))
-
+        logging.info('N locations include {}'.format(n_locations))
 
     # Generate command for bcftools mpileup targeting those sites
     cmd_input = ','.join(generate_location_input(n_locations, ref_name))
+    logging.info('Command locations formatting: {}'.format(cmd_input))
   
     if cmd_input == '':
         if con_seq[300:29700].count('N') != 0: # temporary solution for this as we need to see if no internal N's or all N's
-            print('Sequence is all Ns, exiting')
+            logging.error('Sequence is all Ns!')
             quit()
-        print('No internal Ns in the input')
+        logging.info('No internal Ns in the input, no changes needed! :)')
         quit()
 
     try:
@@ -374,18 +397,18 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
     | bcftools filter -i "%QUAL>100 && AF1==0 && DP>=100" -o ./{}.filtered.vcf
             '''.format(args.bam, args.reference, cmd_input, sample_name)
 
+        logging.info('Running the following commands: {}'.format(cmd))
         subprocess.run(cmd, shell=True)
         subprocess.run('bgzip -f ./{}.filtered.vcf'.format(sample_name), shell=True)
 
     except OSError:
-        print("OSError: Argument list too long, too many Ns in sample")
-        print('Exiting')
+        logging.error("OSError: Argument list too long, too many Ns in sample")
         quit()
 
     changes = get_ref_from_vcf('{}.filtered.vcf.gz'.format(sample_name), tracking_dict)
 
     if changes == []:
-        print('No N changes to be made based! Exiting, have a nice day :)')
+        logging.info('No N changes to be made based! Exiting, have a nice day! :)')
         quit()
     
     else:
