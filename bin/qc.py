@@ -176,7 +176,7 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     # If no data, we set up how it should be and then pass it through
     # Could also make is such that runs without negative ctrls just don't have the columns
     except pd.errors.EmptyDataError:
-        negative_df = pd.DataFrame(columns=['sample', 'negative_control_qc', 'negative_control_genome_covered_bases', 'negative_control_genome_total_bases', 'negative_control_genome_covered_fraction', 'negative_control_amplicons_detected'])
+        negative_df = pd.DataFrame(columns=['sample', 'qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected'])
         negative_df.loc[1, 'sample'] = sample
         negative_df.fillna('NA', inplace=True)
     
@@ -187,9 +187,9 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     if negative:
         new_columns = df.columns.values
         new_columns[0] = 'sample'
-        # Rename columns with negative_control to make them more informative
-        for spot in range(1, len(new_columns)):
-            new_columns[spot] = 'negative_control_{}'.format(new_columns[spot])
+        # Rename columns with negative_control to make them more informative when its ready in IRIDA
+        # for spot in range(1, len(new_columns)):
+        #     new_columns[spot] = 'negative_control_{}'.format(new_columns[spot])
         df.columns = new_columns
 
     file_column = 'sample'

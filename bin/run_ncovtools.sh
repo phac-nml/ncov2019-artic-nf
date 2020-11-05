@@ -2,12 +2,11 @@
 
 # Get the needed variables from the pipeline
 # Names are the same to avoid confusion!
-negativeControlGrep=$1
-config=$2
-amplicon=$3
-reference=$4
-bed=$5
-metadata=$6
+config=$1
+amplicon=$2
+reference=$3
+bed=$4
+metadata=$5
 
 # Moves corrected consensus data to the right header name and replaces the non-corrected ones
 sed -i "s|-updated||" *.corrected.consensus.fasta
@@ -26,14 +25,18 @@ git clone https://github.com/jts/ncov-tools.git
 # Remove the /ARTIC/nanopolish from the files or it seems to fail
 sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
 
+#### Moving files and modifying the config to get what we expect based on inputs ####
+# cp config to allow us to mess with its values
+mv ${amplicon} ./ncov-tools/input_amplicon.bed
+cp ${config} ./ncov-tools
+mv ${reference} ${bed} ./ncov-tools
+
 # If we have a matching negative control, we modify the config to make sure its gotten
-# Else, we comment out the negative controls if its not found
-if $(ls | grep -q "${negativeControlGrep}")
+# If we don't find any, then no negative controls are added
+if $(ls | grep -q -i "negative\|ntc\|water\|blank")
 then
-    run=$(awk '{if(NR==2){ print $2; }}' < $metadata)
-    sed -i -e "s/PLACEHOLDER/$run/g" $config
-else
-    sed -i -e 's/^negative_control_samples/#negative_control_samples/' ${config}
+   negative_list=$(grep -i -e ntc -e negative -e water -e blank ${metadata} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
+   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${config}
 fi
 
 # Check for metadata file
@@ -43,15 +46,13 @@ if [ -f "$metadata" ];
 then
     mv ${metadata} ./ncov-tools/metadata.tsv
 else
-    sed -i -e 's/^metadata/#metadata/' ${config}
+    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/${config}
 fi
 
-
-# Move files into the correct spots
-mv ${amplicon} ./ncov-tools/input_amplicon.bed
-mv ${config} ${reference} ${bed} ./ncov-tools
+# mv all the files into a folder to run on
 mkdir ./ncov-tools/run
 mv *.* ./ncov-tools/run
+
 
 # Go in, run the commands and generate the indexed reference sequence
 cd ncov-tools
@@ -64,5 +65,5 @@ mv ./qc_reports/*.tsv ../
 cd ..
 
 # Touching a negative control so that there always is one (even if we remove the check)
-# To allow us to always smash together all qc outputs into one file!
+# This will allow us to always smash together all qc outputs into one file!
 touch nml_negative_control_report.tsv

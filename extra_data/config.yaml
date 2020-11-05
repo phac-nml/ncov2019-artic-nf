@@ -55,11 +55,10 @@ assign_lineages: true
 #
 platform: oxford-nanopore
 
-#
-# set the names of the negative controls
-#
-negative_control_samples: [ "PLACEHOLDER-negative_ctrl", "PLACEHOLDER-negative_ctrl-1", "PLACEHOLDER-negative_ctrl-2", "PLACEHOLDER-negative_ctrl-3", "negative_ctrl", "negative_ctrl-1", "negative_ctrl-2", "negative_ctrl-3" ]
-
 # minimum completeness threshold for inclusion to the SNP tree plot, if no entry
 # is provided the default is set to 0.75
 completeness_threshold: 0.75
+
+#
+# set the names of the negative controls
+#

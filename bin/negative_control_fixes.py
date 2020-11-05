@@ -35,10 +35,12 @@ def main():
     # Read in qc csv file
     df = pd.read_csv(args.qc_csv, sep=',')
 
-    # Grab the negative control headers
-    # They have negative in them as it was set earlier
-    columns = df.columns
-    negative_columns = [x for x in columns if re.search('negative', x)]
+    # # Grab the negative control headers
+    # # They have negative in them as it was set earlier
+    # Implement with IRIDA renaming later
+    # columns = df.columns
+    # negative_columns = [x for x in columns if re.search('negative', x)]
+    negative_columns = ['qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected']
 
     # Place data here as column: [statement(s)] to generate the fill for the columns
     replace_dict = {}

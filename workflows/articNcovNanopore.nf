@@ -141,7 +141,7 @@ workflow sequenceAnalysisNanopolish {
 
          generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
-         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, writeQCSummaryCSV.out)
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
 
          if (params.correctN) {
            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),

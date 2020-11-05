@@ -183,7 +183,7 @@ process runNcovTools {
 
     script:
     """
-    bash run_ncovtools.sh ${params.negative_control} ${config} ${amplicon} ${reference} ${bed} ${metadata}
+    bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${bed} ${metadata}
     """
 }
 
