@@ -62,7 +62,7 @@ def main():
     for key in replace_dict.keys():
         if replace_dict[key] == []:
             continue
-        df[key] = '!'.join(replace_dict[key])
+        df[key] = '-'.join(replace_dict[key])
 
     df.fillna('NA', inplace=True)
     df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
