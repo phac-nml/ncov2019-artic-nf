@@ -59,6 +59,5 @@ platform: oxford-nanopore
 # is provided the default is set to 0.75
 completeness_threshold: 0.75
 
-#
-# set the names of the negative controls
-#
+# If a negative control were found, 
+# set the names of the negative control(s) below

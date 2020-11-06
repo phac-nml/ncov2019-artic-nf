@@ -187,9 +187,6 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     if negative:
         new_columns = df.columns.values
         new_columns[0] = 'sample'
-        # Rename columns with negative_control to make them more informative when its ready in IRIDA
-        # for spot in range(1, len(new_columns)):
-        #     new_columns[spot] = 'negative_control_{}'.format(new_columns[spot])
         df.columns = new_columns
 
     file_column = 'sample'

@@ -35,11 +35,7 @@ def main():
     # Read in qc csv file
     df = pd.read_csv(args.qc_csv, sep=',')
 
-    # # Grab the negative control headers
-    # # They have negative in them as it was set earlier
-    # Implement with IRIDA renaming later
-    # columns = df.columns
-    # negative_columns = [x for x in columns if re.search('negative', x)]
+    # Set the negative control headers which are static based on ncov-tools
     negative_columns = ['qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected']
 
     # Place data here as column: [statement(s)] to generate the fill for the columns
@@ -54,7 +50,7 @@ def main():
             continue
 
         for spot in negative_data_index:
-            # Column is always called sample, if it changes have to change this
+            # Column is always called sample based on ncov-tools output, if it changes have to change this
             print(spot)
             sample = df['sample'][spot]
             replace_dict[column].append('{}:{}'.format(sample, df[column][spot]))
