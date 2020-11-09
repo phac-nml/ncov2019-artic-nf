@@ -12,6 +12,7 @@ include {articRemoveUnmappedReads} from '../modules/artic.nf'
 
 include {makeQCCSV} from '../modules/qc.nf'
 include {writeQCSummaryCSV} from '../modules/qc.nf'
+include {correctQCSummaryCSV} from '../modules/qc.nf'
 
 include {bamToCram} from '../modules/out.nf'
 
@@ -121,6 +122,8 @@ workflow sequenceAnalysisNanopolish {
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
 
+     correctQCSummaryCSV(writeQCSummaryCSV.out)
+
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
                            .join(articRemoveUnmappedReads.out))
@@ -138,7 +141,7 @@ workflow sequenceAnalysisNanopolish {
 
          generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
-         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, writeQCSummaryCSV.out)
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
 
          if (params.correctN) {
            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),

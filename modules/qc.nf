@@ -62,20 +62,36 @@ process makeQCCSV {
 
 process writeQCSummaryCSV {
 
-    publishDir "${params.outdir}", pattern: "${params.prefix}.qc.csv", mode: 'copy'
-
     tag { params.prefix }
 
     input:
     val lines
 
     output:
-    file("${params.prefix}.qc.csv")
+    file("${params.prefix}.initial.qc.csv")
 
     exec:
-    task.workDir.resolve("${params.prefix}.qc.csv").withWriter { writer ->
+    task.workDir.resolve("${params.prefix}.initial.qc.csv").withWriter { writer ->
         for ( line in lines ) {
             writer.writeLine(line.join(','))
          }   
     }
+}
+
+process correctQCSummaryCSV {
+
+    publishDir "${params.outdir}", pattern: "${params.prefix}.qc.csv", mode: 'copy'
+
+    tag { params.prefix }
+
+    input:
+    file(initial_qc_csv)
+
+    output:
+    file("${params.prefix}.qc.csv")
+
+    script:
+    """
+    negative_control_fixes.py --qc_csv ${initial_qc_csv} --output_prefix ${params.prefix}
+    """
 }
