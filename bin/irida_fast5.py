@@ -119,7 +119,7 @@ def generate_samplelist(sample_tsv, directory, output_dir):
                         subprocess.run(cmd, shell=True)
 
                     subprocess.run('cat  filename_mapping.txt >> {}_filename_mapping.txt'.format(current_line_list[0]), shell=True)
-                    subprocess.run('tar -cvh --use-compress-program="pigz -p 32" -f {}/{}.tar.gz *.fast5 *_filename_mapping.txt && rm *.fast5 *.txt'.format(output_dir, current_line_list[0]), shell=True)
+                    subprocess.run('tar -cvh --use-compress-program=pigz -f {}/{}.tar.gz *.fast5 *_filename_mapping.txt && rm *.fast5 *.txt'.format(output_dir, current_line_list[0]), shell=True)
 
 
                 df_out.at[index, 'Sample_Name'] = current_line_list[0] # Name from input sample info file
