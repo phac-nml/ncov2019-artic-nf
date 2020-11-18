@@ -30,12 +30,12 @@ The specifics are found in the nml config and the process is built off of a slur
 
     Basic command:
     ```
-    nextflow run connor-lab/ncov2019-artic-nf -profile conda,nml --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt
+    nextflow run phac-nml/ncov2019-artic-nf -profile conda,nml --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt
     ```
 
     Command with new optional arguments:
     ```
-    nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt --irida /path/to/samplesheet.tsv --upload_irida /path/to/irida_uploader/config
+    nextflow run phac-nml/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt --irida /path/to/samplesheet.tsv --upload_irida /path/to/irida_uploader/config
     ```
 
 **Optional Arguments**
@@ -64,7 +64,11 @@ where:
 ```
 *Make sure there are no spaces in the samplesheet if including it or it will cause an error*
 
+This will re-name all of the sample names based on the barcode so make sure that the barcodes match what you want the samplenames to be
+
 Unfortunately for the moment the format above must be matched to get it to work. If you don't plan to upload to irida you can put any integer in the project_id column.
+
+Date and ct can be filled by `NA` if there is not one available
 
 #### --upload_irida <irida_uploader.conf>
 
