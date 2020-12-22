@@ -25,6 +25,7 @@ include {generateFastaIridaReport} from '../modules/nml.nf'
 include {generateFast5IridaReport} from '../modules/nml.nf'
 include {correctFailNs} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
+include {snpDists} from '../modules/nml.nf'
 include {uploadIrida} from '../modules/nml.nf'
 include {uploadCorrectN} from '../modules/nml.nf'
 
@@ -99,7 +100,8 @@ workflow sequenceAnalysisNanopolish {
                       articDownloadScheme.out.bed,
                       ch_irida,
                       correctFailNs.out.corrected_consensus.collect())
-
+      
+      snpDists(runNcovTools.out.aligned)
 
       makeQCCSV(articMinIONNanopolish.out.ptrim
                                      .join(articMinIONNanopolish.out.consensus_fasta, by: 0)

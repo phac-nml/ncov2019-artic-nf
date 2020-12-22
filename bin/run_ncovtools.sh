@@ -58,10 +58,13 @@ mv *.* ./ncov-tools/run
 cd ncov-tools
 samtools faidx ${reference}
 snakemake -s workflow/Snakefile all --cores 8
+snakemake -s workflow/Snakefile --cores 1 build_snpeff_db
+snakemake -s workflow/Snakefile --cores 2 all_qc_annotation
 
 # Move files out so that they can be easily detected by nextflow
 mv ./plots/*.pdf ../
 mv ./qc_reports/*.tsv ../
+mv ./qc_analysis/nml_aligned.fasta ../
 cd ..
 
 # Touching a negative control so that there always is one (even if we remove the check)

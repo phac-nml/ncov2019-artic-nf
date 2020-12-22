@@ -180,11 +180,33 @@ process runNcovTools {
     path "ncov-tools/lineages/*.csv" , emit: lineage
     path "nml_summary_qc.tsv" , emit: ncovtools_qc
     path "nml_negative_control_report.tsv" , emit: ncovtools_negative
+    path "nml_aligned.fasta" , emit: aligned
 
     script:
     """
     bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${bed} ${metadata}
     """
+}
+
+process snpDists {
+
+    publishDir "${params.outdir}/", pattern: "matrix.tsv", mode: "copy"
+
+    //conda 'environments/snpdist.yml'
+
+    label 'smallmem'
+
+    input:
+    file(aligned_fasta)
+
+    output:
+    path("matrix.tsv")
+
+    script:
+    """
+    snp-dists ${aligned_fasta} > matrix.tsv
+    """
+
 }
 
 process uploadIrida {
