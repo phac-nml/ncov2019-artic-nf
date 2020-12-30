@@ -88,6 +88,9 @@ workflow sequenceAnalysisNanopolish {
                           .join(articMinIONNanopolish.out.fail_vcf, by:0),
                           articDownloadScheme.out.reffasta)
 
+        correctFailNs.out.corrected_consensus.collect()
+              .ifEmpty(file('placeholder.txt'))
+              .set{ ch_corrected }
       }
 
       Channel.fromPath("${params.ncov}")
@@ -99,7 +102,7 @@ workflow sequenceAnalysisNanopolish {
                       articMinIONNanopolish.out[0].collect(),
                       articDownloadScheme.out.bed,
                       ch_irida,
-                      correctFailNs.out.corrected_consensus.collect())
+                      ch_corrected)
       
       snpDists(runNcovTools.out.aligned)
 

@@ -368,6 +368,7 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
 
     # Find N's based on either the consensus sequence or the failed variants
     if not args.fail_vcf:
+        logging.info('Checking full sequence for Ns to correct')
         n_locations, tracking_dict = find_all_n(con_seq, del_dict)
 
         if len(n_locations) > args.max:
@@ -376,8 +377,14 @@ If you do, please double check the BAM file in a viewer such as IGV to make sure
         logging.info('N locations include {}'.format(n_locations))
 
     else:
+        logging.info('Checking {} for Ns to correct'.format(args.fail_vcf))
         n_locations, tracking_dict = find_fail_locations(args.fail_vcf, del_dict)
         logging.info('N locations include {}'.format(n_locations))
+
+        # Exit if no N's found to be corrected
+        if n_locations == []:
+            logging.info('No Ns to correct, Exitting')
+            quit()
 
     # Generate command for bcftools mpileup targeting those sites
     cmd_input = ','.join(generate_location_input(n_locations, ref_name))
