@@ -18,6 +18,8 @@ A few changes and additions have been made to optimize running this pipeline for
 
 The specifics are found in the nml config and the process is built off of a slurm executor with conda environments for different processes.
 
+**Note from updating artic fieldinformatics to v1.2.1:** [Field informatics](https://github.com/artic-network/fieldbioinformatics) update fixed a rare issue causing samples to fail even when they were of high quality. It also added new checking for primer schemes that had to be modified in the conda environment to allow the internal primer schemes to be used.
+
 **Running**
 
 1. Set up [ncov-tools](https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml) environment

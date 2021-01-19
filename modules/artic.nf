@@ -135,7 +135,8 @@ process articMinIONNanopolish {
     --read-file ${fastq} \
     --fast5-directory ${fast5Pass} \
     --sequencing-summary ${seqSummary} \
-    ${params.scheme}/${params.schemeVersion} \
+    --scheme-version ${params.schemeVersion} \
+    ${params.scheme} \
     ${sampleName}
     """
 }
