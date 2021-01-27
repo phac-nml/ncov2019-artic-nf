@@ -188,6 +188,9 @@ def parse_ncov_tsv(file_in, sample, negative=False):
         new_columns = df.columns.values
         new_columns[0] = 'sample'
         df.columns = new_columns
+    # Input is summary_df, drop its lineage column as we pull and create our own
+    else:
+        df.drop(columns=['lineage'], inplace=True)
 
     file_column = 'sample'
 
