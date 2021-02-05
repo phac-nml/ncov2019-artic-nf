@@ -113,7 +113,8 @@ workflow sequenceAnalysisNanopolish {
                                      .combine(runNcovTools.out.lineage)
                                      .combine(runNcovTools.out.ncovtools_qc)
                                      .combine(runNcovTools.out.ncovtools_negative)
-                                     .combine(ch_irida),
+                                     .combine(ch_irida)
+                                     .combine(runNcovTools.out.snpeff_path),
                 params.pcr_primers)
 
       makeQCCSV.out.csv.splitCsv()

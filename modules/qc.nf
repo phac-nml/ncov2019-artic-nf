@@ -5,7 +5,7 @@ process makeQCCSV {
 
     input:
 
-    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(sample_sheet)
+    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(sample_sheet), path(snp_eff_path)
     path(pcr_bed)
 
     output:
@@ -36,6 +36,8 @@ process makeQCCSV {
         --vcf ${vcf} \
         --sample_sheet ${sample_sheet} \
         --revision ${rev} \
+        --scheme ${params.schemeVersion} \
+        --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
         """
 
@@ -53,6 +55,8 @@ process makeQCCSV {
         --ncov_negative ${ncov_negative} \
         --vcf ${vcf} \
         --revision ${rev} \
+        --scheme ${params.schemeVersion} \
+        --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
         """
 }
