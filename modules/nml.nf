@@ -181,6 +181,7 @@ process runNcovTools {
     path "nml_summary_qc.tsv" , emit: ncovtools_qc
     path "nml_negative_control_report.tsv" , emit: ncovtools_negative
     path "nml_aligned.fasta" , emit: aligned
+    path "ncov-tools/qc_annotation/", emit: snpeff_path
 
     script:
     """

@@ -167,6 +167,10 @@ def get_lineage(pangolin_csv, sample_name):
     
     return 'Unknown'
 
+def get_protein_variants(aa_table):
+    df = pd.read_csv(aa_table, sep='\t').dropna()
+    return ';'.join(df['aa'].tolist())
+
 def parse_ncov_tsv(file_in, sample, negative=False):
 
     # Try to read file (as negative control may not have data in it)
@@ -263,6 +267,9 @@ def go(args):
     # Pangolin Lineages
     lineage = get_lineage(args.pangolin, args.sample)
 
+    # snpEFF output
+    protein_variants = get_protein_variants(args.snpeff_tsv)
+
     # NCOV-Tools Results
     summary_df = parse_ncov_tsv(args.ncov_summary, args.sample)
     negative_df = parse_ncov_tsv(args.ncov_negative, args.sample, negative=True)
@@ -283,7 +290,9 @@ def go(args):
            'num_aligned_reads': [num_reads],
                     'lineage' : [lineage],
                    'variants' : [variants],
+            'protein_variants': [protein_variants],
 'diagnostic_primer_mutations' : [primer_statement],
+                     'scheme' : [args.scheme],
              'run_identifier' : [run_name],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
@@ -323,6 +332,8 @@ def main():
     parser.add_argument('--ncov_negative', required=True)
     parser.add_argument('--revision', required=True)
     parser.add_argument('--vcf', required=True)
+    parser.add_argument('--scheme', required=True)
+    parser.add_argument('--snpeff_tsv', required=True)
     parser.add_argument('--pcr_bed', required=True)
     parser.add_argument('--sample_sheet', required=False)
 
