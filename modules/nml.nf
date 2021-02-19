@@ -215,6 +215,7 @@ process uploadIrida {
     //conda 'environments/irida_uploader.yml'
 
     label 'Upload'
+    errorStrategy 'terminate'
 
     input:
     path(fastq_folder)
@@ -237,6 +238,7 @@ process uploadCorrectN{
     //conda 'environments/irida_uploader.yml'
 
     label 'Upload'
+    errorStrategy 'terminate'
 
     input:
     path(fastas)
