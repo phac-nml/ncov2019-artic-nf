@@ -160,10 +160,10 @@ def get_lineage(pangolin_csv, sample_name):
     with open(pangolin_csv, 'r') as input_handle:
         reader = csv.reader(input_handle)
 
-        for row in reader: # Row format is ['taxon', 'lineage', 'SH-alrt', 'UFbootstrap', 'lineages_version', 'status', 'note']
+        for row in reader: # Row format is ['taxon', 'lineage', 'probability', 'pangoLEARN_version', 'status', 'note']
 
             if re.search(sample_name, row[0]):
-                return str(row[1])
+                return str(row[1]), str(row[3])
     
     return 'Unknown'
 
@@ -212,16 +212,15 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     return negative_df
 
 def get_samplesheet_info(sample_tsv, sample_name):
-    with open(sample_tsv) as input_handle:
+    df = pd.read_csv(sample_tsv, sep='\t')
+    df.rename(columns={'run': 'run_identifier'}, inplace=True)
+    try:
+        df.drop(columns=['ct', 'date'], inplace=True)
+    except KeyError:
+        df.drop(columns=['ct'], inplace=True)
+    slice_df = df.loc[df['sample'] == sample_name]
+    return slice_df.fillna('NA')
 
-        for line in input_handle:
-            row = line.strip('\n').split('\t') # Order is [sample, run, barcode, project_id, ct]
-
-            if re.search(sample_name, row[0]):
-                return str(row[1]), str(row[2]), str(row[3]), str(row[4]) # [run, barcode, project_id, ct]
-
-    return 'Unknown', 'Unknown', 'Unknown', 'Unknown'
-    
 def go(args):
     if args.illumina:
         depth = 10
@@ -265,7 +264,7 @@ def go(args):
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
     # Pangolin Lineages
-    lineage = get_lineage(args.pangolin, args.sample)
+    lineage, pangoLearn = get_lineage(args.pangolin, args.sample)
 
     # snpEFF output
     protein_variants = get_protein_variants(args.snpeff_tsv)
@@ -275,31 +274,44 @@ def go(args):
     negative_df = parse_ncov_tsv(args.ncov_negative, args.sample, negative=True)
 
     if args.sample_sheet:
-        run_name, barcode, project_id, ct = get_samplesheet_info(args.sample_sheet, args.sample)
-    
-    else:
-        run_name = 'NA'
-        barcode = re.search(r'\d+', args.sample).group(0)
-        project_id = 'NA' 
-        ct = 'NA'
+        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample)
 
-
-    qc_line = {      'sample' : [args.sample],
-                 'project_id' : [project_id],
-                    'barcode' : [barcode],
+        qc_line = {  'sample' : [args.sample],
            'num_aligned_reads': [num_reads],
                     'lineage' : [lineage],
                    'variants' : [variants],
             'protein_variants': [protein_variants],
 'diagnostic_primer_mutations' : [primer_statement],
                      'scheme' : [args.scheme],
-             'run_identifier' : [run_name],
+         'pangoLEARN_version' : [pangoLearn],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
+        
+        qc_df = pd.DataFrame.from_dict(qc_line)
+        data_frames = [sample_sheet_df, qc_df, summary_df, negative_df]
 
-    qc_df = pd.DataFrame.from_dict(qc_line)
+    else:
+        run_name = 'NA'
+        barcode = re.search(r'\d+', args.sample).group(0)
+        project_id = 'NA' 
 
-    data_frames = [qc_df, summary_df, negative_df]
+        qc_line = {      'sample' : [args.sample],
+                     'project_id' : [project_id],
+                        'barcode' : [barcode],
+               'num_aligned_reads': [num_reads],
+                        'lineage' : [lineage],
+                       'variants' : [variants],
+                'protein_variants': [protein_variants],
+    'diagnostic_primer_mutations' : [primer_statement],
+                         'scheme' : [args.scheme],
+             'pangoLEARN_version' : [pangoLearn],
+                 'run_identifier' : [run_name],
+                    'script_name' : ['nml-ncov2019-artic-nf'],
+                       'revision' : [args.revision]}
+
+        qc_df = pd.DataFrame.from_dict(qc_line)
+
+        data_frames = [qc_df, summary_df, negative_df]
 
     # Merge all dataframes together
     out_df = reduce(lambda left,right: pd.merge(left,right,on='sample', how='left'), data_frames)

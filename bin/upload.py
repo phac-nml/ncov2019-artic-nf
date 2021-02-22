@@ -91,9 +91,10 @@ def send_metadata(api_instance, metadata_csv, metadata_only):
                     # Get sample name from row 1
                     sample_name = row[i]
                 
-                elif i == 1 and re.search('project', header[1]):
+                # Get the project ID from the correct header no matter where it is
+                elif re.search('project_id', header[i]):
 
-                    if row[i] == 'Unknown':
+                    if row[i] == 'Unknown' or row[i] == 'NA':
                         passing = False
                         break
 
