@@ -28,12 +28,6 @@ def init_parser():
         required=True,
         help='Metadata qc csv for upload containing matching ids to SampleList.csv in the FIRST column and a project id in the SECOND'
     )
-    parser.add_argument(
-        '--metadata_only',
-        required=False,
-        default=False,
-        action='store_true'
-    )
     return parser
 
 
@@ -106,12 +100,11 @@ def send_metadata(api_instance, metadata_csv, metadata_only):
                     metadata[header[i]] = row[i]
             if passing:
                 # Check that sample exists and make it if not
-                if metadata_only:
-                    if api_instance.sample_exists(sample_name=sample_name, project_id=project_id):
-                        pass
-                    else:
-                        irida_sample = model.Sample(sample_name=sample_name)
-                        api_instance.send_sample(sample=irida_sample, project_id=project_id)
+                if api_instance.sample_exists(sample_name=sample_name, project_id=project_id):
+                    pass
+                else:
+                    irida_sample = model.Sample(sample_name=sample_name)
+                    api_instance.send_sample(sample=irida_sample, project_id=project_id)
 
                 upload_metadata = model.Metadata(metadata=metadata, project_id=project_id, sample_name=sample_name)
                 status = api_instance.send_metadata(upload_metadata, upload_metadata.project_id, upload_metadata.sample_name )

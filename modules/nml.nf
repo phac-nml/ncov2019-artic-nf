@@ -246,7 +246,7 @@ process uploadMetadataOnlyIrida {
 
     script:
     """
-    upload.py --config ${irida_config} --metadata_csv ${metadata_csv} --metadata_only
+    upload.py --config ${irida_config} --metadata_csv ${metadata_csv}
     """
 }
 

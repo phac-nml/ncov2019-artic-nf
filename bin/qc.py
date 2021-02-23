@@ -118,6 +118,8 @@ def get_num_reads(bamfile):
     return subprocess.check_output(what).decode().strip()
 
 def get_variants(variants_vcf, variants_list=[], locations=[]):
+    '''
+    '''
     vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
     for rec in vcf_reader:
         variant = '{}{}{}'.format(rec.REF, rec.POS, rec.ALT[0])
@@ -138,6 +140,8 @@ def get_variants(variants_vcf, variants_list=[], locations=[]):
     return variants, locations
 
 def find_primer_mutations(pcr_bed, vcf_locations, primer_mutations=[]):
+    '''
+    '''
     if vcf_locations is None:
         return 'None'
     
@@ -157,6 +161,8 @@ def find_primer_mutations(pcr_bed, vcf_locations, primer_mutations=[]):
     return 'None'
 
 def get_lineage(pangolin_csv, sample_name):
+    '''
+    '''
     with open(pangolin_csv, 'r') as input_handle:
         reader = csv.reader(input_handle)
 
@@ -165,13 +171,17 @@ def get_lineage(pangolin_csv, sample_name):
             if re.search(sample_name, row[0]):
                 return str(row[1]), str(row[3])
     
-    return 'Unknown'
+    return 'Unknown', 'Unknown'
 
 def get_protein_variants(aa_table):
+    '''
+    '''
     df = pd.read_csv(aa_table, sep='\t').dropna()
     return ';'.join(df['aa'].tolist())
 
 def parse_ncov_tsv(file_in, sample, negative=False):
+    '''
+    '''
 
     # Try to read file (as negative control may not have data in it)
     try:
@@ -212,14 +222,21 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     return negative_df
 
 def get_samplesheet_info(sample_tsv, sample_name):
+    '''
+    '''
     df = pd.read_csv(sample_tsv, sep='\t')
     df.rename(columns={'run': 'run_identifier'}, inplace=True)
     try:
         df.drop(columns=['ct', 'date'], inplace=True)
     except KeyError:
         df.drop(columns=['ct'], inplace=True)
-    slice_df = df.loc[df['sample'] == sample_name]
-    return slice_df.fillna('NA')
+
+    
+    df = df.loc[df['sample'] == sample_name]
+    if df.empty:
+        df.loc[1, 'sample']  = sample_name
+
+    return df.fillna('NA')
 
 def go(args):
     if args.illumina:
