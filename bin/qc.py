@@ -117,7 +117,7 @@ def get_num_reads(bamfile):
 
     return subprocess.check_output(what).decode().strip()
 
-def get_variants(variants_vcf, variants_list=[], locations=[]):
+def get_vcf_variants(variants_vcf, variants_list=[], locations=[]):
     '''
     '''
     vcf_reader = vcf.Reader(open(variants_vcf, 'rb'))
@@ -131,6 +131,35 @@ def get_variants(variants_vcf, variants_list=[], locations=[]):
             variants_list.append(variant)
             locations.append(rec.POS)
 
+
+    variants = (';'.join(variants_list))
+
+    if variants == '':
+        return 'None', None
+
+    return variants, locations
+
+def get_tsv_variants(variants_tsv, variants_list=[], locations=[]):
+    '''
+    '''
+    with open(variants_tsv) as input_handle:
+
+        for index, line in enumerate(input_handle):
+
+            # Pass the header line so as to not include it!
+            if index == 0:
+                continue
+
+            row = line.strip('\n').split('\t') # Order is [REGION, POS, REF, ALT, ...]
+
+            variant = '{}{}{}'.format(row[2], row[1], row[3])
+
+            # Checking for duplicate variants that have been an issue
+            if variant in variants_list:
+                pass
+            else:
+                variants_list.append(variant)
+                locations.append(row[1])
     
     variants = (';'.join(variants_list))
 
@@ -224,19 +253,20 @@ def parse_ncov_tsv(file_in, sample, negative=False):
 def get_samplesheet_info(sample_tsv, sample_name):
     '''
     '''
-    df = pd.read_csv(sample_tsv, sep='\t')
+    df = pd.read_csv(sample_tsv, sep='\t', dtype=object)
     df.rename(columns={'run': 'run_identifier'}, inplace=True)
     try:
         df.drop(columns=['ct', 'date'], inplace=True)
     except KeyError:
         df.drop(columns=['ct'], inplace=True)
-
     
     df = df.loc[df['sample'] == sample_name]
     if df.empty:
         df.loc[1, 'sample']  = sample_name
+    
+    df.fillna('NA', inplace=True)
 
-    return df.fillna('NA')
+    return df
 
 def go(args):
     if args.illumina:
@@ -273,9 +303,15 @@ def go(args):
         if largest_N_gap >= 10000 or pct_N_bases < 50.0:
                 qc_pass = "TRUE"
 
-    ## Added checks ##
-    # Vcf passing variants
-    variants, variant_locations = get_variants(args.vcf)
+    ### Added checks ###
+    ####################
+    if args.nanopore:
+        # Vcf passing variants from nanopore pipeline
+        variants, variant_locations = get_vcf_variants(args.vcf)
+    
+    elif args.illumina:
+        # Tsv variants from Illumina pipeline
+        variants, variant_locations = get_tsv_variants(args.tsv_variants)
 
     # Find any overlap of variants in the pcr primer regions
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
@@ -300,6 +336,7 @@ def go(args):
             'protein_variants': [protein_variants],
 'diagnostic_primer_mutations' : [primer_statement],
                      'scheme' : [args.scheme],
+      'sequencing_technology' : [args.sequencing_technology],
          'pangoLEARN_version' : [pangoLearn],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
@@ -309,7 +346,10 @@ def go(args):
 
     else:
         run_name = 'NA'
-        barcode = re.search(r'\d+', args.sample).group(0)
+        if args.nanopore:
+            barcode = re.search(r'\d+', args.sample).group(0)
+        else:
+            barcode = 'NA'
         project_id = 'NA' 
 
         qc_line = {      'sample' : [args.sample],
@@ -321,6 +361,7 @@ def go(args):
                 'protein_variants': [protein_variants],
     'diagnostic_primer_mutations' : [primer_statement],
                          'scheme' : [args.scheme],
+          'sequencing_technology' : [args.sequencing_technology],
              'pangoLEARN_version' : [pangoLearn],
                  'run_identifier' : [run_name],
                     'script_name' : ['nml-ncov2019-artic-nf'],
@@ -360,7 +401,9 @@ def main():
     parser.add_argument('--ncov_summary', required=True)
     parser.add_argument('--ncov_negative', required=True)
     parser.add_argument('--revision', required=True)
-    parser.add_argument('--vcf', required=True)
+    parser.add_argument('--vcf', required=False)
+    parser.add_argument('--tsv_variants', required=False)
+    parser.add_argument('--sequencing_technology', required=True)
     parser.add_argument('--scheme', required=True)
     parser.add_argument('--snpeff_tsv', required=True)
     parser.add_argument('--pcr_bed', required=True)

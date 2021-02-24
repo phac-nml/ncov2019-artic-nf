@@ -53,7 +53,7 @@ def generate_api_instance(config_in):
     return irida_api
                 
 
-def send_metadata(api_instance, metadata_csv, metadata_only):
+def send_metadata(api_instance, metadata_csv):
     '''
     PURPOSE:
         Send metadata from qc.csv to IRIDA for each sample
@@ -125,7 +125,7 @@ def main():
     metadata_csv = args.metadata_csv
 
     irida_api = generate_api_instance(key_config)
-    send_metadata(irida_api, metadata_csv, args.metadata_only)
+    send_metadata(irida_api, metadata_csv)
 
 
 if __name__ == "__main__":

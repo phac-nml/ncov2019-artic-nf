@@ -33,7 +33,7 @@ def main():
     args = parser.parse_args()
 
     # Read in qc csv file
-    df = pd.read_csv(args.qc_csv, sep=',')
+    df = pd.read_csv(args.qc_csv, sep=',', dtype=object)
 
     # Set the negative control headers which are static based on ncov-tools
     negative_columns = ['qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected']

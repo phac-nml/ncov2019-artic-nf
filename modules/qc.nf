@@ -37,6 +37,7 @@ process makeQCCSV {
         --sample_sheet ${sample_sheet} \
         --revision ${rev} \
         --scheme ${params.schemeVersion} \
+        --sequencing_technology ${params.sequencingTechnology} \
         --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
         """
@@ -56,6 +57,7 @@ process makeQCCSV {
         --vcf ${vcf} \
         --revision ${rev} \
         --scheme ${params.schemeVersion} \
+        --sequencing_technology ${params.sequencingTechnology} \
         --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
         """
