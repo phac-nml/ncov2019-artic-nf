@@ -27,7 +27,6 @@ include {correctFailNs} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
 include {snpDists} from '../modules/nml.nf'
 include {uploadIrida} from '../modules/nml.nf'
-include {uploadMetadataOnlyIrida} from '../modules/nml.nf'
 include {uploadCorrectN} from '../modules/nml.nf'
 
 
@@ -142,21 +141,16 @@ workflow sequenceAnalysisNanopolish {
       }
 
      if (params.irida) {
-       if (params.metadata_upload_irida) {
+       if (params.upload_irida) {
          Channel.fromPath("${params.metadata_upload_irida}")
               .set{ ch_upload }
-         uploadMetadataOnlyIrida(ch_upload, correctQCSummaryCSV.out)
 
-       } else if (params.upload_irida) {
-          Channel.fromPath("${params.upload_irida}")
-              .set{ ch_upload }
+         generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
-          generateFast5IridaReport(ch_fast5Pass, ch_irida)
+         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
 
-          uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
-
-          if (params.correctN) {
-            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
+         if (params.correctN) {
+          uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
                           ch_upload,
                           ch_irida)
          }

@@ -233,23 +233,6 @@ process uploadIrida {
     """
 }
 
-process uploadMetadataOnlyIrida {
-
-    //conda 'environments/irida_uploader.yml'
-
-    label 'Upload'
-    errorStrategy 'terminate'
-
-    input:
-    file(irida_config)
-    file(metadata_csv)
-
-    script:
-    """
-    upload.py --config ${irida_config} --metadata_csv ${metadata_csv}
-    """
-}
-
 process uploadCorrectN{
 
     //conda 'environments/irida_uploader.yml'
