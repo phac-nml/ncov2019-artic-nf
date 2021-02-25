@@ -28,7 +28,6 @@ def init_parser():
         required=True,
         help='Metadata qc csv for upload containing matching ids to SampleList.csv in the FIRST column and a project id in the SECOND'
     )
-    
     return parser
 
 
@@ -86,9 +85,10 @@ def send_metadata(api_instance, metadata_csv):
                     # Get sample name from row 1
                     sample_name = row[i]
                 
-                elif i == 1 and re.search('project', header[1]):
+                # Get the project ID from the correct header no matter where it is
+                elif re.search('project_id', header[i]):
 
-                    if row[i] == 'Unknown':
+                    if row[i] == 'Unknown' or row[i] == 'NA':
                         passing = False
                         break
 
@@ -99,6 +99,13 @@ def send_metadata(api_instance, metadata_csv):
                     # Put metadata into metadata dictionary for upload
                     metadata[header[i]] = row[i]
             if passing:
+                # Check that sample exists and make it if not
+                if api_instance.sample_exists(sample_name=sample_name, project_id=project_id):
+                    pass
+                else:
+                    irida_sample = model.Sample(sample_name=sample_name)
+                    api_instance.send_sample(sample=irida_sample, project_id=project_id)
+
                 upload_metadata = model.Metadata(metadata=metadata, project_id=project_id, sample_name=sample_name)
                 status = api_instance.send_metadata(upload_metadata, upload_metadata.project_id, upload_metadata.sample_name )
 
@@ -116,7 +123,6 @@ def main():
 
     key_config = args.config
     metadata_csv = args.metadata_csv
-
 
     irida_api = generate_api_instance(key_config)
     send_metadata(irida_api, metadata_csv)

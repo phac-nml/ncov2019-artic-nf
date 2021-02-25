@@ -229,7 +229,7 @@ process uploadIrida {
     irida-uploader --config ${irida_config} -d ${fastq_folder}
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
     irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
-    upload.py --config ${irida_config} --metadata ${metadata_csv}
+    upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
     """
 }
 
