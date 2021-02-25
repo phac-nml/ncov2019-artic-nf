@@ -142,15 +142,15 @@ workflow sequenceAnalysisNanopolish {
 
      if (params.irida) {
        if (params.upload_irida) {
-         Channel.fromPath("${params.metadata_upload_irida}")
-              .set{ ch_upload }
+         Channel.fromPath("${params.upload_irida}")
+             .set{ ch_upload }
 
          generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
          uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
 
          if (params.correctN) {
-          uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
+           uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
                           ch_upload,
                           ch_irida)
          }
