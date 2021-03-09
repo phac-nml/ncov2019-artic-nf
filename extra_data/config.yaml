@@ -57,7 +57,7 @@ platform: oxford-nanopore
 
 # minimum completeness threshold for inclusion to the SNP tree plot, if no entry
 # is provided the default is set to 0.75
-completeness_threshold: 0.75
+completeness_threshold: 0.50
 
 # If a negative control were found, 
 # set the names of the negative control(s) below
