@@ -39,9 +39,10 @@ def main():
             barcode_number = re.sub("\D", "", line.strip())
 
             # Use barcode number to find the sample
-            try:
-                sample = str(df[df['barcode'] == int(barcode_number)]['sample'].item())
-            except ValueError:
+            filter = df['barcode'] == int(barcode_number)
+            if not df[filter].empty:
+                sample = df[filter]['sample'].item()
+            else:
                 sample = "extra_nml_barcode{}".format(barcode_number)
             # Just print sample to send to output file
             print("{},TOO_FEW_READS".format(sample))
