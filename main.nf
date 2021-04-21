@@ -5,7 +5,6 @@ nextflow.preview.dsl = 2
 
 // include modules
 include {printHelp} from './modules/help.nf'
-include {accountNoReadsInput} from './modules/nml.nf'
 include {makeFastqSearchPath} from './modules/util.nf'
 
 // import subworkflows
@@ -116,8 +115,6 @@ workflow {
                             }
                             count > params.minReadsPerBarcode
                    }.set{ ch_fastqDirs }
-            
-            accountNoReadsInput(ch_badfastqDirs.collect())
 
        } else if ( nanoporeNoBarcode ){
             // No, no barcodes
@@ -131,7 +128,7 @@ workflow {
 
    main:
      if ( params.nanopolish || params.medaka ) {
-         articNcovNanopore(ch_fastqDirs)
+         articNcovNanopore(ch_fastqDirs, ch_badfastqDirs)
      } else if ( params.illumina ) {
          if ( params.cram ) {
             ncovIlluminaCram(ch_cramFiles)

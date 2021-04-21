@@ -19,6 +19,7 @@ include {bamToCram} from '../modules/out.nf'
 include {collateSamples} from '../modules/upload.nf'
 
 include {renameSamples} from '../modules/nml.nf'
+include {accountNoReadsInput} from '../modules/nml.nf'
 include {accountReadFilterFailures} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
 include {generateFastaIridaReport} from '../modules/nml.nf'
@@ -38,6 +39,7 @@ include {Genotyping} from './typing.nf'
 workflow sequenceAnalysisNanopolish {
     take:
       ch_runFastqDirs
+      ch_badfastqDirs
       ch_fast5Pass
       ch_seqSummary
     
@@ -49,6 +51,9 @@ workflow sequenceAnalysisNanopolish {
       if (params.irida) {
        Channel.fromPath("${params.irida}")
               .set{ ch_irida }
+
+       accountNoReadsInput(ch_badfastqDirs.collect(),
+                                      ch_irida)
 
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
@@ -213,6 +218,7 @@ workflow sequenceAnalysisMedaka {
 workflow articNcovNanopore {
     take:
       ch_fastqDirs
+      ch_badfastqDirs
     
     main:
       if ( params.nanopolish ) {
@@ -222,7 +228,7 @@ workflow articNcovNanopore {
           Channel.fromPath( "${params.sequencing_summary}" )
                  .set{ ch_seqSummary }
 
-          sequenceAnalysisNanopolish(ch_fastqDirs, ch_fast5Pass, ch_seqSummary)
+          sequenceAnalysisNanopolish(ch_fastqDirs, ch_badfastqDirs, ch_fast5Pass, ch_seqSummary)
 
           sequenceAnalysisNanopolish.out.vcf.set{ ch_nanopore_vcf }
 
