@@ -8,14 +8,14 @@ process renameSamples {
     label 'smallmem'
 
     input:
-    tuple file(fastq), file(samplecsv)
+    tuple file(fastq), file(sampletsv)
 
     output:
     file('*.fastq')
 
     script:
     """
-    irida_fastq.py --fastq ${fastq} --prefix ${params.prefix} --sample_info ${samplecsv}
+    irida_fastq.py --fastq ${fastq} --prefix ${params.prefix} --sample_info ${sampletsv}
     """
 }
 
@@ -23,17 +23,19 @@ process accountNoReadsInput {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.txt", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.csv", mode: "copy"
 
     input:
     path(fastq_dir)
+    file(sampletsv)
 
     output:
-    file('samples_failing_no_input_reads.txt')
+    file('samples_failing_no_input_reads.csv')
 
     script:
     """
-    ls -d */ > samples_failing_no_input_reads.txt
+    ls -d -1 barcode* > barcode_list.txt
+    barcode_rename.py --barcode_list barcode_list.txt --samplesheet ${sampletsv} >> samples_failing_no_input_reads.csv
     """
 }
 
@@ -41,17 +43,18 @@ process accountReadFilterFailures {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.txt", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.csv", mode: "copy"
 
     input:
     path(fastq)
 
     output:
-    file('samples_failing_read_filter.txt')
+    file('samples_failing_read_filter.csv')
 
     script:
     """
-    ls *.fastq > samples_failing_read_filter.txt
+    echo "sample,qc_pass" > samples_failing_read_filter.csv
+    for FASTQ in \$(ls *.fastq); do echo "\${FASTQ%.*},NO_MAPPING_READS" >> samples_failing_read_filter.csv; done
     """
 }
 
