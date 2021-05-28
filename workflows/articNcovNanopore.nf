@@ -173,25 +173,85 @@ workflow sequenceAnalysisMedaka {
 
       articGuppyPlex(ch_runFastqDirs.flatten())
 
-      articMinIONMedaka(articGuppyPlex.out.fastq
+      if (params.irida) {
+       Channel.fromPath("${params.irida}")
+              .set{ ch_irida }
+
+       renameSamples(articGuppyPlex.out.fastq
+                                       .combine(ch_irida))
+
+       accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+
+       articMinIONMedaka(renameSamples.out
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
 
+       generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+
+       generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
+                                ch_irida)
+      }
+      else {
+       Channel.fromPath("${params.irida}")
+              .set{ ch_irida }
+
+       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+
+       articMinIONMedaka(articGuppyPlex.out.fastq
+                                      .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
+                                      .combine(articDownloadScheme.out.scheme))
+      }
+
       articRemoveUnmappedReads(articMinIONMedaka.out.mapped)
 
-      makeQCCSV(articMinIONMedaka.out.ptrim.join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                           .combine(articDownloadScheme.out.reffasta))
+      if (params.correctN) {
+        correctFailNs(articMinIONMedaka.out.ptrim
+                          .join(articMinIONMedaka.out.ptrimbai, by:0)
+                          .join(articMinIONMedaka.out.consensus_fasta, by:0)
+                          .join(articMinIONMedaka.out.fail_vcf, by:0),
+                          articDownloadScheme.out.reffasta)
+
+        correctFailNs.out.corrected_consensus.collect()
+              .ifEmpty(file('placeholder.txt'))
+              .set{ ch_corrected }
+      }
+
+      Channel.fromPath("${params.ncov}")
+             .set{ ch_ncov }
+
+      runNcovTools(ch_ncov, 
+                      articDownloadScheme.out.reffasta, 
+                      articDownloadScheme.out.ncov_amplicon, 
+                      articMinIONMedaka.out[0].collect(),
+                      articDownloadScheme.out.bed,
+                      ch_irida,
+                      ch_corrected)
+      
+      snpDists(runNcovTools.out.aligned)
+
+      makeQCCSV(articMinIONMedaka.out.ptrim
+                                     .join(articMinIONMedaka.out.consensus_fasta, by: 0)
+                                     .join(articMinIONMedaka.out.vcf, by: 0)
+                                     .combine(articDownloadScheme.out.reffasta)
+                                     .combine(runNcovTools.out.lineage)
+                                     .combine(runNcovTools.out.ncovtools_qc)
+                                     .combine(runNcovTools.out.ncovtools_negative)
+                                     .combine(ch_irida)
+                                     .combine(runNcovTools.out.snpeff_path),
+                params.pcr_primers)
 
       makeQCCSV.out.csv.splitCsv()
                        .unique()
                        .branch {
-                           header: it[-1] == 'qc_pass'
+                           header: it[-1] == 'nextflow_qc_pass'
                            fail: it[-1] == 'FALSE'
                            pass: it[-1] == 'TRUE'
                        }
                        .set { qc }
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
+
+     correctQCSummaryCSV(writeQCSummaryCSV.out)
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
