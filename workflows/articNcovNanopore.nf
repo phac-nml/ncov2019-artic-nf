@@ -188,7 +188,7 @@ workflow sequenceAnalysisMedaka {
 
        generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
 
-       generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
+       generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(),
                                 ch_irida)
       }
       else {

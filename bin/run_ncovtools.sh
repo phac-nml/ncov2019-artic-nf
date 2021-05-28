@@ -22,8 +22,9 @@ for i in *.corrected.consensus.fasta
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
 
-# Remove the /ARTIC/nanopolish from the files or it seems to fail
+# Remove the /ARTIC/nanopolish or /ARTIC/medaka from the files
 sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
+sed -i 's|/ARTIC/medaka||' *.consensus.fasta
 
 #### Moving files and modifying the config to get what we expect based on inputs ####
 # cp config to allow us to mess with its values
