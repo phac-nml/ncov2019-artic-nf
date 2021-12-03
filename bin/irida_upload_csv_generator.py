@@ -2,7 +2,9 @@
 
 import argparse
 import os
+import pathlib
 import re
+import subprocess
 import pandas as pd
 
 def init_parser():
@@ -29,6 +31,7 @@ def init_parser():
 def create_sample_file_df(sample_tsv, sample_dir, file_type='', file_list=[]):
     '''
     Take input sample sheet, directory, and file type to create a df of values needed for IRIDA Uploads
+        Rename the files to include the run name for better tracking
     '''
     # Read in input TSV file
     df = pd.read_csv(sample_tsv, sep='\t')
@@ -44,14 +47,19 @@ def create_sample_file_df(sample_tsv, sample_dir, file_type='', file_list=[]):
 
     # Generate Out DF from values in input table that have matching files found
     row_list = []
-    for sample, proj_id in zip(df['sample'], df['project_id']):
+    for sample, proj_id, run in zip(df['sample'], df['project_id'], df['run']):
         # Check if sample string a is a substring of any files and then add it to df_out if so
+        # Check so that only wanted samples are uploaded
         for file_name in file_list:
             if sample in file_name:
+                # Rename file keeping the same extension
+                ext = ''.join(pathlib.Path(file_name).suffixes)
+                new_file_name = '{}_{}{}'.format(sample, run, ext)
+                subprocess.run('mv {}/{} {}/{}'.format(sample_dir, file_name, sample_dir, new_file_name), shell=True)
                 row_dict = {
                     'Sample_Name': sample,
                     'Project_ID': proj_id, 
-                    'File_Forward': file_name, 
+                    'File_Forward': new_file_name, 
                     'File_Reverse': ''
                 }
                 row_list.append(row_dict)

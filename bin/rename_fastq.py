@@ -45,8 +45,8 @@ def parse_sample_tsv(sample_tsv, fastq):
             print('ERROR: Multiple barcode {} in input samplesheet. Please double check them'.format(barcode_number))
             exit(1)
         else:
-            # Fastq name made from the sample name and run_name
-            sample_name = '{}_{}.fastq'.format(df_slice['sample'].values[0], df_slice['run'].values[0])
+            # Fastq name made from the sample name
+            sample_name = '{}.fastq'.format(df_slice['sample'].values[0])
         return sample_name
 
     # If there is no barcode in the value something has gone wrong and we exit

@@ -411,7 +411,7 @@ def go(args):
 
     # If we have a samplesheet, use its values to create final output
     if args.sample_sheet:
-        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample)
+        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample, args.project_id)
 
         qc_line = {  'sample' : [args.sample],
            'num_aligned_reads': [num_reads],

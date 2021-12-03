@@ -6,7 +6,6 @@ import re
 import subprocess
 import pandas as pd
 
-
 def init_parser():
     '''
     Parser Arguments to pass to script from CL
