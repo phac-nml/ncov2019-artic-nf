@@ -42,7 +42,19 @@ def generate_api_instance(config_in):
     config.read(config_in)
     settings = config['Settings']
     irida_api = api.ApiCalls(settings['client_id'], settings['client_secret'], settings['base_url'], settings['username'], settings['password'])
-    return irida_api            
+    return irida_api
+
+def _create_track_dict(sample, project_id, uploaded, status):
+    """
+    Create and Return dictionary for tracking status of uploaded metadata samples
+    """
+    d = {
+        'sample': sample,
+        'project_id': project_id,
+        'uploaded': uploaded,
+        'status': status
+    }
+    return d
 
 def send_metadata(api_instance, metadata_csv):
     '''
@@ -56,9 +68,10 @@ def send_metadata(api_instance, metadata_csv):
             in the first and second columns respectively
 
     RETURNS:
-        None
+        TRACKING_DICT_LIST --> List of dictionarys containing the status of each samples upload
     '''
-    df_in_dict = pd.read_csv('nml.qc.csv').fillna('NA').to_dict(orient='records')
+    df_in_dict = pd.read_csv(metadata_csv).fillna('NA').to_dict(orient='records')
+    tracking_dict_list = [] # List to append dicts that track the status of samples for data uploads
     for metadata_dict in df_in_dict:
         sample_name = metadata_dict.pop('sample')
         project_id = metadata_dict.pop('project_id')
@@ -75,7 +88,8 @@ def send_metadata(api_instance, metadata_csv):
                 else:
                     irida_n_count = int(irida_metadata['num_consensus_n']['value'])
                     if irida_n_count <= metadata_dict['num_consensus_n']:
-                        print('Sample {} is no better than what is in IRIDA already ({} <= {}). Metadata Skipped'.format(sample_name, irida_n_count, metadata_dict['num_consensus_n']))
+                        print('Skipped sample {} metadata upload as IRIDA N Count {} <= {} New Sample N Count'.format(sample_name, irida_n_count, metadata_dict['num_consensus_n']))
+                        tracking_dict_list.append(_create_track_dict(sample_name, project_id, False, 'IRIDA N Count {} <= {} New Sample N Count'.format(irida_n_count, metadata_dict['num_consensus_n'])))
                         continue
             # If sample does not exist, make it exist
             else:
@@ -83,12 +97,14 @@ def send_metadata(api_instance, metadata_csv):
                 api_instance.send_sample(sample=irida_sample, project_id=project_id)
 
             upload_metadata = model.Metadata(metadata=metadata_dict, project_id=project_id, sample_name=sample_name)
-            status = api_instance.send_metadata(upload_metadata, upload_metadata.project_id, upload_metadata.sample_name )
-            print(status)
+            status = api_instance.send_metadata(upload_metadata, upload_metadata.project_id, upload_metadata.sample_name)
+            print('Uploaded {} metadata to {}'.format(sample_name, project_id))
+            tracking_dict_list.append(_create_track_dict(sample_name, project_id, True, ''))
         else:
             print('Unknown Project ID for {}, moving to next sample'.format(sample_name))
+            tracking_dict_list.append(_create_track_dict(sample_name, project_id, False, 'Unknown Project ID'.format()))
             continue
-
+    return tracking_dict_list
 
 def main():
     
@@ -97,7 +113,10 @@ def main():
     args = parser.parse_args()
 
     irida_api = generate_api_instance(args.config)
-    send_metadata(irida_api, args.metadata_csv)
+    tracking_dict_list = send_metadata(irida_api, args.metadata_csv)
+
+    df = pd.DataFrame.from_dict(tracking_dict_list)
+    df.to_csv('metadata_upload_status.csv', index=False)
 
 if __name__ == "__main__":
     main()
