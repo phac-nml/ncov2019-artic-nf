@@ -157,7 +157,7 @@ process runNcovTools {
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*aligned.fasta", mode: "copy"
-    publishDir "${params.outdir}/ncov-tools_qc", pattern: "ncov-tools/qc_annotation/*", mode: "copy"
+    publishDir "${params.outdir}/ncov-tools_qc", pattern: "ncov-tools/qc_annotation", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
     // Make conda env with mamba or it will error (takes 3+ hours without)
@@ -227,6 +227,9 @@ process uploadIrida {
     path(fast5_folder)
     file(irida_config)
     file(metadata_csv)
+
+    output:
+    file("metadata_upload_status.csv")
 
     script:
     """
