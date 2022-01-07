@@ -2,21 +2,22 @@
 
 # Get the needed variables from the pipeline
 # Names are the same to avoid confusion!
-config=$1
-amplicon=$2
-reference=$3
-bed=$4
-metadata=$5
+CONFIG=$1
+AMPLICON_BED=$2
+NCOV_REF=$3
+PRIMER_BED=$4
+METADATA=$5
+CORES=$6
 
 # Moves corrected consensus data to the right header name and replaces the non-corrected ones
 sed -i "s|-updated||" *.corrected.consensus.fasta
 
 # Overwrites the original consensus files so that we use the corrected ones
-for i in *.corrected.consensus.fasta
+for corrected_consensus in *.corrected.consensus.fasta
     do
-        name="${i%%.*}"
+        name="${corrected_consensus%%.*}"
         echo $name
-        mv $i ${name}.consensus.fasta
+        mv $corrected_consensus ${name}.consensus.fasta
     done
 
 # Clone in ncov-tools
@@ -28,26 +29,26 @@ sed -i 's|/ARTIC/medaka||' *.consensus.fasta
 
 #### Moving files and modifying the config to get what we expect based on inputs ####
 # cp config to allow us to mess with its values
-mv ${amplicon} ./ncov-tools/input_amplicon.bed
-cp ${config} ./ncov-tools
-mv ${reference} ${bed} ./ncov-tools
+mv ${AMPLICON_BED} ./ncov-tools/input_amplicon.bed
+cp ${CONFIG} ./ncov-tools
+mv ${NCOV_REF} ${PRIMER_BED} ./ncov-tools
 
 # If we have a matching negative control, we modify the config to make sure its gotten
 # If we don't find any, then no negative controls are added
 if $(ls | grep -q -i "negative\|ntc\|water\|blank")
 then
-   negative_list=$(grep -i -e ntc -e negative -e water -e blank ${metadata} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
-   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${config}
+   negative_list=$(grep -i -e ntc -e negative -e water -e blank ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
+   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${CONFIG}
 fi
 
 # Check for metadata file
 # If irida sample sheet is used, we will have some and will move it into ncov-tools folder
 # If not, then we will have false passed and will comment out the metadata line to allow ncov-tools to run
-if [ -f "$metadata" ];
+if [ -f "$METADATA" ];
 then
-    mv ${metadata} ./ncov-tools/metadata.tsv
+    mv ${METADATA} ./ncov-tools/metadata.tsv
 else
-    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/${config}
+    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/${CONFIG}
 fi
 
 # mv all the files into a folder to run on
@@ -57,10 +58,9 @@ mv *.* ./ncov-tools/run
 
 # Go in, run the commands and generate the indexed reference sequence
 cd ncov-tools
-samtools faidx ${reference}
-snakemake -kp -s workflow/Snakefile all --cores 8
+samtools faidx ${NCOV_REF}
 snakemake -kp -s workflow/Snakefile --cores 1 build_snpeff_db
-snakemake -kp -s workflow/Snakefile --cores 2 all_qc_annotation
+snakemake -kp -s workflow/Snakefile all --cores ${CORES}
 
 # Move files out so that they can be easily detected by nextflow
 mv ./plots/*.pdf ../
