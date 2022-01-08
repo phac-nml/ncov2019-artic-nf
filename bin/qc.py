@@ -218,25 +218,21 @@ def find_primer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
 
 def get_lineage(pangolin_csv, sample_name):
     '''
-    Check Pangolin output for the lineage of the sample
+    Check Pangolin for the pangoLEARN version as that isn't captured by ncov-tools
     INPUTS:
         pangolin_csv --> `path` from argparse to input pangolin csv file
         sample_name  --> `str` sample name from argparse
     RETURNS:
-        `str` lineage
         `str` pangoLEARN version
     '''
     df = pd.read_csv(pangolin_csv)
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
-        lineage = df_slice['lineage'].any()
         pangoV = df_slice['pangoLEARN_version'].any()
-
-        return lineage, pangoV
-
+        return pangoV
     else:
-        return 'Unknown', 'Unknown'
+        return 'Unknown'
 
 def get_protein_variants(aa_table):
     '''
@@ -292,10 +288,9 @@ def parse_ncov_tsv(file_in, sample, negative=False):
         new_columns = df.columns.values
         new_columns[0] = 'sample'
         df.columns = new_columns
-    # Input is summary_df, drop its lineage column as we pull and create our own (as it didn't have this before, can maybe remove the pangolin parsing)
-    # Also remove run_name from ncov-tools as its always `nml` which is useless for us and messes up the input external metadata
+    # Input is summary_df, drop run_name from this output as its always `nml` and we have our own name that is put through
     else:
-        df.drop(columns=['lineage', 'run_name'], inplace=True)
+        df.drop(columns=['run_name'], inplace=True)
 
     # Set which column contains the sample
     sample_column = 'sample'
@@ -399,8 +394,8 @@ def go(args):
     # Find any overlap of variants in the pcr primer regions
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
-    # Pangolin Lineages
-    lineage, pangoLearn = get_lineage(args.pangolin, args.sample)
+    # PangoLEARN version
+    pangoLearn = get_lineage(args.pangolin, args.sample)
 
     # snpEFF output
     protein_variants, found_consequences = get_protein_variants(args.snpeff_tsv)
@@ -415,7 +410,6 @@ def go(args):
 
         qc_line = {  'sample' : [args.sample],
            'num_aligned_reads': [num_reads],
-                    'lineage' : [lineage],
                    'variants' : [variants],
             'protein_variants': [protein_variants],
 'snpeff_frameshift_consequence' : [found_consequences],
@@ -440,7 +434,6 @@ def go(args):
                      'project_id' : [args.project_id],
                         'barcode' : [barcode],
                'num_aligned_reads': [num_reads],
-                        'lineage' : [lineage],
                        'variants' : [variants],
                 'protein_variants': [protein_variants],
   'snpeff_frameshift_consequence' : [found_consequences],

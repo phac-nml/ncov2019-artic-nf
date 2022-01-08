@@ -209,7 +209,6 @@ process snpDists {
     """
     snp-dists ${aligned_fasta} > matrix.tsv
     """
-
 }
 
 process uploadIrida {
