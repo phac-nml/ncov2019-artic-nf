@@ -229,7 +229,7 @@ def get_lineage(pangolin_csv, sample_name):
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
-        pangoV = df_slice['pangoLEARN_version'].any()
+        pangoV = df_slice.iloc[0]['pangoLEARN_version']
         return pangoV
     else:
         return 'Unknown'
