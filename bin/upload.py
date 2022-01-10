@@ -76,8 +76,8 @@ def send_metadata(api_instance, metadata_csv, no_sample_creation):
     df_in_dict = pd.read_csv(metadata_csv).fillna('NA').to_dict(orient='records')
     tracking_dict_list = [] # List to append dicts that track the status of samples for data uploads
     for metadata_dict in df_in_dict:
-        sample_name = metadata_dict.pop('sample')
-    
+        sample_name = str(metadata_dict.pop('sample'))
+
         # Check if we have a project ID that is an integer for IRIDA
         try:
             project_id = int(metadata_dict.pop('project_id'))
