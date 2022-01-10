@@ -61,7 +61,8 @@ workflow sequenceAnalysisNanopolish {
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
 
-       generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+       generateFastqIridaReport(renameSamples.out.collect(),
+                                ch_irida)
 
        generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
                                 ch_irida)
@@ -186,7 +187,8 @@ workflow sequenceAnalysisMedaka {
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
 
-       generateFastqIridaReport(articGuppyPlex.out.fastq.toList(), ch_irida)
+       generateFastqIridaReport(renameSamples.out.collect(),
+                                ch_irida)
 
        generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(),
                                 ch_irida)

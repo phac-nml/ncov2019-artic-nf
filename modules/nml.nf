@@ -8,14 +8,14 @@ process renameSamples {
     label 'smallmem'
 
     input:
-    tuple file(fastq), file(samplecsv)
+    tuple file(fastq), file(sampletsv)
 
     output:
     file('*.fastq')
 
     script:
     """
-    irida_fastq.py --fastq ${fastq} --prefix ${params.prefix} --sample_info ${samplecsv}
+    rename_fastq.py --fastq ${fastq} --sample_info ${sampletsv}
     """
 }
 
@@ -75,7 +75,7 @@ process generateFastqIridaReport {
     """
     mkdir irida_fastq
     mv ${fastqs} irida_fastq
-    irida_fastq.py --sample_info ${sampletsv} --prefix ${params.prefix} --sample_dir irida_fastq
+    irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir irida_fastq --fastq
     """
 }
 
@@ -99,7 +99,7 @@ process generateFastaIridaReport {
     """
     mkdir irida_consensus
     mv *.consensus.fasta irida_consensus
-    irida_fasta.py --sample_info ${sampletsv} --sample_dir irida_consensus
+    irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir irida_consensus --fasta
     """
 }
 
@@ -156,6 +156,8 @@ process runNcovTools {
 
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
+    publishDir "${params.outdir}/ncov-tools_qc", pattern: "*aligned.fasta", mode: "copy"
+    publishDir "${params.outdir}/ncov-tools_qc", pattern: "ncov-tools/qc_annotation", mode: "copy"
 
     //conda 'environments/ncovtools.yml'
     // Make conda env with mamba or it will error (takes 3+ hours without)
@@ -185,7 +187,7 @@ process runNcovTools {
 
     script:
     """
-    bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${bed} ${metadata}
+    bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${bed} ${metadata} ${task.cpus}
     """
 }
 
@@ -207,12 +209,13 @@ process snpDists {
     """
     snp-dists ${aligned_fasta} > matrix.tsv
     """
-
 }
 
 process uploadIrida {
 
     //conda 'environments/irida_uploader.yml'
+
+    publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
 
     label 'Upload'
     errorStrategy 'terminate'
@@ -224,12 +227,15 @@ process uploadIrida {
     file(irida_config)
     file(metadata_csv)
 
+    output:
+    file("metadata_upload_status.csv")
+
     script:
     """
     irida-uploader --config ${irida_config} -d ${fastq_folder}
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
-    irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
     upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
+    irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
     """
 }
 
@@ -249,7 +255,7 @@ process uploadCorrectN{
     """
     mkdir -p corrected_consensus
     mv *.corrected.consensus.fasta corrected_consensus
-    irida_fasta.py --sample_info ${sampletsv} --sample_dir corrected_consensus
+    irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir corrected_consensus --fasta
     irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
     """
 }

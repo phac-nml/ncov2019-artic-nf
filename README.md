@@ -46,7 +46,9 @@ The specifics are found in the nml config and the process is built off of a slur
 
 This argument will re-name all input samples to their respective sample name in the sample sheet based on the barcode. It will also allow ncov-tools to detect negative control samples and metadata to include that into the analysis.
 
-To run the `--irida` argument, you must include a samplesheet in the TSV format that looks as such:
+To run the `--irida` argument, you must include a samplesheet in TSV format that contains the columns "sample", "run", "barcode", "project_id", "ct", and "date". They can be in any order as long as the first column is called "sample".
+
+Below is an example samplesheet:
 
 | sample | run | barcode | project_id | ct | date |
 |-|-|-|-|-|-|
@@ -59,16 +61,14 @@ To run the `--irida` argument, you must include a samplesheet in the TSV format 
 where:
     - sample     --> Contains the wanted sample name
     - run        --> Contains the wanted run name
-    - barcode    --> Number from 1-24 that matches the sample name to the barcode
-    - project_id --> Any number (if uploading to IRIDA put the IRIDA project)
-    - ct         --> ct number for ncov-tools (or NA if no ct number)
+    - barcode    --> Integer number that matches the sample name to the barcode
+    - project_id --> Any number (if uploading to IRIDA put the IRIDA project), an NML specific need
+    - ct         --> Ct number for ncov-tools (or NA if no ct number)
     - date       --> Sampling date for ncov-tools (yyyy-mm-dd) (NA if no date)
 ```
-*Make sure there are no spaces in the samplesheet if including it or it will cause an error*
+*Make sure there are no spaces in the sample names found in the samplesheet as it will cause an error to occur*
 
-This will re-name all of the sample names based on the barcode so make sure that the barcodes match what you want the samplenames to be
-
-Unfortunately for the moment the format above must be matched to get it to work. If you don't plan to upload to irida you can put any integer in the project_id column.
+This will re-name all of the sample names based on the barcode so make sure that the barcodes match what you want the sample snames to be
 
 Date and ct can be filled by `NA` if there is not one available
 

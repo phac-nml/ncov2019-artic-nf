@@ -135,6 +135,9 @@ def get_vcf_variants(variants_vcf, variants_list=[], locations=[]):
         # Checking for duplicate variants that have been an issue
         if variant in variants_list:
             pass
+        # Removal of N variants
+        elif rec.ALT[0] == 'N':
+            pass
         else:
             variants_list.append(variant)
             locations.append(rec.POS)
@@ -213,38 +216,47 @@ def find_primer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
 
     return 'None'
 
-def get_lineage(pangolin_csv, sample_name):
+def get_pangolearn_version(pangolin_csv, sample_name):
     '''
-    Check Pangolin output for the lineage of the sample
+    Check Pangolin output for the pangoLEARN version as that isn't captured by ncov-tools
     INPUTS:
         pangolin_csv --> `path` from argparse to input pangolin csv file
         sample_name  --> `str` sample name from argparse
     RETURNS:
-        `str` lineage
         `str` pangoLEARN version
     '''
     df = pd.read_csv(pangolin_csv)
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
-        lineage = df_slice['lineage'].any()
-        pangoV = df_slice['pangoLEARN_version'].any()
-
-        return lineage, pangoV
-
+        pangoV = df_slice.iloc[0]['pangoLEARN_version']
+        return pangoV
     else:
-        return 'Unknown', 'Unknown'
+        return 'Unknown'
 
 def get_protein_variants(aa_table):
     '''
-    Parse ncov-tools output to report its amino acid mutations
+    Parse ncov-tools output to report its amino acid mutations along with finding any problem consequences
     INPUTS:
         aa_table  --> `path` from argparse to input aa_table.csv
     RETURNS:
         `str` amino acid mutations separated by a ;
+        `str` amino acid gisaid problem sites separated by a ;
     '''
-    df = pd.read_csv(aa_table, sep='\t').dropna()
-    return ';'.join(df['aa'].tolist())
+    df = pd.read_csv(aa_table, sep='\t')
+    df = df[~df.alt.str.contains("N")] # remove alt allele Ns the N nucleotide means we didn't seq it
+    protein_mutations = ';'.join(df['aa'].dropna().tolist())
+
+    # Check for consequences that may cause frame issues. http://pcingola.github.io/SnpEff/se_inputoutput/#eff-field-vcf-output-files
+    consequences_to_check = ['stop_gained', 'gene_fusion', 'frameshift_variant', 'start_list', 'feature_ablation']
+    df = df[df['Consequence'].isin(consequences_to_check)]
+    if df.empty:
+        found_consequences = 'NA'
+    else:
+        df['cons_pro'] = df['Consequence'] + '-' + df['gene']
+        found_consequences = ';'.join(set(df['cons_pro']))
+
+    return protein_mutations, found_consequences
 
 def parse_ncov_tsv(file_in, sample, negative=False):
     '''
@@ -276,9 +288,9 @@ def parse_ncov_tsv(file_in, sample, negative=False):
         new_columns = df.columns.values
         new_columns[0] = 'sample'
         df.columns = new_columns
-    # Input is summary_df, drop its lineage column as we pull and create our own (as it didn't have this before)
+    # Input is summary_df, drop run_name from this output as its always `nml` and we have our own name that is put through
     else:
-        df.drop(columns=['lineage'], inplace=True)
+        df.drop(columns=['run_name'], inplace=True)
 
     # Set which column contains the sample
     sample_column = 'sample'
@@ -297,24 +309,29 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     
     return negative_df
 
-def get_samplesheet_info(sample_tsv, sample_name):
+def get_samplesheet_info(sample_tsv, sample_name, project_id):
     '''
     Parse samplesheet info to allow for IRIDA uploads and adding whatever data wanted to output qc file
     INPUTS:
         sample_tsv   --> `path` from argparse to input samplesheet.tsv file
         sample_name  --> `str` sample name from argparse
+        project_id   --> `str` project ID from CL to add if there isn't one
     RETURNS:
         `df` populated with data from samplesheet
     '''
     df = pd.read_csv(sample_tsv, sep='\t', dtype=object)
+    samplesheet_columns = df.columns.values
     # Rename run to run_identifier as that is what is already in IRIDA
-    df.rename(columns={'run': 'run_identifier'}, inplace=True)
+    if 'run' in samplesheet_columns:
+        df.rename(columns={'run': 'run_identifier'}, inplace=True)
 
-    # ncov-tools captures these columns and date is not required so drop them
-    try:
-        df.drop(columns=['ct', 'date'], inplace=True)
-    except KeyError:
-        df.drop(columns=['ct'], inplace=True)
+    # ncov-tools captures ct and date from this file so remove, scheme is sometimes here and we capture it ourselves so remove
+    columns_to_remove = set(['ct', 'date', 'scheme', 'primer_scheme']).intersection(samplesheet_columns)
+    if columns_to_remove:
+        df.drop(columns=columns_to_remove, inplace=True)
+
+    if 'project_id' not in samplesheet_columns:
+        df['project_id'] = project_id
     
     # Get only the sample row and if empty, fill it in to match other rows
     df = df.loc[df['sample'] == sample_name]
@@ -368,16 +385,20 @@ def go(args):
     
     elif args.illumina:
         # Tsv variants from Illumina pipeline
-        variants, variant_locations = get_tsv_variants(args.tsv_variants)
+        if args.tsv_variants:
+            variants, variant_locations = get_tsv_variants(args.tsv_variants)
+        # VCF variants from FREEBAYES
+        else:
+            variants, variant_locations = get_vcf_variants(args.vcf)
 
     # Find any overlap of variants in the pcr primer regions
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
-    # Pangolin Lineages
-    lineage, pangoLearn = get_lineage(args.pangolin, args.sample)
+    # PangoLEARN version
+    pangolearn_v = get_pangolearn_version(args.pangolin, args.sample)
 
     # snpEFF output
-    protein_variants = get_protein_variants(args.snpeff_tsv)
+    protein_variants, found_consequences = get_protein_variants(args.snpeff_tsv)
 
     # NCOV-Tools Results
     summary_df = parse_ncov_tsv(args.ncov_summary, args.sample)
@@ -385,17 +406,17 @@ def go(args):
 
     # If we have a samplesheet, use its values to create final output
     if args.sample_sheet:
-        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample)
+        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample, args.project_id)
 
         qc_line = {  'sample' : [args.sample],
            'num_aligned_reads': [num_reads],
-                    'lineage' : [lineage],
                    'variants' : [variants],
             'protein_variants': [protein_variants],
+'snpeff_frameshift_consequence' : [found_consequences],
 'diagnostic_primer_mutations' : [primer_statement],
                      'scheme' : [args.scheme],
       'sequencing_technology' : [args.sequencing_technology],
-         'pangoLEARN_version' : [pangoLearn],
+         'pangoLEARN_version' : [pangolearn_v],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
         
@@ -408,19 +429,18 @@ def go(args):
             barcode = re.search(r'\d+', args.sample).group(0)
         else:
             barcode = 'NA'
-        project_id = 'NA' 
 
         qc_line = {      'sample' : [args.sample],
-                     'project_id' : [project_id],
+                     'project_id' : [args.project_id],
                         'barcode' : [barcode],
                'num_aligned_reads': [num_reads],
-                        'lineage' : [lineage],
                        'variants' : [variants],
                 'protein_variants': [protein_variants],
+  'snpeff_frameshift_consequence' : [found_consequences],
     'diagnostic_primer_mutations' : [primer_statement],
                          'scheme' : [args.scheme],
           'sequencing_technology' : [args.sequencing_technology],
-             'pangoLEARN_version' : [pangoLearn],
+             'pangoLEARN_version' : [pangolearn_v],
                  'run_identifier' : [run_name],
                     'script_name' : ['nml-ncov2019-artic-nf'],
                        'revision' : [args.revision]}
@@ -465,6 +485,7 @@ def main():
     parser.add_argument('--scheme', required=True)
     parser.add_argument('--snpeff_tsv', required=True)
     parser.add_argument('--pcr_bed', required=True)
+    parser.add_argument('--project_id', required=False, default="NA")
     parser.add_argument('--sample_sheet', required=False)
 
     args = parser.parse_args()
