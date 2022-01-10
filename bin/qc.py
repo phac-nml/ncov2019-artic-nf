@@ -216,9 +216,9 @@ def find_primer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
 
     return 'None'
 
-def get_lineage(pangolin_csv, sample_name):
+def get_pangolearn_version(pangolin_csv, sample_name):
     '''
-    Check Pangolin for the pangoLEARN version as that isn't captured by ncov-tools
+    Check Pangolin output for the pangoLEARN version as that isn't captured by ncov-tools
     INPUTS:
         pangolin_csv --> `path` from argparse to input pangolin csv file
         sample_name  --> `str` sample name from argparse
@@ -395,7 +395,7 @@ def go(args):
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
     # PangoLEARN version
-    pangoLearn = get_lineage(args.pangolin, args.sample)
+    pangolearn_v = get_pangolearn_version(args.pangolin, args.sample)
 
     # snpEFF output
     protein_variants, found_consequences = get_protein_variants(args.snpeff_tsv)
@@ -416,7 +416,7 @@ def go(args):
 'diagnostic_primer_mutations' : [primer_statement],
                      'scheme' : [args.scheme],
       'sequencing_technology' : [args.sequencing_technology],
-         'pangoLEARN_version' : [pangoLearn],
+         'pangoLEARN_version' : [pangolearn_v],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
         
@@ -440,7 +440,7 @@ def go(args):
     'diagnostic_primer_mutations' : [primer_statement],
                          'scheme' : [args.scheme],
           'sequencing_technology' : [args.sequencing_technology],
-             'pangoLEARN_version' : [pangoLearn],
+             'pangoLEARN_version' : [pangolearn_v],
                  'run_identifier' : [run_name],
                     'script_name' : ['nml-ncov2019-artic-nf'],
                        'revision' : [args.revision]}
