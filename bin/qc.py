@@ -188,9 +188,9 @@ def get_tsv_variants(variants_tsv, variants_list=[], locations=[]):
         
     return variants, locations
 
-def find_primer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
+def find_pcrprimer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
     '''
-    Use variant info to check for mutations in currently used primers
+    Use variant info to check for mutations in currently used PCR primers
     INPUTS:
         pcr_bed            --> `path` from argparse to input bed file of PCR primers
         genomic_locations  --> `list` of integer locations to check or `None` if none found
@@ -203,16 +203,44 @@ def find_primer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
     
     input_bed = BedTool(pcr_bed)
 
-    for gene in input_bed:
-        location = range(gene.start, gene.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
+    for primer in input_bed:
+        location = range(primer.start, primer.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
 
         for variant_pos in genomic_locations:
             if variant_pos in location:
-                primer_mutations.append('Variant position {} overlaps PCR primer {}'.format(variant_pos, gene.name))
+                primer_mutations.append('Variant position {} overlaps PCR primer {}'.format(variant_pos, primer.name))
     
     if primer_mutations != []:
         statement = '; '.join(primer_mutations)
         return 'Warning: {}'.format(statement)
+
+    return 'None'
+
+def find_sequencing_primer_mutations(primer_bed, variants_list, seq_primer_mutations=[]):
+    '''
+    Use variant info to check for mutations in currently used sequencing primers
+    INPUTS:
+        primer_bed           --> `path` from argparse to input bed file of sequencing primers
+        variants_list        --> `list` of variants to check formatted as 'RefLocationAlt' or `None` if none found
+        seq_primer_mutations --> `list` to append any primer mutations found
+    RETURNS:
+        `str` primer mutations statement
+    '''
+    if variants_list is None:
+        return 'None'
+
+    input_bed = BedTool(primer_bed)
+    for primer in input_bed:
+        location = range(primer.start, primer.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
+
+        for variant in variants_list:
+            int_location = int(re.search(r'\d+', variant).group(0))
+            if int_location in location:
+                variants_list.remove(variant)
+                seq_primer_mutations.append('{}-{}'.format(variant, primer.name))
+
+    if seq_primer_mutations != []:
+        return ';'.join(seq_primer_mutations)
 
     return 'None'
 
@@ -392,7 +420,14 @@ def go(args):
             variants, variant_locations = get_vcf_variants(args.vcf)
 
     # Find any overlap of variants in the pcr primer regions
-    primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
+    primer_statement = find_pcrprimer_mutations(args.pcr_bed, variant_locations)
+
+    # Find any overlap of variants in sequencing primers
+    if variants == 'None':
+        seq_primer_statement = 'None'
+    else:
+        variants_list = variants.split(';')
+        seq_primer_statement = find_sequencing_primer_mutations(args.scheme_bed, variants_list)
 
     # PangoLEARN version
     pangolearn_v = get_pangolearn_version(args.pangolin, args.sample)
@@ -414,6 +449,7 @@ def go(args):
             'protein_variants': [protein_variants],
 'snpeff_frameshift_consequence' : [found_consequences],
 'diagnostic_primer_mutations' : [primer_statement],
+'sequencing_primer_mutations' : [seq_primer_statement],
                      'scheme' : [args.scheme],
       'sequencing_technology' : [args.sequencing_technology],
          'pangoLEARN_version' : [pangolearn_v],
@@ -438,6 +474,7 @@ def go(args):
                 'protein_variants': [protein_variants],
   'snpeff_frameshift_consequence' : [found_consequences],
     'diagnostic_primer_mutations' : [primer_statement],
+    'sequencing_primer_mutations' : [seq_primer_statement],
                          'scheme' : [args.scheme],
           'sequencing_technology' : [args.sequencing_technology],
              'pangoLEARN_version' : [pangolearn_v],
@@ -483,6 +520,7 @@ def main():
     parser.add_argument('--tsv_variants', required=False)
     parser.add_argument('--sequencing_technology', required=True)
     parser.add_argument('--scheme', required=True)
+    parser.add_argument('--scheme_bed', required=True)
     parser.add_argument('--snpeff_tsv', required=True)
     parser.add_argument('--pcr_bed', required=True)
     parser.add_argument('--project_id', required=False, default="NA")

@@ -115,7 +115,8 @@ workflow sequenceAnalysisNanopolish {
                                      .combine(runNcovTools.out.ncovtools_qc)
                                      .combine(runNcovTools.out.ncovtools_negative)
                                      .combine(ch_irida)
-                                     .combine(runNcovTools.out.snpeff_path),
+                                     .combine(runNcovTools.out.snpeff_path)
+                                     .combine(articDownloadScheme.out.bed),
                 params.pcr_primers)
 
       makeQCCSV.out.csv.splitCsv()
@@ -239,7 +240,8 @@ workflow sequenceAnalysisMedaka {
                                      .combine(runNcovTools.out.ncovtools_qc)
                                      .combine(runNcovTools.out.ncovtools_negative)
                                      .combine(ch_irida)
-                                     .combine(runNcovTools.out.snpeff_path),
+                                     .combine(runNcovTools.out.snpeff_path)
+                                     .combine(articDownloadScheme.out.bed),
                 params.pcr_primers)
 
       makeQCCSV.out.csv.splitCsv()
