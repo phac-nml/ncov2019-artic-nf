@@ -60,7 +60,13 @@ def main():
             continue
         df[key] = '-'.join(replace_dict[key])
 
+    # Fill blank columns
     df.fillna('NA', inplace=True)
+    # Rearrange final output columns
+    cols = list(df.columns)
+    key_cols = ['sample', 'run_identifier', 'project_id', 'num_aligned_reads', 'num_consensus_n', 'lineage', 'variants', 'protein_variants']
+    extra_cols = [x for x in cols if x not in key_cols]
+    df = df[key_cols+extra_cols]
     df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
 
 
