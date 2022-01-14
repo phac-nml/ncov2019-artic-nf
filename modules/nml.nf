@@ -211,7 +211,7 @@ process snpDists {
     """
 }
 
-process uploadIrida {
+process uploadIridaNanopolish {
 
     //conda 'environments/irida_uploader.yml'
 
@@ -236,6 +236,32 @@ process uploadIrida {
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
     upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
     irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
+    """
+}
+
+process uploadIridaMedaka {
+
+    //conda 'environments/irida_uploader.yml'
+
+    publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
+
+    label 'Upload'
+    errorStrategy 'terminate'
+
+    input:
+    path(fastq_folder)
+    path(consensus_folder)
+    file(irida_config)
+    file(metadata_csv)
+
+    output:
+    file("metadata_upload_status.csv")
+
+    script:
+    """
+    irida-uploader --config ${irida_config} -d ${fastq_folder}
+    irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
+    upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
     """
 }
 

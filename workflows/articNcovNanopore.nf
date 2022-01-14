@@ -26,7 +26,8 @@ include {generateFast5IridaReport} from '../modules/nml.nf'
 include {correctFailNs} from '../modules/nml.nf'
 include {runNcovTools} from '../modules/nml.nf'
 include {snpDists} from '../modules/nml.nf'
-include {uploadIrida} from '../modules/nml.nf'
+include {uploadIridaNanopolish} from '../modules/nml.nf'
+include {uploadIridaMedaka} from '../modules/nml.nf'
 include {uploadCorrectN} from '../modules/nml.nf'
 
 
@@ -149,7 +150,7 @@ workflow sequenceAnalysisNanopolish {
 
          generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
-         uploadIrida(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
+         uploadIridaNanopolish(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
 
          if (params.correctN) {
            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
@@ -266,6 +267,22 @@ workflow sequenceAnalysisMedaka {
                         .join (articDownloadScheme.out.reffasta.combine(ch_preparedRef.map{ it[0] })) )
 
       }
+
+     if (params.irida) {
+       if (params.upload_irida) {
+         Channel.fromPath("${params.upload_irida}")
+             .set{ ch_upload }
+
+         uploadIridaMedaka(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, correctQCSummaryCSV.out)
+
+         if (params.correctN) {
+           uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
+                          ch_upload,
+                          ch_irida)
+         }
+       }
+     }
+
     emit:
       qc_pass = collateSamples.out
       reffasta = articDownloadScheme.out.reffasta
