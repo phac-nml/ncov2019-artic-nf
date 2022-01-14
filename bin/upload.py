@@ -77,17 +77,18 @@ def send_metadata(api_instance, metadata_csv, no_sample_creation):
     tracking_dict_list = [] # List to append dicts that track the status of samples for data uploads
     for metadata_dict in df_in_dict:
         sample_name = str(metadata_dict.pop('sample'))
+        project_id = metadata_dict.pop('project_id')
 
         # Check if we have a project ID that is an integer for IRIDA
         try:
-            project_id = int(metadata_dict.pop('project_id'))
+            project_id_int = int(project_id)
         except ValueError:
-            print('Unknown Project ID {} for sample {}, moving to next sample'.format(project_id, sample_name))
+            print('Unknown Project ID for sample {}, moving to next sample'.format(project_id, sample_name))
             tracking_dict_list.append(_create_track_dict(sample_name, project_id, False, 'Unknown Project ID'.format()))
             continue
 
         # Check that sample exists and if the new values are better than previous
-        sample_id = api_instance.get_sample_id(sample_name=sample_name, project_id=project_id)
+        sample_id = api_instance.get_sample_id(sample_name=sample_name, project_id=project_id_int)
         if sample_id:
             irida_metadata = api_instance.get_metadata(sample_id)
             # If there is metadata, check that the new data is better than the old data first with N count, and then with aligned read count
@@ -95,29 +96,29 @@ def send_metadata(api_instance, metadata_csv, no_sample_creation):
                 irida_n_count = int(irida_metadata['num_consensus_n']['value'])
                 if irida_n_count < metadata_dict['num_consensus_n']:
                     print('Skipped sample {} metadata upload as IRIDA N Count {} < {} New Sample N Count'.format(sample_name, irida_n_count, metadata_dict['num_consensus_n']))
-                    tracking_dict_list.append(_create_track_dict(sample_name, project_id, False, 'IRIDA N Count {} < {} New Sample N Count'.format(irida_n_count, metadata_dict['num_consensus_n'])))
+                    tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'IRIDA N Count {} < {} New Sample N Count'.format(irida_n_count, metadata_dict['num_consensus_n'])))
                     continue
                 irida_aligned_reads = int(irida_metadata['num_aligned_reads']['value'])
                 if irida_aligned_reads >= metadata_dict['num_aligned_reads']:
                     print('Skipped sample {} metadata upload as IRIDA aligned read count {} >= {} New Sample aligned read count'.format(sample_name, irida_aligned_reads, metadata_dict['num_aligned_reads']))
-                    tracking_dict_list.append(_create_track_dict(sample_name, project_id, False, 'IRIDA aligned read count {} >= {} New Sample aligned read count'.format(irida_aligned_reads, metadata_dict['num_aligned_reads'])))
+                    tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'IRIDA aligned read count {} >= {} New Sample aligned read count'.format(irida_aligned_reads, metadata_dict['num_aligned_reads'])))
                     continue
         # If given, skip samples that are not in IRIDA already
         elif no_sample_creation:
             print('Skipped sample {} metadata as it is not in IRIDA and --no_sample_creation arg passed'.format(sample_name))
-            tracking_dict_list.append(_create_track_dict(sample_name, project_id, False, 'Not in IRIDA and --no_sample_creation arg passed'))
+            tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'Not in IRIDA and --no_sample_creation arg passed'))
             continue
         # If sample does not already exist, create it and grab its sample_id
         else:
             irida_sample = model.Sample(sample_name=sample_name)
-            response = api_instance.send_sample(sample=irida_sample, project_id=project_id)
+            response = api_instance.send_sample(sample=irida_sample, project_id=project_id_int)
             sample_id = response['resource']['identifier']
 
         # Actually Upload data
-        upload_metadata = model.Metadata(metadata=metadata_dict, project_id=project_id, sample_name=sample_name)
+        upload_metadata = model.Metadata(metadata=metadata_dict, project_id=project_id_int, sample_name=sample_name)
         status = api_instance.send_metadata(upload_metadata, sample_id)
-        print('Uploaded {} metadata to {}'.format(sample_name, project_id))
-        tracking_dict_list.append(_create_track_dict(sample_name, project_id, True, ''))
+        print('Uploaded {} metadata to {}'.format(sample_name, project_id_int))
+        tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, True, ''))
 
     return tracking_dict_list
 
