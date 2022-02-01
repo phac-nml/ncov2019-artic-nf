@@ -93,16 +93,18 @@ def send_metadata(api_instance, metadata_csv, no_sample_creation):
             irida_metadata = api_instance.get_metadata(sample_id)
             # If there is metadata, check that the new data is better than the old data first with N count, and then with aligned read count
             if irida_metadata != {}:
-                irida_n_count = int(irida_metadata['num_consensus_n']['value'])
-                if irida_n_count < metadata_dict['num_consensus_n']:
-                    print('Skipped sample {} metadata upload as IRIDA N Count {} < {} New Sample N Count'.format(sample_name, irida_n_count, metadata_dict['num_consensus_n']))
-                    tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'IRIDA N Count {} < {} New Sample N Count'.format(irida_n_count, metadata_dict['num_consensus_n'])))
-                    continue
-                irida_aligned_reads = int(irida_metadata['num_aligned_reads']['value'])
-                if irida_aligned_reads >= metadata_dict['num_aligned_reads']:
-                    print('Skipped sample {} metadata upload as IRIDA aligned read count {} >= {} New Sample aligned read count'.format(sample_name, irida_aligned_reads, metadata_dict['num_aligned_reads']))
-                    tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'IRIDA aligned read count {} >= {} New Sample aligned read count'.format(irida_aligned_reads, metadata_dict['num_aligned_reads'])))
-                    continue
+                if 'num_consensus_n' in irida_metadata:
+                    irida_n_count = int(irida_metadata['num_consensus_n']['value'])
+                    if irida_n_count < metadata_dict['num_consensus_n']:
+                        print('Skipped sample {} metadata upload as IRIDA N Count {} < {} New Sample N Count'.format(sample_name, irida_n_count, metadata_dict['num_consensus_n']))
+                        tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'IRIDA N Count {} < {} New Sample N Count'.format(irida_n_count, metadata_dict['num_consensus_n'])))
+                        continue
+                if 'num_aligned_reads' in irida_metadata:
+                    irida_aligned_reads = int(irida_metadata['num_aligned_reads']['value'])
+                    if irida_aligned_reads >= metadata_dict['num_aligned_reads']:
+                        print('Skipped sample {} metadata upload as IRIDA aligned read count {} >= {} New Sample aligned read count'.format(sample_name, irida_aligned_reads, metadata_dict['num_aligned_reads']))
+                        tracking_dict_list.append(_create_track_dict(sample_name, project_id_int, False, 'IRIDA aligned read count {} >= {} New Sample aligned read count'.format(irida_aligned_reads, metadata_dict['num_aligned_reads'])))
+                        continue
         # If given, skip samples that are not in IRIDA already
         elif no_sample_creation:
             print('Skipped sample {} metadata as it is not in IRIDA and --no_sample_creation arg passed'.format(sample_name))
