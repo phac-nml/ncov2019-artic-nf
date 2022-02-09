@@ -37,7 +37,7 @@ mv ${NCOV_REF} ${PRIMER_BED} ./ncov-tools
 # If we don't find any, then no negative controls are added
 if $(ls | grep -q -i "negative\|ntc\|water\|blank")
 then
-   negative_list=$(grep -i -e ntc -e negative -e water -e blank ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
+   negative_list=$(grep -i -e ntc -e negative -e water -e blank -e neg ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
    echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${CONFIG}
 fi
 
