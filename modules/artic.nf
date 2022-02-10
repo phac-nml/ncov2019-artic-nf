@@ -42,6 +42,36 @@ process articGuppyPlex {
     """
 }
 
+process articGuppyPlexFlat {
+    tag { params.prefix + "-" + fastq }
+
+    label 'largemem'
+
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
+
+    input:
+    path(fastq)
+
+    output:
+    path "*.fastq", emit: fastq
+
+    // Utilize the sampleName to not have to rename anything later on
+    //  Have to do the final mv command we need a different name from input (why we have the _prefix)
+    script:
+    sampleName = fastq.getBaseName().replaceAll(~/\.fastq.*$/, '')
+    """
+    mkdir -p input_fastq
+    mv $fastq input_fastq
+    artic guppyplex \
+    --min-length ${params.min_length} \
+    --max-length ${params.max_length} \
+    --prefix ${params.prefix} \
+    --directory input_fastq
+
+    mv ${params.prefix}_input_fastq.fastq ${sampleName}_${params.prefix}.fastq
+    """
+}
+
 process articMinIONMedaka {
     tag { sampleName }
 

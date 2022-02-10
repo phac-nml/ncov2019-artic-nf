@@ -6,6 +6,7 @@ nextflow.preview.dsl = 2
 // import modules
 include {articDownloadScheme} from '../modules/artic.nf' 
 include {articGuppyPlex} from '../modules/artic.nf' 
+include {articGuppyPlexFlat} from '../modules/artic.nf' 
 include {articMinIONNanopolish} from  '../modules/artic.nf' 
 include {articMinIONMedaka} from  '../modules/artic.nf'
 include {articRemoveUnmappedReads} from '../modules/artic.nf' 
@@ -290,6 +291,88 @@ workflow sequenceAnalysisMedaka {
 
 }
 
+// Write new process for analyzing flat fastq/fastq.gz files
+workflow sequenceAnalysisMedakaFlat {
+    take:
+      ch_fastq
+
+    main:
+      articDownloadScheme()
+
+      articGuppyPlexFlat(ch_fastq)
+
+      accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+
+      articMinIONMedaka(articGuppyPlexFlat.out.fastq
+                                      .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
+                                      .combine(articDownloadScheme.out.scheme))
+
+      articRemoveUnmappedReads(articMinIONMedaka.out.mapped)
+
+      if (params.correctN) {
+        correctFailNs(articMinIONMedaka.out.ptrim
+                          .join(articMinIONMedaka.out.ptrimbai, by:0)
+                          .join(articMinIONMedaka.out.consensus_fasta, by:0)
+                          .join(articMinIONMedaka.out.fail_vcf, by:0),
+                          articDownloadScheme.out.reffasta)
+
+        correctFailNs.out.corrected_consensus.collect()
+              .ifEmpty(file('placeholder.txt'))
+              .set{ ch_corrected }
+      }
+
+      // Add ncov-tools config file
+      Channel.fromPath("${params.ncov}")
+             .set{ ch_ncov }
+      // Add metadata (if there is any, otherwise its just false)
+      Channel.fromPath("${params.irida}")
+             .set{ ch_irida }
+
+      runNcovTools(ch_ncov, 
+                      articDownloadScheme.out.reffasta, 
+                      articDownloadScheme.out.ncov_amplicon, 
+                      articMinIONMedaka.out[0].collect(),
+                      articDownloadScheme.out.bed,
+                      ch_irida,
+                      ch_corrected)
+      
+      snpDists(runNcovTools.out.aligned)
+
+      makeQCCSV(articMinIONMedaka.out.ptrim
+                                     .join(articMinIONMedaka.out.consensus_fasta, by: 0)
+                                     .join(articMinIONMedaka.out.vcf, by: 0)
+                                     .combine(articDownloadScheme.out.reffasta)
+                                     .combine(runNcovTools.out.lineage)
+                                     .combine(runNcovTools.out.ncovtools_qc)
+                                     .combine(runNcovTools.out.ncovtools_negative)
+                                     .combine(ch_irida)
+                                     .combine(runNcovTools.out.snpeff_path)
+                                     .combine(articDownloadScheme.out.bed),
+                params.pcr_primers)
+
+      makeQCCSV.out.csv.splitCsv()
+                       .unique()
+                       .branch {
+                           header: it[-1] == 'nextflow_qc_pass'
+                           fail: it[-1] == 'FALSE'
+                           pass: it[-1] == 'TRUE'
+                       }
+                       .set { qc }
+
+     writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
+
+     correctQCSummaryCSV(writeQCSummaryCSV.out)
+
+     collateSamples(qc.pass.map{ it[0] }
+                           .join(articMinIONMedaka.out.consensus_fasta, by: 0)
+                           .join(articRemoveUnmappedReads.out))
+
+    emit:
+      qc_pass = collateSamples.out
+      reffasta = articDownloadScheme.out.reffasta
+      vcf = articMinIONMedaka.out.vcf
+}
+
 
 workflow articNcovNanopore {
     take:
@@ -309,6 +392,15 @@ workflow articNcovNanopore {
 
           sequenceAnalysisNanopolish.out.reffasta.set{ ch_nanopore_reffasta }
 
+      } else if ( params.flat ) {
+          Channel.fromPath( "${params.basecalled_fastq}/*.fastq", type: 'file', maxDepth: 1 )
+                 .set{ ch_fastq }
+          sequenceAnalysisMedakaFlat(ch_fastq)
+
+          sequenceAnalysisMedakaFlat.out.vcf.set{ ch_nanopore_vcf }
+
+          sequenceAnalysisMedakaFlat.out.reffasta.set{ ch_nanopore_reffasta }
+      
       } else if ( params.medaka ) {
           sequenceAnalysisMedaka(ch_fastqDirs)
 
