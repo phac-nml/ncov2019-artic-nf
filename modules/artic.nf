@@ -47,20 +47,21 @@ process articGuppyPlexFlat {
 
     label 'largemem'
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "out/${sampleName}.fastq", mode: "copy"
 
     input:
     path(fastq)
 
     output:
-    path "*.fastq", emit: fastq
+    path "out/${sampleName}.fastq", emit: fastq
 
-    // Utilize the sampleName to not have to rename anything later on
-    //  Have to do the final mv command we need a different name from input (why we have the _prefix)
+    // Utilize the sampleName to keep the name consistent
+    //  Have to use out dir for the end name as otherwise the file is the same as the input
     script:
     sampleName = fastq.getBaseName().replaceAll(~/\.fastq.*$/, '')
     """
     mkdir -p input_fastq
+    mkdir -p out
     mv $fastq input_fastq
     artic guppyplex \
     --min-length ${params.min_length} \
@@ -68,7 +69,7 @@ process articGuppyPlexFlat {
     --prefix ${params.prefix} \
     --directory input_fastq
 
-    mv ${params.prefix}_input_fastq.fastq ${sampleName}_${params.prefix}.fastq
+    mv ${params.prefix}_input_fastq.fastq out/${sampleName}.fastq
     """
 }
 

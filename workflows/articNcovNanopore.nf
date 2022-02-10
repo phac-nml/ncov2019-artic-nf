@@ -367,6 +367,27 @@ workflow sequenceAnalysisMedakaFlat {
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
                            .join(articRemoveUnmappedReads.out))
 
+     // Upload Data
+     if (params.irida) {
+       if (params.upload_irida) {
+         Channel.fromPath("${params.upload_irida}")
+             .set{ ch_upload }
+        
+         // Generate upload datasets
+         generateFastqIridaReport(articGuppyPlexFlat.out.fastq.collect(), ch_irida)
+         generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(), ch_irida)
+
+         // Upload
+         uploadIridaMedaka(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, correctQCSummaryCSV.out)
+
+         if (params.correctN) {
+           uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
+                          ch_upload,
+                          ch_irida)
+         }
+       }
+     }
+
     emit:
       qc_pass = collateSamples.out
       reffasta = articDownloadScheme.out.reffasta
@@ -393,7 +414,7 @@ workflow articNcovNanopore {
           sequenceAnalysisNanopolish.out.reffasta.set{ ch_nanopore_reffasta }
 
       } else if ( params.flat ) {
-          Channel.fromPath( "${params.basecalled_fastq}/*.fastq", type: 'file', maxDepth: 1 )
+          Channel.fromPath( "${params.basecalled_fastq}/*.fastq*", type: 'file', maxDepth: 1 )
                  .set{ ch_fastq }
           sequenceAnalysisMedakaFlat(ch_fastq)
 
