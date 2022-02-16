@@ -44,6 +44,7 @@ def printHelp() {
       --minReadsPerBarcode    Minimum number of reads accepted for a single barcode when supplying deplexed Fastq
                               files as input. Barcodes having fewer reads are ignored. (Default: 100)
                               
+      --flat                  Run fastq files from a flat folder through the medaka pipeline (Still MUST pass --medaka)
       --ncov                  Path to ncov-tools config file (Default: baseDir/extra_data/config.yaml)
       --irida                 Path to Irida sample_list.tsv file to rename data and upload to Irida (Default: false)
                               Sample_list.tsv should be formated as [sample, run, barcode, project_id, ct]
