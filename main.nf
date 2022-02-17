@@ -90,7 +90,7 @@ workflow {
    else {
        // Check to see if we have barcodes
        nanoporeBarcodeDirs = file("${params.basecalled_fastq}/barcode*", type: 'dir', maxdepth: 1 )
-       nanoporeNoBarcode = file("${params.basecalled_fastq}/*.fastq", type: 'file', maxdepth: 1)
+       nanoporeNoBarcode = file("${params.basecalled_fastq}/*.fastq*", type: 'file', maxdepth: 1)
 
        if( nanoporeBarcodeDirs ) {
             // Yes, barcodes!
