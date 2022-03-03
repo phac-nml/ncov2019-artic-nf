@@ -337,13 +337,14 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     
     return negative_df
 
-def get_samplesheet_info(sample_tsv, sample_name, project_id):
+def get_samplesheet_info(sample_tsv, sample_name, project_id, sequencing_tech):
     '''
     Parse samplesheet info to allow for IRIDA uploads and adding whatever data wanted to output qc file
     INPUTS:
-        sample_tsv   --> `path` from argparse to input samplesheet.tsv file
-        sample_name  --> `str` sample name from argparse
-        project_id   --> `str` project ID from CL to add if there isn't one
+        sample_tsv       --> `path` from argparse to input samplesheet.tsv file
+        sample_name      --> `str` sample name from argparse
+        project_id       --> `str` project ID from CL to add if there isn't one
+        sequencing_tech  --> `str` sequencing technology input from CL
     RETURNS:
         `df` populated with data from samplesheet
     '''
@@ -358,8 +359,11 @@ def get_samplesheet_info(sample_tsv, sample_name, project_id):
     if columns_to_remove:
         df.drop(columns=columns_to_remove, inplace=True)
 
+    # Add in missing columns and make sure not to duplicate them
     if 'project_id' not in samplesheet_columns:
         df['project_id'] = project_id
+    if 'sequencing_technology' not in samplesheet_columns:
+        df['sequencing_technology'] = sequencing_tech
     
     # Get only the sample row and if empty, fill it in to match other rows
     df = df.loc[df['sample'] == sample_name]
@@ -441,7 +445,7 @@ def go(args):
 
     # If we have a samplesheet, use its values to create final output
     if args.sample_sheet:
-        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample, args.project_id)
+        sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample, args.project_id, args.sequencing_technology)
 
         qc_line = {  'sample' : [args.sample],
            'num_aligned_reads': [num_reads],
@@ -451,7 +455,6 @@ def go(args):
 'diagnostic_primer_mutations' : [primer_statement],
 'sequencing_primer_mutations' : [seq_primer_statement],
                      'scheme' : [args.scheme],
-      'sequencing_technology' : [args.sequencing_technology],
          'pangoLEARN_version' : [pangolearn_v],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
