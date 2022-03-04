@@ -142,6 +142,7 @@ process correctFailNs {
     output:
     path "*.corrected.consensus.fasta", optional: true, emit: corrected_consensus
     path "logs/*.log", optional: true, emit: logs
+    path "*.process.yml" , emit: versions
 
     script:
     """
@@ -149,6 +150,12 @@ process correctFailNs {
     correct_n.py --bam $bamfile --consensus $consensus --reference $reference --fail_vcf ${fail_vcf}.gz --force
     mkdir -p logs
     mv *.log logs/
+
+    # Versions #
+    cat <<-END_VERSIONS > ncorrection.process.yml
+        "${task.process}":
+            correct_n.py: 0.1.0
+    END_VERSIONS
     """
 }
 
@@ -184,10 +191,23 @@ process runNcovTools {
     path "nml_negative_control_report.tsv" , emit: ncovtools_negative
     path "nml_aligned.fasta" , emit: aligned
     path "ncov-tools/qc_annotation/", emit: snpeff_path
+    path "*.process.yml" , emit: versions
 
     script:
     """
     bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${bed} ${metadata} ${task.cpus}
+
+    # Versions #
+    cat <<-END_VERSIONS > ncovtools.process.yml
+        "${task.process}":
+            augur: \$(echo \$(augur --version | sed 's/augur //'))
+            bedtools: \$(echo \$(bedtools --version | sed 's/bedtools v//'))
+            minimap2: \$(echo \$(minimap2 --version))
+            pangolin: \$(echo \$(pangolin --version | sed 's/pangolin //'))
+            samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
+            snakemake: \$(echo \$(snakemake --version))
+            snpEff: \$(echo \$(snpEff -version))
+    END_VERSIONS
     """
 }
 
@@ -203,11 +223,18 @@ process snpDists {
     file(aligned_fasta)
 
     output:
-    path("matrix.tsv")
+    path "matrix.tsv", emit: matrix
+    path "*.process.yml" , emit: versions
 
     script:
     """
     snp-dists ${aligned_fasta} > matrix.tsv
+
+    # Versions #
+    cat <<-END_VERSIONS > snpdists.process.yml
+        "${task.process}":
+            snp-dists: \$(echo \$(snp-dists -v | sed 's/snp-dists //'))
+    END_VERSIONS
     """
 }
 
@@ -228,7 +255,8 @@ process uploadIridaNanopolish {
     file(metadata_csv)
 
     output:
-    file("metadata_upload_status.csv")
+    path "metadata_upload_status.csv", emit: upload_metadata
+    path "*.process.yml" , emit: versions
 
     script:
     """
@@ -236,6 +264,12 @@ process uploadIridaNanopolish {
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
     upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
     irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
+
+    # Versions #
+    cat <<-END_VERSIONS > upload_all_nanopolish.process.yml
+        "${task.process}":
+            irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
+    END_VERSIONS
     """
 }
 
@@ -255,17 +289,24 @@ process uploadIridaMedaka {
     file(metadata_csv)
 
     output:
-    file("metadata_upload_status.csv")
+    path "metadata_upload_status.csv", emit: upload_metadata
+    path "*.process.yml" , emit: versions
 
     script:
     """
     irida-uploader --config ${irida_config} -d ${fastq_folder}
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
     upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
+
+    # Versions #
+    cat <<-END_VERSIONS > upload_all_medaka.process.yml
+        "${task.process}":
+            irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
+    END_VERSIONS
     """
 }
 
-process uploadCorrectN{
+process uploadCorrectN {
 
     //conda 'environments/irida_uploader.yml'
 
@@ -283,5 +324,25 @@ process uploadCorrectN{
     mv *.corrected.consensus.fasta corrected_consensus
     irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir corrected_consensus --fasta
     irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
+    """
+}
+
+process outputVersions {
+
+    label 'smallmem'
+
+    publishDir "${params.outdir}", pattern: "process_versions.yml", mode: "copy"
+
+    input:
+    path versions
+
+    output:
+    path "process_versions.yml"
+
+    script:
+    def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
+    """
+    echo '"articNcovNanopore-${rev}":' > process_versions.yml
+    cat *.process.yml >> process_versions.yml
     """
 }
