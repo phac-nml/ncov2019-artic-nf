@@ -31,6 +31,7 @@ process articGuppyPlex {
 
     output:
     path "${params.prefix}*.fastq", emit: fastq
+    path "*.process.yml" , emit: versions
 
     script:
     """
@@ -39,6 +40,12 @@ process articGuppyPlex {
     --max-length ${params.max_length} \
     --prefix ${params.prefix} \
     --directory ${fastqDir}
+
+    # Versions #
+    cat <<-END_VERSIONS > artic_guppyplex.process.yml
+        "${task.process}":
+            artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
+    END_VERSIONS
     """
 }
 
@@ -54,6 +61,7 @@ process articGuppyPlexFlat {
 
     output:
     path "out/${sampleName}.fastq", emit: fastq
+    path "*.process.yml" , emit: versions
 
     // Utilize the sampleName to keep the name consistent
     //  Have to use out dir for the end name as otherwise the file is the same as the input
@@ -70,6 +78,12 @@ process articGuppyPlexFlat {
     --directory input_fastq
 
     mv ${params.prefix}_input_fastq.fastq out/${sampleName}.fastq
+
+    # Versions #
+    cat <<-END_VERSIONS > artic_guppyplex_flat.process.yml
+        "${task.process}":
+            artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
+    END_VERSIONS
     """
 }
 
@@ -92,6 +106,7 @@ process articMinIONMedaka {
     tuple sampleName, file("${sampleName}.consensus.fasta"), emit: consensus_fasta
     tuple sampleName, file("${sampleName}.pass.vcf.gz"), emit: vcf
     tuple sampleName, file("${sampleName}.fail.vcf"), emit: fail_vcf
+    path "*.process.yml" , emit: versions
 
     script:
     // Make an identifier from the fastq filename
@@ -122,6 +137,17 @@ process articMinIONMedaka {
     --scheme-version ${params.schemeVersion} \
     ${params.scheme} \
     ${sampleName}
+
+    # Versions #
+    cat <<-END_VERSIONS > artic_minion_medaka.process.yml
+        "${task.process}":
+            artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
+            artic-tools: \$(artic-tools --version)
+            bcftools: \$(echo \$(bcftools --version | grep bcftools | sed 's/bcftools //'))
+            medaka: \$(echo \$(medaka --version | sed 's/medaka //'))
+            minimap2: \$(echo \$(minimap2 --version))
+            samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
+    END_VERSIONS
     """
 }
 
@@ -144,6 +170,7 @@ process articMinIONNanopolish {
     tuple sampleName, file("${sampleName}.consensus.fasta"), emit: consensus_fasta
     tuple sampleName, file("${sampleName}.pass.vcf.gz"), emit: vcf
     tuple sampleName, file("${sampleName}.fail.vcf"), emit: fail_vcf
+    path "*.process.yml" , emit: versions
 
     script:
     // Make an identifier from the fastq filename
@@ -174,6 +201,17 @@ process articMinIONNanopolish {
     --scheme-version ${params.schemeVersion} \
     ${params.scheme} \
     ${sampleName}
+
+    # Versions #
+    cat <<-END_VERSIONS > artic_minion_nanopolish.process.yml
+        "${task.process}":
+            artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
+            artic-tools: \$(artic-tools --version)
+            bcftools: \$(echo \$(bcftools --version | grep bcftools | sed 's/bcftools //'))
+            nanopolish: \$(echo \$(nanopolish --version | grep nanopolish | sed 's/nanopolish version //'))
+            minimap2: \$(echo \$(minimap2 --version))
+            samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
+    END_VERSIONS
     """
 }
 
@@ -186,11 +224,17 @@ process articRemoveUnmappedReads {
     tuple(sampleName, path(bamfile))
 
     output:
-    tuple( sampleName, file("${sampleName}.mapped.sorted.bam"))
+    tuple sampleName, file("${sampleName}.mapped.sorted.bam"), emit: mapped_bam
+    path "*.process.yml" , emit: versions
 
     script:
     """
-    samtools view -F4 -o ${sampleName}.mapped.sorted.bam ${bamfile} 
+    samtools view -F4 -o ${sampleName}.mapped.sorted.bam ${bamfile}
+
+    # Versions #
+    cat <<-END_VERSIONS > artic_remove_unmapped.process.yml
+        "${task.process}":
+            samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
+    END_VERSIONS
     """
 }
-

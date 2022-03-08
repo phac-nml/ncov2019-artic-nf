@@ -30,6 +30,7 @@ include {snpDists} from '../modules/nml.nf'
 include {uploadIridaNanopolish} from '../modules/nml.nf'
 include {uploadIridaMedaka} from '../modules/nml.nf'
 include {uploadCorrectN} from '../modules/nml.nf'
+include {outputVersions} from '../modules/nml.nf'
 
 
 // import subworkflows
@@ -44,9 +45,13 @@ workflow sequenceAnalysisNanopolish {
       ch_seqSummary
     
     main:
+
+      ch_versions = Channel.empty()
+
       articDownloadScheme()
       
       articGuppyPlex(ch_runFastqDirs.flatten())
+      ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
 
       if (params.irida) {
        Channel.fromPath("${params.irida}")
@@ -62,6 +67,7 @@ workflow sequenceAnalysisNanopolish {
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
+       ch_versions = ch_versions.mix(articMinIONNanopolish.out.versions.first())
 
        generateFastqIridaReport(renameSamples.out.collect(),
                                 ch_irida)
@@ -80,9 +86,11 @@ workflow sequenceAnalysisNanopolish {
                                           .combine(articDownloadScheme.out.scheme)
                                           .combine(ch_fast5Pass)
                                           .combine(ch_seqSummary))
+       ch_versions = ch_versions.mix(articMinIONNanopolish.out.versions.first())
       }
 
       articRemoveUnmappedReads(articMinIONNanopolish.out.mapped)
+      ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
 
       if (params.correctN) {
         correctFailNs(articMinIONNanopolish.out.ptrim
@@ -90,6 +98,7 @@ workflow sequenceAnalysisNanopolish {
                           .join(articMinIONNanopolish.out.consensus_fasta, by:0)
                           .join(articMinIONNanopolish.out.fail_vcf, by:0),
                           articDownloadScheme.out.reffasta)
+        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
 
         correctFailNs.out.corrected_consensus.collect()
               .ifEmpty(file('placeholder.txt'))
@@ -106,8 +115,10 @@ workflow sequenceAnalysisNanopolish {
                       articDownloadScheme.out.bed,
                       ch_irida,
                       ch_corrected)
+      ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
       
       snpDists(runNcovTools.out.aligned)
+      ch_versions = ch_versions.mix(snpDists.out.versions.first())
 
       makeQCCSV(articMinIONNanopolish.out.ptrim
                                      .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
@@ -136,7 +147,7 @@ workflow sequenceAnalysisNanopolish {
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
-                           .join(articRemoveUnmappedReads.out))
+                           .join(articRemoveUnmappedReads.out.mapped_bam))
 
      if (params.outCram) {
         bamToCram(articMinIONNanopolish.out.ptrim.map{ it[0] } 
@@ -152,6 +163,7 @@ workflow sequenceAnalysisNanopolish {
          generateFast5IridaReport(ch_fast5Pass, ch_irida)
 
          uploadIridaNanopolish(generateFastqIridaReport.out, generateFastaIridaReport.out, generateFast5IridaReport.out, ch_upload, correctQCSummaryCSV.out)
+         ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions.first())
 
          if (params.correctN) {
            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
@@ -160,6 +172,8 @@ workflow sequenceAnalysisNanopolish {
          }
        }
      }
+
+     outputVersions(ch_versions.collect())
 
     emit:
       qc_pass = collateSamples.out
@@ -173,9 +187,13 @@ workflow sequenceAnalysisMedaka {
       ch_runFastqDirs
 
     main:
+    
+      ch_versions = Channel.empty()
+
       articDownloadScheme()
 
       articGuppyPlex(ch_runFastqDirs.flatten())
+      ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
 
       if (params.irida) {
        Channel.fromPath("${params.irida}")
@@ -189,6 +207,7 @@ workflow sequenceAnalysisMedaka {
        articMinIONMedaka(renameSamples.out
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
+       ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
 
        generateFastqIridaReport(renameSamples.out.collect(),
                                 ch_irida)
@@ -205,9 +224,11 @@ workflow sequenceAnalysisMedaka {
        articMinIONMedaka(articGuppyPlex.out.fastq
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
+       ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
       }
 
       articRemoveUnmappedReads(articMinIONMedaka.out.mapped)
+      ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
 
       if (params.correctN) {
         correctFailNs(articMinIONMedaka.out.ptrim
@@ -215,6 +236,7 @@ workflow sequenceAnalysisMedaka {
                           .join(articMinIONMedaka.out.consensus_fasta, by:0)
                           .join(articMinIONMedaka.out.fail_vcf, by:0),
                           articDownloadScheme.out.reffasta)
+        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
 
         correctFailNs.out.corrected_consensus.collect()
               .ifEmpty(file('placeholder.txt'))
@@ -231,8 +253,10 @@ workflow sequenceAnalysisMedaka {
                       articDownloadScheme.out.bed,
                       ch_irida,
                       ch_corrected)
+      ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
       
       snpDists(runNcovTools.out.aligned)
+      ch_versions = ch_versions.mix(snpDists.out.versions.first())
 
       makeQCCSV(articMinIONMedaka.out.ptrim
                                      .join(articMinIONMedaka.out.consensus_fasta, by: 0)
@@ -261,7 +285,7 @@ workflow sequenceAnalysisMedaka {
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                           .join(articRemoveUnmappedReads.out))
+                           .join(articRemoveUnmappedReads.out.mapped_bam))
 
      if (params.outCram) {
         bamToCram(articMinIONMedaka.out.ptrim.map{ it[0] } 
@@ -275,6 +299,7 @@ workflow sequenceAnalysisMedaka {
              .set{ ch_upload }
 
          uploadIridaMedaka(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, correctQCSummaryCSV.out)
+         ch_versions = ch_versions.mix(uploadIridaMedaka.out.versions.first())
 
          if (params.correctN) {
            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
@@ -283,6 +308,8 @@ workflow sequenceAnalysisMedaka {
          }
        }
      }
+
+     outputVersions(ch_versions.collect())
 
     emit:
       qc_pass = collateSamples.out
@@ -297,17 +324,23 @@ workflow sequenceAnalysisMedakaFlat {
       ch_fastq
 
     main:
+    
+      ch_versions = Channel.empty()
+
       articDownloadScheme()
 
       articGuppyPlexFlat(ch_fastq)
+      ch_versions = ch_versions.mix(articGuppyPlexFlat.out.versions.first())
 
       accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
 
       articMinIONMedaka(articGuppyPlexFlat.out.fastq
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
+      ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
 
       articRemoveUnmappedReads(articMinIONMedaka.out.mapped)
+      ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
 
       if (params.correctN) {
         correctFailNs(articMinIONMedaka.out.ptrim
@@ -315,6 +348,7 @@ workflow sequenceAnalysisMedakaFlat {
                           .join(articMinIONMedaka.out.consensus_fasta, by:0)
                           .join(articMinIONMedaka.out.fail_vcf, by:0),
                           articDownloadScheme.out.reffasta)
+        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
 
         correctFailNs.out.corrected_consensus.collect()
               .ifEmpty(file('placeholder.txt'))
@@ -335,8 +369,10 @@ workflow sequenceAnalysisMedakaFlat {
                       articDownloadScheme.out.bed,
                       ch_irida,
                       ch_corrected)
+      ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
       
       snpDists(runNcovTools.out.aligned)
+      ch_versions = ch_versions.mix(snpDists.out.versions.first())
 
       makeQCCSV(articMinIONMedaka.out.ptrim
                                      .join(articMinIONMedaka.out.consensus_fasta, by: 0)
@@ -365,7 +401,7 @@ workflow sequenceAnalysisMedakaFlat {
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                           .join(articRemoveUnmappedReads.out))
+                           .join(articRemoveUnmappedReads.out.mapped_bam))
 
      // Upload Data
      if (params.irida) {
@@ -379,6 +415,7 @@ workflow sequenceAnalysisMedakaFlat {
 
          // Upload
          uploadIridaMedaka(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, correctQCSummaryCSV.out)
+         ch_versions = ch_versions.mix(uploadIridaMedaka.out.versions.first())
 
          if (params.correctN) {
            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
@@ -387,6 +424,8 @@ workflow sequenceAnalysisMedakaFlat {
          }
        }
      }
+
+     outputVersions(ch_versions.collect())
 
     emit:
       qc_pass = collateSamples.out
