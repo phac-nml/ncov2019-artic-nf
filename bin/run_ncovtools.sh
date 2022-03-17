@@ -66,6 +66,7 @@ snakemake -kp -s workflow/Snakefile all --cores ${CORES}
 mv ./plots/*.pdf ../
 mv ./qc_reports/*.tsv ../
 mv ./qc_analysis/nml_aligned.fasta ../
+mv ./qc_analysis/nml_amplicon_coverage_table.tsv ../
 cd ..
 
 # Touching a negative control so that there always is one (even if we remove the check)
