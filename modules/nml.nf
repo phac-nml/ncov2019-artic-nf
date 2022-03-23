@@ -169,7 +169,7 @@ process runNcovTools {
     //conda 'environments/ncovtools.yml'
     // Make conda env with mamba or it will error (takes 3+ hours without)
 
-    label 'ncovtools'
+    label 'mediumcpu'
 
     input:
     file(config)

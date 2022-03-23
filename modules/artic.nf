@@ -90,7 +90,7 @@ process articGuppyPlexFlat {
 process articMinIONMedaka {
     tag { sampleName }
 
-    label 'largecpu'
+    label 'mediumcpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}*", mode: "copy"
 
