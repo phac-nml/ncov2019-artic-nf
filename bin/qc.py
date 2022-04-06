@@ -244,23 +244,23 @@ def find_sequencing_primer_mutations(primer_bed, variants_list, seq_primer_mutat
 
     return 'None'
 
-def get_pangolearn_version(pangolin_csv, sample_name):
+def get_pango_des_version(pangolin_csv, sample_name):
     '''
-    Check Pangolin output for the pangoLEARN version as that isn't captured by ncov-tools
+    Check Pangolin output for the pango designation version as that isn't captured by ncov-tools
     INPUTS:
         pangolin_csv --> `path` from argparse to input pangolin csv file
         sample_name  --> `str` sample name from argparse
     RETURNS:
-        `str` pangoLEARN version
+        `str` pango designation version
     '''
     df = pd.read_csv(pangolin_csv)
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
-        pangoV = df_slice.iloc[0]['pangoLEARN_version']
+        pangoV = df_slice.iloc[0]['version']
         return pangoV
     else:
-        return 'Unknown'
+        return 'Unassigned'
 
 def get_protein_variants(aa_table):
     '''
@@ -433,8 +433,8 @@ def go(args):
         variants_list = variants.split(';')
         seq_primer_statement = find_sequencing_primer_mutations(args.scheme_bed, variants_list)
 
-    # PangoLEARN version
-    pangolearn_v = get_pangolearn_version(args.pangolin, args.sample)
+    # Pango designation version
+    pango_des_v = get_pango_des_version(args.pangolin, args.sample)
 
     # snpEFF output
     protein_variants, found_consequences = get_protein_variants(args.snpeff_tsv)
@@ -455,7 +455,7 @@ def go(args):
 'diagnostic_primer_mutations' : [primer_statement],
 'sequencing_primer_mutations' : [seq_primer_statement],
                      'scheme' : [args.scheme],
-         'pangoLEARN_version' : [pangolearn_v],
+                    'version' : [pango_des_v],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
         
@@ -480,7 +480,7 @@ def go(args):
     'sequencing_primer_mutations' : [seq_primer_statement],
                          'scheme' : [args.scheme],
           'sequencing_technology' : [args.sequencing_technology],
-             'pangoLEARN_version' : [pangolearn_v],
+                        'version' : [pango_des_v],
                  'run_identifier' : [run_name],
                     'script_name' : ['nml-ncov2019-artic-nf'],
                        'revision' : [args.revision]}
