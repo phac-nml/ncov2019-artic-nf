@@ -57,7 +57,7 @@ process makeQCCSV {
         --vcf ${vcf} \
         --revision ${rev} \
         --scheme ${params.schemeVersion} \
-        --scheme_bed ${} \
+        --scheme_bed ${scheme_bed} \
         --sequencing_technology ${params.sequencingTechnology} \
         --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
@@ -91,12 +91,26 @@ process correctQCSummaryCSV {
 
     input:
     file(initial_qc_csv)
+    file(read_count_failures)
+    file(read_filter_failures)
 
     output:
     file("${params.prefix}.qc.csv")
 
     script:
     """
+    if [ -f ${read_count_failures} ]; then 
+        READ_FILTER="${read_count_failures}"
+    else
+        READ_FILTER=""
+    fi
+    
+    if [ -f ${read_filter_failures} ]; then
+        MAPPING_FILTER="${read_filter_failures}"
+    else
+        MAPPING_FILTER=""
+    fi
+    
     negative_control_fixes.py --qc_csv ${initial_qc_csv} --output_prefix ${params.prefix}
     """
 }

@@ -23,36 +23,56 @@ process accountNoReadsInput {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.txt", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.csv", mode: "copy"
 
     input:
     path(fastq_dir)
+    file(sampletsv)
 
     output:
-    file('samples_failing_no_input_reads.txt')
+    file('samples_failing_no_input_reads.csv')
 
-    script:
-    """
-    ls -d */ > samples_failing_no_input_reads.txt
-    """
+    // Use shell block so that we don't have to escape bash variables
+    shell:
+    '''
+    echo "sample,qc_pass" > samples_failing_no_input_reads.csv
+
+    if [ -f !{sampletsv} ]; then 
+        for barcode in barcode*; do
+            barcode_n="${barcode//[!0-9]/}"
+            sample_name=$(awk -F'\t' -v barcode_n="$barcode_n"  '$3 == barcode_n' !{sampletsv} | cut -f 1)
+            echo "$sample_name,TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.csv
+        done
+    else
+        for barcode in barcode*; do
+            echo "!{params.prefix}_${barcode},TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.csv
+        done
+    fi
+    '''
 }
 
 process accountReadFilterFailures {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.txt", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.csv", mode: "copy"
 
     input:
     path(fastq)
 
     output:
-    file('samples_failing_read_filter.txt')
+    file('samples_failing_read_filter.csv')
 
-    script:
-    """
-    ls *.fastq > samples_failing_read_filter.txt
-    """
+    shell:
+    '''
+    echo "sample,qc_pass" > samples_failing_read_filter.csv
+
+    for fastq in *.fastq; do
+        # Removes all extensions to get the sample name, . are not allowed in IRIDA sample names anyway
+        filename="${fastq%%.*}"
+        echo "$filename,TOO_FEW_MAPPING_READS" >> samples_failing_read_filter.csv
+    done
+    '''
 }
 
 process generateFastqIridaReport {

@@ -19,6 +19,7 @@ include {bamToCram} from '../modules/out.nf'
 
 include {collateSamples} from '../modules/upload.nf'
 
+include {accountNoReadsInput} from '../modules/nml.nf'
 include {renameSamples} from '../modules/nml.nf'
 include {accountReadFilterFailures} from '../modules/nml.nf'
 include {generateFastqIridaReport} from '../modules/nml.nf'
@@ -41,26 +42,36 @@ include {Genotyping} from './typing.nf'
 workflow sequenceAnalysisNanopolish {
     take:
       ch_runFastqDirs
+      ch_badFastqDirs
       ch_fast5Pass
       ch_seqSummary
+      ch_irida
     
     main:
 
       ch_versions = Channel.empty()
 
+
       articDownloadScheme()
+
+      accountNoReadsInput(ch_badFastqDirs.collect(),
+                          ch_irida)
+      accountNoReadsInput.out
+        .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
+        .set{ ch_noReadsTracking }
       
       articGuppyPlex(ch_runFastqDirs.flatten())
       ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
 
       if (params.irida) {
-       Channel.fromPath("${params.irida}")
-              .set{ ch_irida }
 
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
        accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+       accountReadFilterFailures.out
+        .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
+        .set{ ch_filterReadsTracking }
 
        articMinIONNanopolish(renameSamples.out
                                           .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
@@ -76,10 +87,11 @@ workflow sequenceAnalysisNanopolish {
                                 ch_irida)
       }
       else {
-       Channel.fromPath("${params.irida}")
-              .set{ ch_irida }
 
        accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+       accountReadFilterFailures.out
+        .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
+        .set{ ch_filterReadsTracking }
 
        articMinIONNanopolish(articGuppyPlex.out.fastq
                                           .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
@@ -143,7 +155,9 @@ workflow sequenceAnalysisNanopolish {
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
 
-     correctQCSummaryCSV(writeQCSummaryCSV.out)
+     correctQCSummaryCSV(writeQCSummaryCSV.out,
+                        ch_noReadsTracking,
+                        ch_filterReadsTracking)
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
@@ -185,6 +199,8 @@ workflow sequenceAnalysisNanopolish {
 workflow sequenceAnalysisMedaka {
     take:
       ch_runFastqDirs
+      ch_badFastqDirs
+      ch_irida
 
     main:
     
@@ -192,17 +208,24 @@ workflow sequenceAnalysisMedaka {
 
       articDownloadScheme()
 
+      accountNoReadsInput(ch_badFastqDirs.collect(),
+                          ch_irida)
+      accountNoReadsInput.out
+        .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
+        .set{ ch_noReadsTracking }
+
       articGuppyPlex(ch_runFastqDirs.flatten())
       ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
 
       if (params.irida) {
-       Channel.fromPath("${params.irida}")
-              .set{ ch_irida }
 
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
        accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+       accountReadFilterFailures.out
+        .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
+        .set{ ch_filterReadsTracking }
 
        articMinIONMedaka(renameSamples.out
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
@@ -216,10 +239,11 @@ workflow sequenceAnalysisMedaka {
                                 ch_irida)
       }
       else {
-       Channel.fromPath("${params.irida}")
-              .set{ ch_irida }
 
        accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+       accountReadFilterFailures.out
+        .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
+        .set{ ch_filterReadsTracking }
 
        articMinIONMedaka(articGuppyPlex.out.fastq
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
@@ -281,7 +305,9 @@ workflow sequenceAnalysisMedaka {
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
 
-     correctQCSummaryCSV(writeQCSummaryCSV.out)
+     correctQCSummaryCSV(writeQCSummaryCSV.out,
+                        ch_noReadsTracking,
+                        ch_filterReadsTracking)
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
@@ -321,7 +347,8 @@ workflow sequenceAnalysisMedaka {
 // Write new process for analyzing flat fastq/fastq.gz files
 workflow sequenceAnalysisMedakaFlat {
     take:
-      ch_fastq
+      ch_fastqs
+      ch_irida
 
     main:
     
@@ -329,10 +356,13 @@ workflow sequenceAnalysisMedakaFlat {
 
       articDownloadScheme()
 
-      articGuppyPlexFlat(ch_fastq)
+      articGuppyPlexFlat(ch_fastqs)
       ch_versions = ch_versions.mix(articGuppyPlexFlat.out.versions.first())
 
       accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
+      accountReadFilterFailures.out
+        .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
+        .set{ ch_filterReadsTracking }
 
       articMinIONMedaka(articGuppyPlexFlat.out.fastq
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
@@ -358,9 +388,6 @@ workflow sequenceAnalysisMedakaFlat {
       // Add ncov-tools config file
       Channel.fromPath("${params.ncov}")
              .set{ ch_ncov }
-      // Add metadata (if there is any, otherwise its just false)
-      Channel.fromPath("${params.irida}")
-             .set{ ch_irida }
 
       runNcovTools(ch_ncov, 
                       articDownloadScheme.out.reffasta, 
@@ -397,7 +424,9 @@ workflow sequenceAnalysisMedakaFlat {
 
      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
 
-     correctQCSummaryCSV(writeQCSummaryCSV.out)
+     correctQCSummaryCSV(writeQCSummaryCSV.out,
+                        ch_noReadsTracking,
+                        ch_filterReadsTracking))
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
@@ -433,12 +462,18 @@ workflow sequenceAnalysisMedakaFlat {
       vcf = articMinIONMedaka.out.vcf
 }
 
-
+// Process that controls what pipeline to utilize to get results
 workflow articNcovNanopore {
     take:
       ch_fastqDirs
+      ch_badFastqDirs
     
     main:
+      // Add metadata (if there is any, otherwise this will just become false which will work when passed to different processes)
+      Channel.fromPath("${params.irida}")
+             .set{ ch_irida }
+
+      // Actually run the different pipeline processes
       if ( params.nanopolish ) {
           Channel.fromPath( "${params.fast5_pass}" )
                  .set{ ch_fast5Pass }
@@ -446,7 +481,7 @@ workflow articNcovNanopore {
           Channel.fromPath( "${params.sequencing_summary}" )
                  .set{ ch_seqSummary }
 
-          sequenceAnalysisNanopolish(ch_fastqDirs, ch_fast5Pass, ch_seqSummary)
+          sequenceAnalysisNanopolish(ch_fastqDirs, ch_badFastqDirs, ch_fast5Pass, ch_seqSummary, ch_irida)
 
           sequenceAnalysisNanopolish.out.vcf.set{ ch_nanopore_vcf }
 
@@ -454,15 +489,16 @@ workflow articNcovNanopore {
 
       } else if ( params.flat ) {
           Channel.fromPath( "${params.basecalled_fastq}/*.fastq*", type: 'file', maxDepth: 1 )
-                 .set{ ch_fastq }
-          sequenceAnalysisMedakaFlat(ch_fastq)
+                 .set{ ch_fastqs }
+
+          sequenceAnalysisMedakaFlat(ch_fastqs, ch_irida)
 
           sequenceAnalysisMedakaFlat.out.vcf.set{ ch_nanopore_vcf }
 
           sequenceAnalysisMedakaFlat.out.reffasta.set{ ch_nanopore_reffasta }
       
       } else if ( params.medaka ) {
-          sequenceAnalysisMedaka(ch_fastqDirs)
+          sequenceAnalysisMedaka(ch_fastqDirs, ch_badFastqDirs, ch_irida)
 
           sequenceAnalysisMedaka.out.vcf.set{ ch_nanopore_vcf }
 
