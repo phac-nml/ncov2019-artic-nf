@@ -23,29 +23,46 @@ process accountNoReadsInput {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.csv", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.tsv", mode: "copy"
 
     input:
     path(fastq_dir)
     file(sampletsv)
 
     output:
-    file('samples_failing_no_input_reads.csv')
+    path 'samples_failing_no_input_reads.tsv', optional: true, emit: count_filter
 
     // Use shell block so that we don't have to escape bash variables
     shell:
     '''
-    echo "sample,qc_pass" > samples_failing_no_input_reads.csv
-
+    ## If we have a samplesheet, we want all info along with a note in the QC Pass column carried along
     if [ -f !{sampletsv} ]; then 
+        ## Make sure we have barcode column
+        barcode_col=$(awk -v RS='\t' '/barcode/{print NR; exit}' !{sampletsv})
+        if [ "$barcode_col" == "" ]; then
+            echo "ERROR: Column 'barcode' does not exist and is required"
+            exit 1
+        fi
+
+        ## Set header
+        header=$(head -n 1 !{sampletsv})
+        echo "$header	qc_pass" > samples_failing_no_input_reads.tsv
+
+        ## Populate
         for barcode in barcode*; do
             barcode_n="${barcode//[!0-9]/}"
-            sample_name=$(awk -F'\t' -v barcode_n="$barcode_n"  '$3 == barcode_n' !{sampletsv} | cut -f 1)
-            echo "$sample_name,TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.csv
+            ## Awk line uses the column number of the barcode column found and checks that it matches to the barcode number
+            fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' !{sampletsv})
+            ## No matches, skip line
+            if [ "$fileline" != "" ]; then
+                echo "$fileline	TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.tsv
+            fi
         done
+    ## No samplesheet, just track that the barcode failed
     else
+        echo "sample	qc_pass" > samples_failing_no_input_reads.tsv
         for barcode in barcode*; do
-            echo "!{params.prefix}_${barcode},TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.csv
+            echo "!{params.prefix}_${barcode}	TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.tsv
         done
     fi
     '''
@@ -55,23 +72,49 @@ process accountReadFilterFailures {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.csv", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.tsv", mode: "copy"
 
     input:
     path(fastq)
+    file(sampletsv)
 
     output:
-    file('samples_failing_read_filter.csv')
+    path 'samples_failing_read_filter.tsv', optional: true, emit: map_filter
 
     shell:
     '''
-    echo "sample,qc_pass" > samples_failing_read_filter.csv
+    ## If we have a samplesheet, use it to keep all of the values
+    if [ -f !{sampletsv} ]; then 
+        ## Make sure we have sample column
+        sample_col=$(awk -v RS='\t' '/sample/{print NR; exit}' !{sampletsv})
+        if [ "$sample_col" == "" ]; then
+            echo "ERROR: Column 'sample' does not exist and is required"
+            exit 1
+        fi
 
-    for fastq in *.fastq; do
-        # Removes all extensions to get the sample name, . are not allowed in IRIDA sample names anyway
-        filename="${fastq%%.*}"
-        echo "$filename,TOO_FEW_MAPPING_READS" >> samples_failing_read_filter.csv
-    done
+        ## Set header
+        header=$(head -n 1 !{sampletsv})
+        echo "$header	qc_pass" > samples_failing_read_filter.tsv
+
+        for fastq in *.fastq; do
+            ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
+            filename="${fastq%%.*}"
+            ## Use AWK to get the column as grep is having issues with extra data (barcode not in samplesheet, 'extra_nml_barcode' samples)
+            fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' !{sampletsv})
+            ## No matches, skip line
+            if [ "$fileline" != "" ]; then
+                echo "$fileline	TOO_FEW_MAPPING_READS" >> samples_failing_read_filter.tsv
+            fi
+        done
+    ## No samplesheet, just track that the barcode failed
+    else
+        echo "sample	qc_pass" > samples_failing_read_filter.tsv
+        for fastq in *.fastq; do
+            ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
+            filename="${fastq%%.*}"
+            echo "$filename	TOO_FEW_MAPPING_READS" >> samples_failing_read_filter.tsv
+        done
+    fi
     '''
 }
 

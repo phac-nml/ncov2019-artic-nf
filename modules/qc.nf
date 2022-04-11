@@ -100,17 +100,17 @@ process correctQCSummaryCSV {
     script:
     """
     if [ -f ${read_count_failures} ]; then 
-        READ_FILTER="${read_count_failures}"
+        READ_FILTER="--read_tsv ${read_count_failures}"
     else
         READ_FILTER=""
     fi
-    
+
     if [ -f ${read_filter_failures} ]; then
-        MAPPING_FILTER="${read_filter_failures}"
+        MAPPING_FILTER="--mapping_tsv ${read_filter_failures}"
     else
         MAPPING_FILTER=""
     fi
-    
-    negative_control_fixes.py --qc_csv ${initial_qc_csv} --output_prefix ${params.prefix}
+
+    negative_control_fixes.py --qc_csv ${initial_qc_csv} --output_prefix ${params.prefix} \${READ_FILTER} \${MAPPING_FILTER}
     """
 }

@@ -56,7 +56,7 @@ workflow sequenceAnalysisNanopolish {
 
       accountNoReadsInput(ch_badFastqDirs.collect(),
                           ch_irida)
-      accountNoReadsInput.out
+      accountNoReadsInput.out.count_filter
         .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
         .set{ ch_noReadsTracking }
       
@@ -68,8 +68,9 @@ workflow sequenceAnalysisNanopolish {
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
-       accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
-       accountReadFilterFailures.out
+       accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
+                                  ch_irida)
+       accountReadFilterFailures.out.map_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -88,8 +89,9 @@ workflow sequenceAnalysisNanopolish {
       }
       else {
 
-       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
-       accountReadFilterFailures.out
+       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
+                                  ch_irida)
+       accountReadFilterFailures.out.map_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -193,7 +195,6 @@ workflow sequenceAnalysisNanopolish {
       qc_pass = collateSamples.out
       reffasta = articDownloadScheme.out.reffasta
       vcf = articMinIONNanopolish.out.vcf
-
 }
 
 workflow sequenceAnalysisMedaka {
@@ -210,7 +211,7 @@ workflow sequenceAnalysisMedaka {
 
       accountNoReadsInput(ch_badFastqDirs.collect(),
                           ch_irida)
-      accountNoReadsInput.out
+      accountNoReadsInput.out.count_filter
         .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
         .set{ ch_noReadsTracking }
 
@@ -222,8 +223,9 @@ workflow sequenceAnalysisMedaka {
        renameSamples(articGuppyPlex.out.fastq
                                        .combine(ch_irida))
 
-       accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
-       accountReadFilterFailures.out
+       accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
+                                  ch_irida)
+       accountReadFilterFailures.out.map_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -237,11 +239,11 @@ workflow sequenceAnalysisMedaka {
 
        generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(),
                                 ch_irida)
-      }
-      else {
+      } else {
 
-       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
-       accountReadFilterFailures.out
+       accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
+                                  ch_irida)
+       accountReadFilterFailures.out.map_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -341,7 +343,6 @@ workflow sequenceAnalysisMedaka {
       qc_pass = collateSamples.out
       reffasta = articDownloadScheme.out.reffasta
       vcf = articMinIONMedaka.out.vcf
-
 }
 
 // Write new process for analyzing flat fastq/fastq.gz files
@@ -353,14 +354,18 @@ workflow sequenceAnalysisMedakaFlat {
     main:
     
       ch_versions = Channel.empty()
+      // Won't check this but still need it to get the final value
+      Channel.fromPath('placeholder_accountNoReadsInput.txt')
+             .set{ ch_noReadsTracking }
 
       articDownloadScheme()
 
       articGuppyPlexFlat(ch_fastqs)
       ch_versions = ch_versions.mix(articGuppyPlexFlat.out.versions.first())
 
-      accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect())
-      accountReadFilterFailures.out
+      accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
+                                  ch_irida)
+      accountReadFilterFailures.out.map_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -426,7 +431,7 @@ workflow sequenceAnalysisMedakaFlat {
 
      correctQCSummaryCSV(writeQCSummaryCSV.out,
                         ch_noReadsTracking,
-                        ch_filterReadsTracking))
+                        ch_filterReadsTracking)
 
      collateSamples(qc.pass.map{ it[0] }
                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
