@@ -22,7 +22,7 @@ process articDownloadScheme{
 process articGuppyPlex {
     tag { params.prefix + "-" + fastqDir }
 
-    label 'largemem'
+    label 'mediumcpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${params.prefix}*.fastq", mode: "copy"
 
@@ -52,7 +52,7 @@ process articGuppyPlex {
 process articGuppyPlexFlat {
     tag { params.prefix + "-" + fastq }
 
-    label 'largemem'
+    label 'mediumcpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "out/${sampleName}.fastq", mode: "copy"
 
