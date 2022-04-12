@@ -72,14 +72,14 @@ process accountReadFilterFailures {
 
     label 'smallmem'
 
-    publishDir "${params.outdir}/", pattern: "samples_failing_read_filter.tsv", mode: "copy"
+    publishDir "${params.outdir}/", pattern: "samples_failing_read_size_filter.tsv", mode: "copy"
 
     input:
     path(fastq)
     file(sampletsv)
 
     output:
-    path 'samples_failing_read_filter.tsv', optional: true, emit: map_filter
+    path 'samples_failing_read_size_filter.tsv', optional: true, emit: size_filter
 
     shell:
     '''
@@ -94,7 +94,7 @@ process accountReadFilterFailures {
 
         ## Set header
         header=$(head -n 1 !{sampletsv})
-        echo "$header	qc_pass" > samples_failing_read_filter.tsv
+        echo "$header	qc_pass" > samples_failing_read_size_filter.tsv
 
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
@@ -103,16 +103,16 @@ process accountReadFilterFailures {
             fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' !{sampletsv})
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
-                echo "$fileline	TOO_FEW_MAPPING_READS" >> samples_failing_read_filter.tsv
+                echo "$fileline	TOO_FEW_SIZE_SELECTED_READS" >> samples_failing_read_size_filter.tsv
             fi
         done
     ## No samplesheet, just track that the barcode failed
     else
-        echo "sample	qc_pass" > samples_failing_read_filter.tsv
+        echo "sample	qc_pass" > samples_failing_read_size_filter.tsv
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
             filename="${fastq%%.*}"
-            echo "$filename	TOO_FEW_MAPPING_READS" >> samples_failing_read_filter.tsv
+            echo "$filename	TOO_FEW_SIZE_SELECTED_READS" >> samples_failing_read_size_filter.tsv
         done
     fi
     '''

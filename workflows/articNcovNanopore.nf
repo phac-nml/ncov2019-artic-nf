@@ -70,7 +70,7 @@ workflow sequenceAnalysisNanopolish {
 
        accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
                                   ch_irida)
-       accountReadFilterFailures.out.map_filter
+       accountReadFilterFailures.out.size_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -91,7 +91,7 @@ workflow sequenceAnalysisNanopolish {
 
        accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
                                   ch_irida)
-       accountReadFilterFailures.out.map_filter
+       accountReadFilterFailures.out.size_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -225,7 +225,7 @@ workflow sequenceAnalysisMedaka {
 
        accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
                                   ch_irida)
-       accountReadFilterFailures.out.map_filter
+       accountReadFilterFailures.out.size_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -243,7 +243,7 @@ workflow sequenceAnalysisMedaka {
 
        accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
                                   ch_irida)
-       accountReadFilterFailures.out.map_filter
+       accountReadFilterFailures.out.size_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
@@ -365,7 +365,7 @@ workflow sequenceAnalysisMedakaFlat {
 
       accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
                                   ch_irida)
-      accountReadFilterFailures.out.map_filter
+      accountReadFilterFailures.out.size_filter
         .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
         .set{ ch_filterReadsTracking }
 
