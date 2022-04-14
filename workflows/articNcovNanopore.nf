@@ -81,7 +81,10 @@ workflow sequenceAnalysisNanopolish {
                                           .combine(ch_seqSummary))
        ch_versions = ch_versions.mix(articMinIONNanopolish.out.versions.first())
 
-       generateFastqIridaReport(renameSamples.out.collect(),
+       // Adding size filter for IRIDA uploads, 1kB needed
+       generateFastqIridaReport(renameSamples.out
+                                             .filter{ it.size() > 1024 }
+                                             .collect(),
                                 ch_irida)
 
        generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
@@ -233,8 +236,11 @@ workflow sequenceAnalysisMedaka {
                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
                                       .combine(articDownloadScheme.out.scheme))
        ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
-
-       generateFastqIridaReport(renameSamples.out.collect(),
+        
+       // Adding size filter for IRIDA uploads, 1kB needed
+       generateFastqIridaReport(renameSamples.out
+                                             .filter{ it.size() > 1024 }
+                                             .collect(),
                                 ch_irida)
 
        generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(),
@@ -442,9 +448,9 @@ workflow sequenceAnalysisMedakaFlat {
        if (params.upload_irida) {
          Channel.fromPath("${params.upload_irida}")
              .set{ ch_upload }
-        
+
          // Generate upload datasets
-         generateFastqIridaReport(articGuppyPlexFlat.out.fastq.collect(), ch_irida)
+         generateFastqIridaReport(articGuppyPlexFlat.out.fastq.filter{ it.size() > 1024 }.collect(), ch_irida)
          generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(), ch_irida)
 
          // Upload
