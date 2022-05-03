@@ -133,7 +133,6 @@ process articMinIONMedaka {
     --threads ${task.cpus} \
     --scheme-directory ${schemeRepo} \
     --read-file ${fastq} \
-    --no-longshot \
     --medaka-model ${params.medakaModel} \
     --scheme-version ${params.schemeVersion} \
     ${params.scheme} \
