@@ -8,7 +8,7 @@ process articDownloadScheme{
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${params.schemeDir}", mode: "copy"
 
     output:
-    path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
+    path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/${params.scheme}.reference.fasta" , emit: reffasta
     path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/${params.scheme}.bed" , emit: bed
     path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/ncov-qc_*.scheme.bed" , emit: ncov_amplicon
     path "${params.schemeDir}" , emit: scheme
@@ -22,7 +22,7 @@ process articDownloadScheme{
 process articGuppyPlex {
     tag { params.prefix + "-" + fastqDir }
 
-    label 'largemem'
+    label 'mediumcpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${params.prefix}*.fastq", mode: "copy"
 
@@ -52,7 +52,7 @@ process articGuppyPlex {
 process articGuppyPlexFlat {
     tag { params.prefix + "-" + fastq }
 
-    label 'largemem'
+    label 'mediumcpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "out/${sampleName}.fastq", mode: "copy"
 

@@ -252,15 +252,32 @@ def get_pango_des_version(pangolin_csv, sample_name):
         sample_name  --> `str` sample name from argparse
     RETURNS:
         `str` pango designation version
+        `str` scorpio note
+        `str` new pangolin v4 note column
     '''
     df = pd.read_csv(pangolin_csv)
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
         pangoV = df_slice.iloc[0]['version']
-        return pangoV
+        # Issue with ncov-parser at the moment, get column back to previous
+        # https://github.com/simpsonlab/ncov-parser/blob/14698f01d3add0b5cd868f0b601f6992c51cfa68/ncov/parser/Lineage.py#L40
+        scorpio_note_str = str(df_slice.iloc[0]['scorpio_notes'])
+        if scorpio_note_str.startswith('scorpio call'):
+            n_dict = scorpio_note_str.split(' ')
+            alt = re.sub(';', '', n_dict[4])
+            ref = re.sub(';', '', n_dict[7])
+            amb = n_dict[-1]
+            tag = 'alt/ref/amb:'
+            value = '/'.join([alt, ref, amb])
+            scorpio_note_out = ''.join([tag, value])
+        else:
+            scorpio_note_out = 'none'
+        
+        pangoN = df_slice.iloc[0]['note']
+        return pangoV, scorpio_note_out, pangoN
     else:
-        return 'Unassigned'
+        return 'Unassigned', 'none', 'none'
 
 def get_protein_variants(aa_table):
     '''
@@ -316,9 +333,9 @@ def parse_ncov_tsv(file_in, sample, negative=False):
         new_columns = df.columns.values
         new_columns[0] = 'sample'
         df.columns = new_columns
-    # Input is summary_df, drop run_name from this output as its always `nml` and we have our own name that is put through
     else:
-        df.drop(columns=['run_name'], inplace=True)
+        # Drop run_name as it'll just be the prefix from the pipeline (which is nml for us), also drop lineage_notes due to issue
+        df.drop(columns=['run_name', 'lineage_notes'], inplace=True)
 
     # Set which column contains the sample
     sample_column = 'sample'
@@ -434,7 +451,7 @@ def go(args):
         seq_primer_statement = find_sequencing_primer_mutations(args.scheme_bed, variants_list)
 
     # Pango designation version
-    pango_des_v = get_pango_des_version(args.pangolin, args.sample)
+    pango_des_v, scorpio_note, pango_note = get_pango_des_version(args.pangolin, args.sample)
 
     # snpEFF output
     protein_variants, found_consequences = get_protein_variants(args.snpeff_tsv)
@@ -456,6 +473,8 @@ def go(args):
 'sequencing_primer_mutations' : [seq_primer_statement],
                      'scheme' : [args.scheme],
                     'version' : [pango_des_v],
+              'lineage_notes' : [scorpio_note],
+              'pangolin_note' : [pango_note],
                 'script_name' : ['nml-ncov2019-artic-nf'],
                    'revision' : [args.revision]}
         
@@ -481,6 +500,8 @@ def go(args):
                          'scheme' : [args.scheme],
           'sequencing_technology' : [args.sequencing_technology],
                         'version' : [pango_des_v],
+                  'lineage_notes' : [scorpio_note],
+                  'pangolin_note' : [pango_note],
                  'run_identifier' : [run_name],
                     'script_name' : ['nml-ncov2019-artic-nf'],
                        'revision' : [args.revision]}

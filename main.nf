@@ -5,7 +5,6 @@ nextflow.preview.dsl = 2
 
 // include modules
 include {printHelp} from './modules/help.nf'
-include {accountNoReadsInput} from './modules/nml.nf'
 include {makeFastqSearchPath} from './modules/util.nf'
 
 // import subworkflows
@@ -104,7 +103,7 @@ workflow {
                                 }
                             }
                             count <= params.minReadsPerBarcode
-                   }.set{ ch_badfastqDirs }
+                   }.set{ ch_badFastqDirs }
             Channel.fromPath( nanoporeBarcodeDirs )
                    .filter( ~/.*barcode[0-9]{1,4}$/ )
                    .filter{ d ->
@@ -116,13 +115,12 @@ workflow {
                             }
                             count > params.minReadsPerBarcode
                    }.set{ ch_fastqDirs }
-            
-            accountNoReadsInput(ch_badfastqDirs.collect())
 
        } else if ( nanoporeNoBarcode ){
             // No, no barcodes
             Channel.fromPath( "${params.basecalled_fastq}", type: 'dir', maxDepth: 1 )
                     .set{ ch_fastqDirs }
+            ch_badFastqDirs = Channel.empty()
       } else {
             println("Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to the unmodified guppy output directory.")
             System.exit(1)
@@ -131,7 +129,7 @@ workflow {
 
    main:
      if ( params.nanopolish || params.medaka ) {
-         articNcovNanopore(ch_fastqDirs)
+         articNcovNanopore(ch_fastqDirs, ch_badFastqDirs)
      } else if ( params.illumina ) {
          if ( params.cram ) {
             ncovIlluminaCram(ch_cramFiles)

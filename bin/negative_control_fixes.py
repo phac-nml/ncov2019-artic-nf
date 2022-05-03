@@ -16,11 +16,20 @@ def init_parser():
         required=True,
         help='Path to qc_csv to check for negative control status'
     )
-
     parser.add_argument(
         '--output_prefix',
         required=True,
         help='Output file prefix'
+    )
+    parser.add_argument(
+        '--read_tsv',
+        required=False,
+        help='Path to tsv containing samples failing read count filter'
+    )
+    parser.add_argument(
+        '--mapping_tsv',
+        required=False,
+        help='Path to tsv containing samples failing read mapping count filter'
     )
 
     return parser
@@ -60,15 +69,36 @@ def main():
             continue
         df[key] = '-'.join(replace_dict[key])
 
+    # Setup to concat DFs if we have any
+    frames = [df]
+    df_columns = df.columns.values
+    # Rename to match what comes out of qc.py
+    rename_columns = {
+            'run': 'run_identifier',
+            'ct': 'qpcr_ct',
+            'date': 'collection_date'
+        }
+
+    # Append on the other failed samples for tracking
+    if args.read_tsv:
+        read_df = pd.read_csv(args.read_tsv, sep='\t', dtype=object)
+        read_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
+        frames.append(read_df)
+    if args.mapping_tsv:
+        mapping_df = pd.read_csv(args.mapping_tsv, sep='\t', dtype=object)
+        mapping_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
+        frames.append(mapping_df)
+
+    # Create final concated df and then output
+    final_df = pd.concat(frames)
     # Fill blank columns
-    df.fillna('NA', inplace=True)
+    final_df.fillna('NA', inplace=True)
     # Rearrange final output columns
     cols = list(df.columns)
     key_cols = ['sample', 'run_identifier', 'barcode', 'project_id', 'num_aligned_reads', 'num_consensus_n', 'lineage', 'variants', 'protein_variants']
     extra_cols = [x for x in cols if x not in key_cols]
-    df = df[key_cols+extra_cols]
-    df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
-
+    final_df = final_df[key_cols+extra_cols]
+    final_df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
 
 if __name__ == "__main__":
     main()
