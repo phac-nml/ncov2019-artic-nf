@@ -46,7 +46,7 @@ process accountNoReadsInput {
 
         ## Set header
         header=$(head -n 1 !{sampletsv})
-        echo "$header	qc_pass" > samples_failing_no_input_reads.tsv
+        echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_no_input_reads.tsv
 
         ## Populate
         for barcode in barcode*; do
@@ -55,14 +55,14 @@ process accountNoReadsInput {
             fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' !{sampletsv})
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
-                echo "$fileline	TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.tsv
+                echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
             fi
         done
     ## No samplesheet, just track that the barcode failed
     else
-        echo "sample	qc_pass" > samples_failing_no_input_reads.tsv
+        echo "sample	qc_pass	nextflow_qc_pass" > samples_failing_no_input_reads.tsv
         for barcode in barcode*; do
-            echo "!{params.prefix}_${barcode}	TOO_FEW_INPUT_READS" >> samples_failing_no_input_reads.tsv
+            echo "!{params.prefix}_${barcode}	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
         done
     fi
     '''
@@ -94,7 +94,7 @@ process accountReadFilterFailures {
 
         ## Set header
         header=$(head -n 1 !{sampletsv})
-        echo "$header	qc_pass" > samples_failing_read_size_filter.tsv
+        echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_read_size_filter.tsv
 
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
@@ -103,16 +103,16 @@ process accountReadFilterFailures {
             fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' !{sampletsv})
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
-                echo "$fileline	TOO_FEW_SIZE_SELECTED_READS" >> samples_failing_read_size_filter.tsv
+                echo "$fileline	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
             fi
         done
     ## No samplesheet, just track that the barcode failed
     else
-        echo "sample	qc_pass" > samples_failing_read_size_filter.tsv
+        echo "sample	qc_pass	nextflow_qc_pass" > samples_failing_read_size_filter.tsv
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
             filename="${fastq%%.*}"
-            echo "$filename	TOO_FEW_SIZE_SELECTED_READS" >> samples_failing_read_size_filter.tsv
+            echo "$filename	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
         done
     fi
     '''

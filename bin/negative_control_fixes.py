@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import re
 import pandas as pd
 import numpy as np
 
@@ -9,7 +8,6 @@ def init_parser():
     '''
     Parser Arguments to pass to script from CL
     '''
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--qc_csv',
@@ -36,13 +34,26 @@ def init_parser():
 
 
 def main():
-    
      # Init Parser and set arguments
     parser = init_parser()
     args = parser.parse_args()
 
     # Read in qc csv file
     df = pd.read_csv(args.qc_csv, sep=',', dtype=object)
+
+    # Set numeric columns so that they can be filled with 0 instead of NA. These columns ALWAYS part of output
+    numeric_columns = [
+        'num_aligned_reads',
+        'num_consensus_n',
+        'num_consensus_snvs',
+        'num_consensus_iupac',
+        'num_variants_snvs',
+        'num_variants_indel',
+        'num_variants_indel_triplet',
+        'mean_sequencing_depth',
+        'median_sequencing_depth',
+        'genome_completeness'
+    ]
 
     # Set the negative control headers which are static based on ncov-tools
     negative_columns = ['qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected']
@@ -91,13 +102,14 @@ def main():
 
     # Create final concated df and then output
     final_df = pd.concat(frames)
-    # Fill blank columns
+    # Fill blank numeric columns with 0 and then other columns with NA
+    final_df[numeric_columns] = final_df[numeric_columns].fillna(value=0)
     final_df.fillna('NA', inplace=True)
-    # Rearrange final output columns
-    cols = list(df.columns)
+    # Rearrange final output columns to output similar order each time
+    cols = list(final_df.columns)
     key_cols = ['sample', 'run_identifier', 'barcode', 'project_id', 'num_aligned_reads', 'num_consensus_n', 'lineage', 'variants', 'protein_variants']
-    extra_cols = [x for x in cols if x not in key_cols]
-    final_df = final_df[key_cols+extra_cols]
+    extra_cols = [x for x in cols if (x not in key_cols) and (x not in negative_columns)]
+    final_df = final_df[key_cols+extra_cols+negative_columns]
     final_df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
 
 if __name__ == "__main__":
