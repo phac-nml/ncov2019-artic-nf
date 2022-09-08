@@ -50,6 +50,12 @@ metadata: metadata.tsv
 assign_lineages: true
 
 #
+# set analysis mode for pangolin. Either 'fast' or 'accurate'
+#  default is accurate
+#
+pango_analysis_mode: "fast"
+
+#
 # this flag should identify the sequencing platform used, valid options are:
 # `illumina` or `oxford-nanopore`
 #
@@ -57,7 +63,7 @@ platform: oxford-nanopore
 
 # minimum completeness threshold for inclusion to the SNP tree plot, if no entry
 # is provided the default is set to 0.75
-completeness_threshold: 0.50
+completeness_threshold: 0.70
 
 # If a negative control were found, 
 # set the names of the negative control(s) below
