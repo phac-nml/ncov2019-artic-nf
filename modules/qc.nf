@@ -21,7 +21,6 @@ process makeQCCSV {
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
 
     if ( params.irida )
-
         """
         qc.py ${qcSetting} \
         --outfile ${params.prefix}.${sampleName}.qc.csv \
@@ -37,13 +36,12 @@ process makeQCCSV {
         --revision ${rev} \
         --scheme ${params.schemeVersion} \
         --scheme_bed ${scheme_bed} \
+        --script_name 'nml-ncov2019-artic-nf' \
         --sequencing_technology ${params.sequencingTechnology} \
         --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
         """
-
     else
-
         """
         qc.py ${qcSetting} \
         --outfile ${params.prefix}.${sampleName}.qc.csv \
@@ -58,12 +56,12 @@ process makeQCCSV {
         --revision ${rev} \
         --scheme ${params.schemeVersion} \
         --scheme_bed ${scheme_bed} \
+        --script_name 'nml-ncov2019-artic-nf' \
         --sequencing_technology ${params.sequencingTechnology} \
         --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
         --pcr_bed ${pcr_bed}
         """
 }
-
 
 process writeQCSummaryCSV {
 
@@ -97,6 +95,7 @@ process correctQCSummaryCSV {
     output:
     file("${params.prefix}.qc.csv")
 
+    // Note: The pipeline will always have values the read count and read filter fail files due to placeholders
     script:
     """
     if [ -f ${read_count_failures} ]; then 

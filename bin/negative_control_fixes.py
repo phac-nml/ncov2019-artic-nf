@@ -29,11 +29,16 @@ def init_parser():
         required=False,
         help='Path to tsv containing samples failing read mapping count filter'
     )
-
     return parser
 
 
 def main():
+    '''
+    One function to:
+        - Fix up the negative control columns
+        - Add in failing samples removed by pipeline for failing read count checks
+        - Order final CSV columns that are available
+    '''
      # Init Parser and set arguments
     parser = init_parser()
     args = parser.parse_args()
@@ -55,42 +60,46 @@ def main():
         'genome_completeness'
     ]
 
+    ### Negative Control Fixes ###
     # Set the negative control headers which are static based on ncov-tools
     negative_columns = ['qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected']
-
     # Place data here as column: [statement(s)] to generate the fill for the columns
     replace_dict = {}
 
+    # Fix negative control columns to contain the negative control values
     for column in negative_columns:
         # Get integer locations of the non-null data in the negative columns
         replace_dict[column] = []
         negative_data_index = np.where(df[column].notnull())[0].tolist()
-        
         if negative_data_index == []:
             continue
-
+        # Combine all negative control column values
         for spot in negative_data_index:
             # Column is always called sample based on ncov-tools output, if it changes have to change this
             print(spot)
             sample = df['sample'][spot]
             replace_dict[column].append('{}:{}'.format(sample, df[column][spot]))
 
+    # Add the combined negative columns to their column separated by a `-`
     for key in replace_dict.keys():
         if replace_dict[key] == []:
             continue
         df[key] = '-'.join(replace_dict[key])
+    ### End Negative Control Fixes ###
 
+    ### Adding in failed sample tsv files ###
     # Setup to concat DFs if we have any
     frames = [df]
     df_columns = df.columns.values
+
+    # Append on the other failed samples for tracking
+    # For the nanopore pipeline fail tracking
     # Rename to match what comes out of qc.py
     rename_columns = {
             'run': 'run_identifier',
             'ct': 'qpcr_ct',
             'date': 'collection_date'
         }
-
-    # Append on the other failed samples for tracking
     if args.read_tsv:
         read_df = pd.read_csv(args.read_tsv, sep='\t', dtype=object)
         read_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
@@ -99,8 +108,9 @@ def main():
         mapping_df = pd.read_csv(args.mapping_tsv, sep='\t', dtype=object)
         mapping_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
         frames.append(mapping_df)
+    ### End appending failing samples ###
 
-    # Create final concated df and then output
+    ### Create final concated df and then output ###
     final_df = pd.concat(frames)
     # Fill blank numeric columns with 0 and then other columns with NA
     final_df[numeric_columns] = final_df[numeric_columns].fillna(value=0)
@@ -108,6 +118,8 @@ def main():
     # Rearrange final output columns to output similar order each time
     cols = list(final_df.columns)
     key_cols = ['sample', 'run_identifier', 'barcode', 'project_id', 'num_aligned_reads', 'num_consensus_n', 'lineage', 'variants', 'protein_variants']
+    # Some key_cols are not mandatory so remove those while keeping the order of the csv file
+    key_cols = [x for x in key_cols if x in cols]
     extra_cols = [x for x in cols if (x not in key_cols) and (x not in negative_columns)]
     final_df = final_df[key_cols+extra_cols+negative_columns]
     final_df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)

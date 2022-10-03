@@ -75,18 +75,14 @@ def get_N_positions(fasta):
     return n_pos
 
 def get_pct_N_bases(fasta):
-    
     count_N = len(get_N_positions(fasta))
-
     pct_N_bases = count_N / len(fasta.seq) * 100
 
     return pct_N_bases, count_N
 
 def get_largest_N_gap(fasta):
     n_pos = get_N_positions(fasta)
-
     n_pos = [0] + n_pos + [len(fasta.seq)]
-
     n_gaps = [j-i for i, j in zip(n_pos[:-1], n_pos[1:])]
 
     return sorted(n_gaps)[-1]
@@ -96,7 +92,6 @@ def get_ref_length(ref):
     return len(record.seq)
 
 def sliding_window_N_density(sequence, window=10):
-
     sliding_window_n_density = []
     for i in range(0, len(sequence.seq), 1):
         window_mid = i + ( window / 2)
@@ -109,7 +104,6 @@ def sliding_window_N_density(sequence, window=10):
     return sliding_window_n_density
 
 def get_num_reads(bamfile):
-
     st_filter = '0x900'
     command = 'samtools view -c -F{} {}'.format(st_filter, bamfile)
     what = shlex.split(command)
@@ -142,9 +136,7 @@ def get_vcf_variants(variants_vcf, variants_list=[], locations=[]):
             variants_list.append(variant)
             locations.append(rec.POS)
 
-
     variants = (';'.join(variants_list))
-
     if variants == '':
         return 'None', None
 
@@ -163,15 +155,13 @@ def get_tsv_variants(variants_tsv, variants_list=[], locations=[]):
         `list` of locations or None if no variants found
     '''
     with open(variants_tsv) as input_handle:
-
         for index, line in enumerate(input_handle):
-
             # Pass the header line so as to not include it!
             if index == 0:
                 continue
 
+            # Match tsv variant format to vcf
             row = line.strip('\n').split('\t') # Order is [REGION, POS, REF, ALT, ...]
-
             variant = '{}{}{}'.format(row[2], row[1], row[3])
 
             # Checking for duplicate variants that have been an issue
@@ -182,7 +172,6 @@ def get_tsv_variants(variants_tsv, variants_list=[], locations=[]):
                 locations.append(row[1])
     
     variants = (';'.join(variants_list))
-
     if variants == '':
         return 'None', None
         
@@ -198,11 +187,12 @@ def find_pcrprimer_mutations(pcr_bed, genomic_locations, primer_mutations=[]):
     RETURNS:
         `str` primer mutations statement
     '''
+    # If no snps there is no primer mutations
     if genomic_locations is None:
         return 'None'
     
+    # Use bed file to check for primer mutations
     input_bed = BedTool(pcr_bed)
-
     for primer in input_bed:
         location = range(primer.start, primer.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
 
@@ -226,9 +216,11 @@ def find_sequencing_primer_mutations(primer_bed, variants_list, seq_primer_mutat
     RETURNS:
         `str` primer mutations statement
     '''
+    # If no snps there is no primer mutations
     if variants_list is None:
         return 'None'
 
+    # Use bed file to check for primer mutations
     input_bed = BedTool(primer_bed)
     for primer in input_bed:
         location = range(primer.start, primer.stop + 1) # Plus one to make sure that we get mutations in the final location of the range
@@ -313,28 +305,26 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     RETURNS:
         Populated `df`
     '''
-
     # Try to read file (as negative control may not have data in it)
     try:
         df = pd.read_csv(file_in, sep='\t')
-
     # If no data, we set up how it should be and then pass it through
     # Could also make is such that runs without negative ctrls just don't have the columns
     except pd.errors.EmptyDataError:
+        # Empty negative sample df just fill in the negative columns and sample name as its got no contamination and no data
+        # Data will be filled later in the fixes script
         negative_df = pd.DataFrame(columns=['sample', 'qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected'])
         negative_df.loc[1, 'sample'] = sample
         negative_df.fillna('NA', inplace=True)
-    
+
         return negative_df
 
     # If the column headers get changed in the input just replace the new sample column below
     # First column is the file name
     if negative:
-        new_columns = df.columns.values
-        new_columns[0] = 'sample'
-        df.columns = new_columns
+        df.columns.values[0] = 'sample'
+    # Drop run_name as it'll just be the prefix from the pipeline (which is nml for us), also drop lineage_notes due to issue with ncov-tools parsing
     else:
-        # Drop run_name as it'll just be the prefix from the pipeline (which is nml for us), also drop lineage_notes due to issue
         df.drop(columns=['run_name', 'lineage_notes'], inplace=True)
 
     # Set which column contains the sample
@@ -346,12 +336,12 @@ def parse_ncov_tsv(file_in, sample, negative=False):
             df.loc[index, sample_column] = sample
             df.fillna('NA', inplace=True)
             return df.iloc[[index]]
-    
+
     # If nothing is found, input is not a negative control and we need to keep negative columns
-    negative_df = pd.DataFrame(columns=new_columns)
+    negative_df = pd.DataFrame(columns=df.columns.values)
     negative_df.loc[1, sample_column] = sample
     negative_df.fillna('NA', inplace=True)
-    
+
     return negative_df
 
 def get_samplesheet_info(sample_tsv, sample_name, project_id, sequencing_tech):
@@ -371,7 +361,7 @@ def get_samplesheet_info(sample_tsv, sample_name, project_id, sequencing_tech):
     if 'run' in samplesheet_columns:
         df.rename(columns={'run': 'run_identifier'}, inplace=True)
 
-    # ncov-tools captures ct and date from this file so remove, scheme is sometimes here and we capture it ourselves so remove
+    # ncov-tools captures ct and date from this file so remove these, scheme is sometimes here and we capture it ourselves so remove
     columns_to_remove = set(['ct', 'date', 'scheme', 'primer_scheme']).intersection(samplesheet_columns)
     if columns_to_remove:
         df.drop(columns=columns_to_remove, inplace=True)
@@ -402,9 +392,7 @@ def go(args):
     depth_pos = read_depth_file(args.bam)
 
     depth_covered_bases = get_covered_pos(depth_pos, depth)
-
     depth_coverage = get_depth_coverage(depth_pos, ref_length)
-
     pct_covered_bases = depth_covered_bases / ref_length * 100
 
     ## Number of aligned reads calculaton
@@ -412,13 +400,11 @@ def go(args):
 
     # Unknown base calcs
     fasta = SeqIO.read(args.fasta, "fasta")
-
     pct_N_bases   = 0
     largest_N_gap = 0
     qc_pass       = "FALSE"
 
     if len(fasta.seq) != 0:
-
         pct_N_bases, count_N = get_pct_N_bases(fasta)
         largest_N_gap = get_largest_N_gap(fasta)
 
@@ -431,7 +417,7 @@ def go(args):
     if args.nanopore:
         # Vcf passing variants from nanopore pipeline
         variants, variant_locations = get_vcf_variants(args.vcf)
-    
+
     elif args.illumina:
         # Tsv variants from Illumina pipeline
         if args.tsv_variants:
@@ -475,14 +461,14 @@ def go(args):
                     'version' : [pango_des_v],
               'lineage_notes' : [scorpio_note],
               'pangolin_note' : [pango_note],
-                'script_name' : ['nml-ncov2019-artic-nf'],
+                'script_name' : [args.script_name],
                    'revision' : [args.revision]}
-        
+
         qc_df = pd.DataFrame.from_dict(qc_line)
         data_frames = [sample_sheet_df, qc_df, summary_df, negative_df]
 
     else:
-        run_name = 'NA'
+        run_identifier = 'NA'
         if args.nanopore:
             barcode = re.search(r'\d+', args.sample).group(0)
         else:
@@ -502,8 +488,8 @@ def go(args):
                         'version' : [pango_des_v],
                   'lineage_notes' : [scorpio_note],
                   'pangolin_note' : [pango_note],
-                 'run_identifier' : [run_name],
-                    'script_name' : ['nml-ncov2019-artic-nf'],
+                 'run_identifier' : [run_identifier],
+                    'script_name' : [args.script_name],
                        'revision' : [args.revision]}
 
         qc_df = pd.DataFrame.from_dict(qc_line)
@@ -527,6 +513,7 @@ def go(args):
 def main():
     import argparse
 
+    # Sorry there are a million args to input
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--nanopore', action='store_true')
@@ -545,6 +532,7 @@ def main():
     parser.add_argument('--sequencing_technology', required=True)
     parser.add_argument('--scheme', required=True)
     parser.add_argument('--scheme_bed', required=True)
+    parser.add_argument('--script_name', required=True)
     parser.add_argument('--snpeff_tsv', required=True)
     parser.add_argument('--pcr_bed', required=True)
     parser.add_argument('--project_id', required=False, default="NA")
