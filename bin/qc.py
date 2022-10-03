@@ -357,9 +357,16 @@ def get_samplesheet_info(sample_tsv, sample_name, project_id, sequencing_tech):
     '''
     df = pd.read_csv(sample_tsv, sep='\t', dtype=object)
     samplesheet_columns = df.columns.values
-    # Rename run to run_identifier as that is what is already in IRIDA
+    # Rename run to run_identifier as that is what is already in IRIDA. We always want one!
     if 'run' in samplesheet_columns:
         df.rename(columns={'run': 'run_identifier'}, inplace=True)
+    # Add if not there
+    elif 'run_identifier' not in samplesheet_columns:
+        df['run_identifier'] = 'NA'
+
+    # Add barcode to keep consistent if not there (for Illumina side)
+    if 'barcode' not in samplesheet_columns:
+        df['barcode'] = 'NA'
 
     # ncov-tools captures ct and date from this file so remove these, scheme is sometimes here and we capture it ourselves so remove
     columns_to_remove = set(['ct', 'date', 'scheme', 'primer_scheme']).intersection(samplesheet_columns)

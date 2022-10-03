@@ -117,7 +117,7 @@ def main():
     final_df.fillna('NA', inplace=True)
     # Rearrange final output columns to output similar order each time
     cols = list(final_df.columns)
-    key_cols = ['sample', 'run_identifier', 'barcode', 'project_id', 'num_aligned_reads', 'num_consensus_n', 'lineage', 'variants', 'protein_variants']
+    key_cols = ['sample', 'run_identifier', 'barcode', 'project_id', 'num_aligned_reads', 'num_consensus_n', 'lineage', 'scorpio_call', 'variants', 'protein_variants']
     # Some key_cols are not mandatory so remove those while keeping the order of the csv file
     key_cols = [x for x in key_cols if x in cols]
     extra_cols = [x for x in cols if (x not in key_cols) and (x not in negative_columns)]
