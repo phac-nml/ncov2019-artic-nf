@@ -269,7 +269,7 @@ def get_pango_des_version(pangolin_csv, sample_name):
         pangoN = df_slice.iloc[0]['note']
         return pangoV, scorpio_note_out, pangoN
     else:
-        return 'Unassigned', 'none', 'none'
+        return 'none', 'none', 'none'
 
 def get_protein_variants(aa_table):
     '''
