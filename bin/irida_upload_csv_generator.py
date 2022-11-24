@@ -35,7 +35,8 @@ def create_sample_file_df(sample_tsv, sample_dir, file_type='', file_list=[]):
     '''
     # Read in input TSV file
     df = pd.read_csv(sample_tsv, sep='\t')
-    
+    df['sample'] = df['sample'].astype("string")
+
     # Get all of the fasta files in the input folder to a list to check against our sample_tsv df
     if file_type == 'fastq':
         FILE_WANTED_REGEX = re.compile(r'^.+\.fastq$')
