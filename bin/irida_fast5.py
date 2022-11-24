@@ -93,8 +93,7 @@ def create_sample_archive_df(sample_tsv, directory, output_dir, row_list=[]):
 
 
 def main():
-    
-     # Init Parser and set arguments
+    # Init Parser and set arguments
     parser = init_parser()
     args = parser.parse_args()
 
