@@ -38,4 +38,3 @@ def makeFastqSearchPath ( illuminaPrefixes, illuminaSuffixes, fastq_exts ) {
 
     return fastqSearchPath
 }
-

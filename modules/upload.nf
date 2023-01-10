@@ -1,10 +1,9 @@
 process collateSamples {
     tag { sampleName }
-
     publishDir "${params.outdir}/qc_pass_climb_upload/${params.prefix}", pattern: "${sampleName}", mode: 'copy'
 
     input:
-    tuple(sampleName, path(bam), path(fasta))
+    tuple val(sampleName), path(bam), path(fasta)
 
     output:
     path("${sampleName}")
@@ -31,12 +30,11 @@ process prepareUploadDirectory {
     """
 }
 
-
 process uploadToCLIMB {
     tag { params.prefix }
 
     input:
-    tuple(path(sshkey), path(uploadDir))
+    tuple path(sshkey), path(uploadDir)
 
     output:
 

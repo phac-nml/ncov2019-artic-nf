@@ -1,17 +1,13 @@
 process renameSamples {
-
+    // Rename barcoded fastq samples to their name in the --irida {input tsv} param
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
-
-    //conda 'environments/extras.txt'
-    // Only with --irida flag
-
     label 'smallmem'
 
     input:
     tuple file(fastq), file(sampletsv)
 
     output:
-    file('*.fastq')
+    path('*.fastq')
 
     script:
     """
@@ -20,17 +16,16 @@ process renameSamples {
 }
 
 process accountNoReadsInput {
-
+    // Account for no reads in the input barcode folder and rename it --irida given
     label 'smallmem'
-
     publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.tsv", mode: "copy"
 
     input:
-    path(fastq_dir)
-    file(sampletsv)
+    path fastq_dir
+    file sampletsv
 
     output:
-    path 'samples_failing_no_input_reads.tsv', optional: true, emit: count_filter
+    path('samples_failing_no_input_reads.tsv'), optional: true, emit: count_filter
 
     // Use shell block so that we don't have to escape bash variables
     shell:
@@ -69,17 +64,16 @@ process accountNoReadsInput {
 }
 
 process accountReadFilterFailures {
-
+    // Account for samples that fail after the read filtering step
     label 'smallmem'
-
     publishDir "${params.outdir}/", pattern: "samples_failing_read_size_filter.tsv", mode: "copy"
 
     input:
-    path(fastq)
-    file(sampletsv)
+    path fastq
+    file sampletsv
 
     output:
-    path 'samples_failing_read_size_filter.tsv', optional: true, emit: size_filter
+    path('samples_failing_read_size_filter.tsv'), optional: true, emit: size_filter
 
     shell:
     '''
@@ -119,17 +113,13 @@ process accountReadFilterFailures {
 }
 
 process generateFastqIridaReport {
-
+    // Create directory for fastq files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"
-
-    //conda 'environments/extras.txt'
-    // Only with --irida flag
-
     label 'smallmem'
 
     input:
-    file(fastqs)
-    file(sampletsv)
+    path fastqs
+    file sampletsv
 
     output:
     path("irida_fastq")
@@ -143,17 +133,13 @@ process generateFastqIridaReport {
 }
 
 process generateFastaIridaReport {
-
+    // Create directory for fasta files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_consensus", mode: "copy"
-
-    //conda 'environments/extras.txt'
-    // Only with --irida flag
-
     label 'smallmem'
 
     input:
-    file(fastas)
-    file(sampletsv)
+    path fastas
+    file sampletsv
 
     output:
     path("irida_consensus")
@@ -167,17 +153,14 @@ process generateFastaIridaReport {
 }
 
 process generateFast5IridaReport {
-
+    // Create directory for fast5 files that can be uploaded to IRIDA.
+    //  Only ran with --upload_irida as it is an intensive process
     publishDir "${params.outdir}", pattern: "irida_fast5", mode: "symlink"
-
-    //conda 'environments/extras.txt'
-    // Only with --irida flag
-
     label 'fast5compress'
 
     input:
-    path(fast5_dirs)
-    file(sampletsv)
+    path fast5_dirs
+    file sampletsv
 
     output:
     path("irida_fast5")
@@ -189,23 +172,20 @@ process generateFast5IridaReport {
 }
 
 process correctFailNs {
-
+    // Nanopore - Correct positions that are designated as an N but can be called a reference base based on bcftools
+    tag { sampleName }
     publishDir "${params.outdir}/corrected_consensus", pattern: "*.corrected.consensus.fasta", mode: "copy"
     publishDir "${params.outdir}/corrected_consensus", pattern: "logs/*.log", mode: "copy"
-
-    //conda 'environments/extras.yml'
-    // Experimental change to re-check N calls
-
     label 'smallmem'
 
     input:
-    tuple(sampleName, path(bamfile), path(bambai), path(consensus), path(fail_vcf))
-    file(reference)
+    tuple val(sampleName), path(bamfile), path(bambai), path(consensus), path(fail_vcf)
+    file reference
 
     output:
-    path "*.corrected.consensus.fasta", optional: true, emit: corrected_consensus
-    path "logs/*.log", optional: true, emit: logs
-    path "*.process.yml" , emit: versions
+    path("*.corrected.consensus.fasta"), optional: true, emit: corrected_consensus
+    path("logs/*.log"), optional: true, emit: logs
+    path("*.process.yml"), emit: versions
 
     script:
     """
@@ -223,25 +203,22 @@ process correctFailNs {
 }
 
 process runNcovTools {
-
+    // Run ncov-tools with the bash script in the bin
+    //  Script written to not have to escape a lot of variables
     publishDir "${params.outdir}/qc_plots", pattern: "*.pdf", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*aligned.fasta", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "ncov-tools/qc_annotation", mode: "copy"
-
-    //conda 'environments/ncovtools.yml'
-    // Make conda env with mamba or it will error (takes 3+ hours without)
-
     label 'mediumcpu'
 
     input:
-    file(config)
-    file(reference)
-    file(amplicon)
-    file(nanopolishresults)
-    file(bed)
-    file(metadata)
-    path(corrected_fastas)
+    path config
+    path reference
+    path amplicon
+    path nanopolishresults
+    path bed
+    path metadata
+    path corrected_fastas
 
     // Currently have the nml_* outputs hardcoded as the config has the run name as nml
     // If you change the ncov-tools config change them as well in all instances below
@@ -249,12 +226,12 @@ process runNcovTools {
     file("*.pdf")
     path("*.tsv")
 
-    path "ncov-tools/lineages/*.csv" , emit: lineage
-    path "nml_summary_qc.tsv" , emit: ncovtools_qc
-    path "nml_negative_control_report.tsv" , emit: ncovtools_negative
-    path "nml_aligned.fasta" , emit: aligned
-    path "ncov-tools/qc_annotation/", emit: snpeff_path
-    path "*.process.yml" , emit: versions
+    path("ncov-tools/lineages/*.csv"), emit: lineage
+    path("nml_summary_qc.tsv"), emit: ncovtools_qc
+    path("nml_negative_control_report.tsv"), emit: ncovtools_negative
+    path("nml_aligned.fasta"), emit: aligned
+    path("ncov-tools/qc_annotation/"), emit: snpeff_path
+    path("*.process.yml"), emit: versions
 
     script:
     """
@@ -275,19 +252,16 @@ process runNcovTools {
 }
 
 process snpDists {
-
+    // Run snpDist check for samples in the analysis
     publishDir "${params.outdir}/", pattern: "matrix.tsv", mode: "copy"
-
-    //conda 'environments/snpdist.yml'
-
     label 'smallmem'
 
     input:
-    file(aligned_fasta)
+    file aligned_fasta
 
     output:
-    path "matrix.tsv", emit: matrix
-    path "*.process.yml" , emit: versions
+    path("matrix.tsv"), emit: matrix
+    path("*.process.yml"), emit: versions
 
     script:
     """
@@ -302,24 +276,22 @@ process snpDists {
 }
 
 process uploadIridaNanopolish {
-
-    //conda 'environments/irida_uploader.yml'
-
+    // Upload all data (Fastq, Fasta, Fast5, and metadata) for nanopolish runs to IRIDA
+    //  If both --irida and --upload_irida params given
     publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
-
     label 'Upload'
-    errorStrategy 'terminate'
+    errorStrategy 'terminate' // Don't want to duplicate samples if there is an issue
 
     input:
-    path(fastq_folder)
-    path(consensus_folder)
-    path(fast5_folder)
-    file(irida_config)
-    file(metadata_csv)
+    path fastq_folder
+    path consensus_folder
+    path fast5_folder
+    file irida_config
+    file metadata_csv
 
     output:
-    path "metadata_upload_status.csv", emit: upload_metadata
-    path "*.process.yml" , emit: versions
+    path("metadata_upload_status.csv"), emit: upload_metadata
+    path("*.process.yml"), emit: versions
 
     script:
     """
@@ -337,23 +309,21 @@ process uploadIridaNanopolish {
 }
 
 process uploadIridaMedaka {
-
-    //conda 'environments/irida_uploader.yml'
-
+    // Upload all data (Fastq, Fasta, and metadata) for medaka runs to IRIDA
+    //  If both --irida and --upload_irida params given
     publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
-
     label 'Upload'
-    errorStrategy 'terminate'
+    errorStrategy 'terminate' // Don't want to duplicate samples if there is an issue
 
     input:
-    path(fastq_folder)
-    path(consensus_folder)
-    file(irida_config)
-    file(metadata_csv)
+    path fastq_folder
+    path consensus_folder
+    file irida_config
+    file metadata_csv
 
     output:
-    path "metadata_upload_status.csv", emit: upload_metadata
-    path "*.process.yml" , emit: versions
+    path("metadata_upload_status.csv"), emit: upload_metadata
+    path("*.process.yml"), emit: versions
 
     script:
     """
@@ -370,16 +340,16 @@ process uploadIridaMedaka {
 }
 
 process uploadCorrectN {
-
-    //conda 'environments/irida_uploader.yml'
+    // Upload the N corrected consensus sequences to IRIDA
+    //  If both --irida and --upload_irida params given
 
     label 'Upload'
     errorStrategy 'terminate'
 
     input:
-    path(fastas)
-    file(irida_config)
-    file(sampletsv)
+    path fastas
+    file irida_config
+    file sampletsv
 
     script:
     """
@@ -391,16 +361,15 @@ process uploadCorrectN {
 }
 
 process outputVersions {
-
+    // Output versions for each process
     label 'smallmem'
-
     publishDir "${params.outdir}", pattern: "process_versions.yml", mode: "copy"
 
     input:
     path versions
 
     output:
-    path "process_versions.yml"
+    path("process_versions.yml")
 
     script:
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
