@@ -1,23 +1,26 @@
 #!/usr/bin/env nextflow
 
 // enable dsl2
-nextflow.preview.dsl = 2
+nextflow.enable.dsl = 2
 
 // import modules
-include {articDownloadScheme } from '../modules/artic.nf' 
-include {readTrimming} from '../modules/illumina.nf' 
-include {indexReference} from '../modules/illumina.nf'
-include {readMapping} from '../modules/illumina.nf' 
-include {trimPrimerSequences} from '../modules/illumina.nf' 
-include {callVariants} from '../modules/illumina.nf'
-include {makeConsensus} from '../modules/illumina.nf' 
-include {cramToFastq} from '../modules/illumina.nf'
+include {
+  articDownloadScheme;
+  readTrimming;
+  indexReference;
+  readMapping;
+  trimPrimerSequences;
+  callVariants;
+  makeConsensus;
+  cramToFastq
+} from '../modules/artic.nf'
 
-include {makeQCCSV} from '../modules/qc.nf'
-include {writeQCSummaryCSV} from '../modules/qc.nf'
+include {
+  makeQCCSV;
+  writeQCSummaryCSV
+} from '../modules/qc.nf'
 
 include {bamToCram} from '../modules/out.nf'
-
 include {collateSamples} from '../modules/upload.nf'
 
 // import subworkflows
@@ -107,7 +110,7 @@ workflow sequenceAnalysis {
                            header: it[-1] == 'qc_pass'
                            fail: it[-1] == 'FALSE'
                            pass: it[-1] == 'TRUE'
-    		       }
+    		               }
                        .set { qc }
 
       writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
@@ -147,7 +150,6 @@ workflow ncovIllumina {
                  .set{ ch_typingYaml }
 
           Genotyping(sequenceAnalysis.out.variants, ch_refGff, prepareReferenceFiles.out.reffasta, ch_typingYaml) 
-
       }
  
       // Upload files to CLIMB
@@ -158,7 +160,6 @@ workflow ncovIllumina {
       
         CLIMBrsync(sequenceAnalysis.out.qc_pass, ch_CLIMBkey )
       }
-
 }
 
 workflow ncovIlluminaCram {
@@ -171,4 +172,3 @@ workflow ncovIlluminaCram {
       // Run standard pipeline
       ncovIllumina(cramToFastq.out)
 }
-

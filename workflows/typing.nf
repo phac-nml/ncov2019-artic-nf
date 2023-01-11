@@ -1,6 +1,8 @@
 
-include {typeVariants} from '../modules/typing.nf'
-include {mergeTypingCSVs} from '../modules/typing.nf'
+include {
+  typeVariants;
+  mergeTypingCSVs
+} from '../modules/typing.nf'
 
 workflow Genotyping {
     take:
