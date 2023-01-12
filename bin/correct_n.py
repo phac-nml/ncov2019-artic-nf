@@ -20,7 +20,6 @@ def init_parser():
     '''
     Parser Arguments to pass to script from CL
     '''
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--bam', required=True)
     parser.add_argument('--consensus', required=True)
