@@ -4,8 +4,8 @@
 nextflow.enable.dsl = 2
 
 // import modules
+include {articDownloadScheme } from '../modules/artic.nf' 
 include {
-  articDownloadScheme;
   readTrimming;
   indexReference;
   readMapping;
@@ -13,7 +13,7 @@ include {
   callVariants;
   makeConsensus;
   cramToFastq
-} from '../modules/artic.nf'
+} from '../modules/illumina.nf'
 
 include {
   makeQCCSV;
