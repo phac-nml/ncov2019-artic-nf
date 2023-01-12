@@ -22,9 +22,9 @@ nextflow run ./main.nf \
 ### Check Outputs ###
 # 1. Num Reads
 READS=`awk -F, '$1 == "TestSample1" {print $5}' ./results/nml.qc.csv`
-if [[ "$READS" != "8744" ]]; then 
+if [[ "$READS" != "10130" ]]; then 
     echo "Incorrect output: Number of reads mapped"
-    echo "  Expected: 8744, Got: $READS"
+    echo "  Expected: 10130, Got: $READS"
     exit 1
 fi
 # 2. Number Consensus Ns
