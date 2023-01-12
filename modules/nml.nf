@@ -120,7 +120,7 @@ process generateFastqIridaReport {
     label 'conda_extra'
 
     input:
-    path fastqs
+    file fastqs
     file sampletsv
 
     output:
@@ -141,7 +141,7 @@ process generateFastaIridaReport {
     label 'conda_extra'
 
     input:
-    path fastas
+    file fastas
     file sampletsv
 
     output:
