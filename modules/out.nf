@@ -5,6 +5,7 @@ process bamToCram {
     * @output 
     */
     tag { sampleName }
+    label 'conda_extra'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${bam.baseName}.cram", mode: 'copy'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${bam.baseName}.cram.crai", mode: 'copy'
 

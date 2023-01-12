@@ -2,6 +2,7 @@ process renameSamples {
     // Rename barcoded fastq samples to their name in the --irida {input tsv} param
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
     label 'smallmem'
+    label 'conda_extra'
 
     input:
     tuple file(fastq), file(sampletsv)
@@ -116,6 +117,7 @@ process generateFastqIridaReport {
     // Create directory for fastq files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"
     label 'smallmem'
+    label 'conda_extra'
 
     input:
     path fastqs
@@ -136,6 +138,7 @@ process generateFastaIridaReport {
     // Create directory for fasta files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_consensus", mode: "copy"
     label 'smallmem'
+    label 'conda_extra'
 
     input:
     path fastas
@@ -157,6 +160,7 @@ process generateFast5IridaReport {
     //  Only ran with --upload_irida as it is an intensive process
     publishDir "${params.outdir}", pattern: "irida_fast5", mode: "symlink"
     label 'fast5compress'
+    label 'conda_extra'
 
     input:
     path fast5_dirs
@@ -177,6 +181,7 @@ process correctFailNs {
     publishDir "${params.outdir}/corrected_consensus", pattern: "*.corrected.consensus.fasta", mode: "copy"
     publishDir "${params.outdir}/corrected_consensus", pattern: "logs/*.log", mode: "copy"
     label 'smallmem'
+    label 'conda_extra'
 
     input:
     tuple val(sampleName), path(bamfile), path(bambai), path(consensus), path(fail_vcf)
@@ -280,6 +285,7 @@ process uploadIridaNanopolish {
     //  If both --irida and --upload_irida params given
     publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
     label 'Upload'
+    label 'conda_iridaupload'
     errorStrategy 'terminate' // Don't want to duplicate samples if there is an issue
 
     input:
@@ -313,6 +319,7 @@ process uploadIridaMedaka {
     //  If both --irida and --upload_irida params given
     publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
     label 'Upload'
+    label 'conda_iridaupload'
     errorStrategy 'terminate' // Don't want to duplicate samples if there is an issue
 
     input:
@@ -342,8 +349,8 @@ process uploadIridaMedaka {
 process uploadCorrectN {
     // Upload the N corrected consensus sequences to IRIDA
     //  If both --irida and --upload_irida params given
-
     label 'Upload'
+    label 'conda_iridaupload'
     errorStrategy 'terminate'
 
     input:
