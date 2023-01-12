@@ -29,11 +29,12 @@ jobs:
         miniconda-version: "latest"
         activate-environment: nextflow
         python-version: 3.8
+        mamba-version: "*"
         use-mamba: true
         channels: conda-forge,bioconda,defaults
-    - shell: bash -el {0}
-        run: |
-          mamba install nextflow
+    - name: Install Nextflow
+      run: |
+        mamba install nextflow
     - name: Nextflow Version
       run: | 
         nextflow -v
