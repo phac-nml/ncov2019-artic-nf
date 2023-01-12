@@ -7,8 +7,10 @@ mkdir -p conda_cache_dir
 # Set if metadata will be used or not for test
 if [ "$1" = "--no_metadata" ]; then
     METADATA=""
+    NAME="nml_barcode78"
 else
     METADATA="--irida $PWD/.github/data/metadata.tsv"
+    NAME="TestSample1"
 fi
 
 ### Run Nanopolish Pipeline ###
@@ -29,14 +31,14 @@ nextflow run ./main.nf \
 
 ### Check Outputs ###
 # 1. Num Reads
-READS=`awk -F, '$1 == "TestSample1" {print $5}' ./results/nml.qc.csv`
+READS=`awk -F, -v samplename="$NAME" '$1 == samplename {print $5}' ./results/nml.qc.csv`
 if [[ "$READS" != "10130" ]]; then 
     echo "Incorrect output: Number of reads mapped"
     echo "  Expected: 10130, Got: $READS"
     exit 1
 fi
 # 2. Number Consensus Ns
-N_COUNT=`awk -F, '$1 == "TestSample1" {print $6}' ./results/nml.qc.csv`
+N_COUNT=`awk -F, -v samplename="$NAME" '$1 == samplename {print $6}' ./results/nml.qc.csv`
 if [[ "$N_COUNT" != "189" ]]; then 
     echo "Incorrect output: Number Consensus Ns"
     echo "  Expected: 189, Got: $N_COUNT"
