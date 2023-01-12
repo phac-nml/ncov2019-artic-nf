@@ -209,7 +209,7 @@ process runNcovTools {
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*.tsv", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "*aligned.fasta", mode: "copy"
     publishDir "${params.outdir}/ncov-tools_qc", pattern: "ncov-tools/qc_annotation", mode: "copy"
-    label 'mediumcpu'
+    label 'ncovtools'
 
     input:
     path config
