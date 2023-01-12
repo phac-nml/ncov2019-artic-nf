@@ -50,7 +50,7 @@ jobs:
     # Unzip fast5s to run
     - name: Unzip fast5 files
       run: |
-        cd .github/nanopore/fast5_pass/barcode78/
+        cd .github/data/nanopore/fast5_pass/barcode78/
         gunzip *.fast5.gz
         cd -
 
