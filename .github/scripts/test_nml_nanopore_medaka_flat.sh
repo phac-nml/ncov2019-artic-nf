@@ -22,17 +22,29 @@ nextflow run ./main.nf \
 
 ### Check Outputs ###
 # 1. Num Reads
-READS=`awk -F, '$1 == "TestSample1" {print $5}' ./results/nml.qc.csv`
-if [[ "$READS" != "10130" ]]; then 
+READS=`awk -F, '$1 == "fastq_runid_20e5f24723fa8df117afef2fbcd04f61f053acdb_0_0" {print $5}' ./results/nml.qc.csv`
+if [[ "$READS" != "3350" ]]; then 
     echo "Incorrect output: Number of reads mapped"
-    echo "  Expected: 10130, Got: $READS"
+    echo "  Expected: 3350, Got: $READS"
+    exit 1
+fi
+READS=`awk -F, '$1 == "fastq_runid_20e5f24723fa8df117afef2fbcd04f61f053acdb_1_0" {print $5}' ./results/nml.qc.csv`
+if [[ "$READS" != "3419" ]]; then 
+    echo "Incorrect output: Number of reads mapped"
+    echo "  Expected: 3419, Got: $READS"
     exit 1
 fi
 # 2. Number Consensus Ns
-N_COUNT=`awk -F, '$1 == "TestSample1" {print $6}' ./results/nml.qc.csv`
-if [[ "$N_COUNT" != "189" ]]; then 
+N_COUNT=`awk -F, '$1 == "fastq_runid_20e5f24723fa8df117afef2fbcd04f61f053acdb_0_0" {print $6}' ./results/nml.qc.csv`
+if [[ "$N_COUNT" != "1238" ]]; then 
     echo "Incorrect output: Number Consensus Ns"
-    echo "  Expected: 189, Got: $N_COUNT"
+    echo "  Expected: 1238, Got: $N_COUNT"
+    exit 1
+fi
+N_COUNT=`awk -F, '$1 == "fastq_runid_20e5f24723fa8df117afef2fbcd04f61f053acdb_1_0" {print $6}' ./results/nml.qc.csv`
+if [[ "$N_COUNT" != "1238" ]]; then 
+    echo "Incorrect output: Number Consensus Ns"
+    echo "  Expected: 1238, Got: $N_COUNT"
     exit 1
 fi
 
