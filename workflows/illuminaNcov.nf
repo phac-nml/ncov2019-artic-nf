@@ -4,7 +4,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include {articDownloadScheme } from '../modules/artic.nf' 
+include { articDownloadScheme } from '../modules/artic.nf' 
 include {
   readTrimming;
   indexReference;
@@ -20,16 +20,16 @@ include {
   writeQCSummaryCSV
 } from '../modules/qc.nf'
 
-include {bamToCram} from '../modules/out.nf'
-include {collateSamples} from '../modules/upload.nf'
+include { bamToCram } from '../modules/out.nf'
+include { collateSamples } from '../modules/upload.nf'
 
 // import subworkflows
-include {CLIMBrsync} from './upload.nf'
-include {Genotyping} from './typing.nf'
+include { CLIMBrsync } from './upload.nf'
+include { Genotyping } from './typing.nf'
 
 workflow prepareReferenceFiles {
     // Get reference fasta
-    if (params.ref) {
+    if ( params.ref ) {
       Channel.fromPath(params.ref)
               .set{ ch_refFasta }
     } else {
@@ -42,7 +42,7 @@ workflow prepareReferenceFiles {
     /* Either get BWA aux files from reference 
        location or make them fresh */
     
-    if (params.ref) {
+    if ( params.ref ) {
       // Check if all BWA aux files exist, if not, make them
       bwaAuxFiles = []
       refPath = new File(params.ref).getAbsolutePath()
@@ -68,7 +68,7 @@ workflow prepareReferenceFiles {
     /* If bedfile is supplied, use that,
        if not, get it from ARTIC github repo */ 
  
-    if (params.bed ) {
+    if ( params.bed ) {
       Channel.fromPath(params.bed)
              .set{ ch_bedFile }
 
@@ -119,9 +119,9 @@ workflow sequenceAnalysis {
                            .join(makeConsensus.out, by: 0)
                            .join(trimPrimerSequences.out.mapped))     
 
-      if (params.outCram) {
+      if ( params.outCram ) {
         bamToCram(trimPrimerSequences.out.mapped.map{it[0] } 
-                        .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
+                        .join(trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
 
       }
 
