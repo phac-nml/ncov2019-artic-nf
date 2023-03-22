@@ -113,6 +113,9 @@ process articMinIONMedaka {
     if ( params.normalise ) {
         minionRunConfigBuilder.add("--normalise ${params.normalise}")
     }
+    if ( params.no_frameshift ){
+        minionRunConfigBuilder.add("--no-frameshifts")
+    }
     if ( params.bwa ) {
         minionRunConfigBuilder.add("--bwa")
     } else {
@@ -172,6 +175,9 @@ process articMinIONNanopolish {
     minionRunConfigBuilder = []
     if ( params.normalise ) {
         minionRunConfigBuilder.add("--normalise ${params.normalise}")
+    }
+    if ( params.no_frameshift ){
+        minionRunConfigBuilder.add("--no-frameshifts")
     }
     if ( params.bwa ) {
         minionRunConfigBuilder.add("--bwa")
