@@ -57,9 +57,6 @@ jobs:
         cd .github/data/nanopore/fast5_pass/barcode78/
         gunzip *.fast5.gz
         cd -
-    - name: Make bin Executable
-      run: |
-        chmod +x bin/*
 
     # Run Pipelines
     - name: Run Nanopore Nanopolish with metadata
