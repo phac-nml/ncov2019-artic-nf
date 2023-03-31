@@ -60,16 +60,16 @@ jobs:
 
     # Run Pipelines
     - name: Run Nanopore Nanopolish with metadata
-      run: bash .github/scripts/test_nml_nanopore_nanopolish.sh
+      run: .github/scripts/test_nml_nanopore_nanopolish.sh
 
     - name: Run Nanopore Nanopolish with no metadata
-      run: bash .github/scripts/test_nml_nanopore_nanopolish.sh --no_metadata
+      run: .github/scripts/test_nml_nanopore_nanopolish.sh --no_metadata
 
     - name: Run Nanopore Medaka with metadata
-      run: bash .github/scripts/test_nml_nanopore_medaka.sh
+      run: .github/scripts/test_nml_nanopore_medaka.sh
 
     - name: Run Nanopore Medaka flat
-      run: bash .github/scripts/test_nml_nanopore_medaka_flat.sh
+      run: .github/scripts/test_nml_nanopore_medaka_flat.sh
 
     - name: Done Pipelines
       run: echo "Done running pipelines"
