@@ -1,0 +1,75 @@
+#####################################
+# Nextflow CI Test for NML Pipeline #
+#####################################
+name: ncov2019-artic-nf NML CI
+
+on:
+  pull_request: # Run on all pull requests
+  push:
+    branches: master
+  schedule: # Run master on 5th of each month
+    - cron: 0 6 5 * *
+      branches: master
+
+jobs:
+  pipeline-test:
+    name: ncov2019-artic-nf nanopore CI tests
+    runs-on: ubuntu-latest
+    # For conda
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+    # Setup repo
+    - uses: actions/checkout@v3
+    - name: Create artifacts dir
+      run: mkdir -p artifacts
+
+    # Add conda, mamba, and nextflow
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2.2.0
+      with:
+        miniconda-version: "latest"
+        activate-environment: nextflow
+        python-version: 3.8
+        mamba-version: "*"
+        use-mamba: true
+        channels: conda-forge,bioconda,defaults
+    - name: Install Nextflow
+      run: |
+        mamba install nextflow
+    - name: Nextflow Version
+      run: | 
+        nextflow -v
+        conda --version
+    # Check how repo looks incase there is an issue
+    - name: List Files
+      run: |
+        ls -al ${{ github.workspace }}
+    # Run Help Command
+    - name: Pipeline Help CMD
+      run: |
+        nextflow run ./main.nf --help
+    # Unzip fast5s to run
+    - name: Unzip fast5 files
+      run: |
+        cd .github/data/nanopore/fast5_pass/barcode78/
+        gunzip *.fast5.gz
+        cd -
+
+    # Run Pipelines
+    - name: Run Nanopore Nanopolish with metadata
+      run: .github/scripts/test_nml_nanopore_nanopolish.sh
+
+    - name: Run Nanopore Nanopolish with no metadata
+      run: .github/scripts/test_nml_nanopore_nanopolish.sh --no_metadata
+
+    - name: Run Nanopore Medaka with metadata
+      run: .github/scripts/test_nml_nanopore_medaka.sh
+
+    - name: Run Nanopore Medaka flat
+      run: .github/scripts/test_nml_nanopore_medaka_flat.sh
+
+    - name: Done Pipelines
+      run: echo "Done running pipelines"

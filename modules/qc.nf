@@ -1,15 +1,16 @@
 process makeQCCSV {
+    // Make singular sample qc.csv files
     tag { sampleName }
-
+    label 'conda_extra'
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple sampleName, path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(sample_sheet), path(snp_eff_path), path(scheme_bed)
-    path(pcr_bed)
+    tuple val(sampleName), path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(sample_sheet), path(snp_eff_path), path(scheme_bed)
+    path pcr_bed
 
     output:
-    path "${params.prefix}.${sampleName}.qc.csv", emit: csv
-    path "${sampleName}.depth.png"
+    path("${params.prefix}.${sampleName}.qc.csv"), emit: csv
+    path("${sampleName}.depth.png")
 
     script:
     if ( params.illumina ) {
@@ -19,7 +20,6 @@ process makeQCCSV {
     }
 
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
-
     if ( params.irida )
         """
         qc.py ${qcSetting} \
@@ -64,7 +64,7 @@ process makeQCCSV {
 }
 
 process writeQCSummaryCSV {
-
+    // Concatenate individual QC files together
     tag { params.prefix }
 
     input:
@@ -82,20 +82,19 @@ process writeQCSummaryCSV {
 }
 
 process correctQCSummaryCSV {
-
+    // Reorder and correct columns in the concatenated QC file. Focused on neg controls and tracking failed samples
     publishDir "${params.outdir}", pattern: "${params.prefix}.qc.csv", mode: 'copy'
-
     tag { params.prefix }
 
     input:
-    file(initial_qc_csv)
-    file(read_count_failures)
-    file(read_filter_failures)
+    path initial_qc_csv
+    path read_count_failures
+    path read_filter_failures
 
     output:
     file("${params.prefix}.qc.csv")
 
-    // Note: The pipeline will always have values the read count and read filter fail files due to placeholders
+    // Note: The pipeline will always have values the read_count and read_filter fail files due to placeholders
     script:
     """
     if [ -f ${read_count_failures} ]; then 

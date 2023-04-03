@@ -38,7 +38,6 @@ def ivar_variants_to_vcf_string(FileIn,RefIn):
                     https://github.com/saramonzon
                     https://github.com/svarona
     '''
-
     filename = os.path.splitext(os.path.basename(FileIn))[0]
 
     with open(RefIn,"r") as f: 

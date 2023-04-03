@@ -53,7 +53,6 @@ def read_depth_file(bamfile):
 
     return pos_depth
 
-
 def get_covered_pos(pos_depth, min_depth):
     counter = 0
     for contig, pos,depth in pos_depth:

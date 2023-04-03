@@ -5,7 +5,6 @@ import re
 import subprocess
 import pandas as pd
 
-
 def init_parser():
     '''
     Parser Arguments to pass to script from CL
@@ -22,6 +21,7 @@ def init_parser():
         required=True,
         help='File path to tab separated sample sheet with the following columns ["sample", "run", "barcode", "project_id", "ct", "date"]'
     )
+
     return parser
 
 def parse_sample_tsv(sample_tsv, fastq):

@@ -29,8 +29,8 @@ def init_parser():
         required=False,
         help='Path to tsv containing samples failing read mapping count filter'
     )
-    return parser
 
+    return parser
 
 def main():
     '''

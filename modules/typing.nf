@@ -1,19 +1,18 @@
 
 process typeVariants {
-
+    // Type variants from pipeline devs
     tag { sampleName }
-
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}/variants", pattern: "${sampleName}.variants.csv", mode: 'copy'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}/vcf", pattern: "${sampleName}.csq.vcf", mode: 'copy'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}/typing", pattern: "${sampleName}.typing.csv", mode: 'copy'
 
     input:
-    tuple sampleName, path(variants), path(gff), path(ref), path(yaml)
+    tuple val(sampleName), path(variants), path(gff), path(ref), path(yaml)
 
     output:
-    path "${sampleName}.variants.csv", optional: true, emit: variants_csv
-    path "${sampleName}.typing.csv", optional: true, emit: typing_csv
-    path "${sampleName}.csq.vcf", emit: csq_vcf
+    path("${sampleName}.variants.csv"), optional: true, emit: variants_csv
+    path("${sampleName}.typing.csv"), optional: true, emit: typing_csv
+    path("${sampleName}.csq.vcf"), emit: csq_vcf
 
     script:
     if( params.illumina )
@@ -45,9 +44,8 @@ process typeVariants {
 }
 
 process mergeTypingCSVs {
-
+    // Merge type csv files
     tag { params.prefix }
-
     publishDir "${params.outdir}", pattern: "${params.prefix}.typing_summary.csv", mode: 'copy'
     publishDir "${params.outdir}", pattern: "${params.prefix}.variant_summary.csv", mode: 'copy'
 
@@ -55,8 +53,8 @@ process mergeTypingCSVs {
     tuple path('typing/*'), path('variant/*')
 
     output:
-    path "${params.prefix}.typing_summary.csv", emit: typing_summary_csv
-    path "${params.prefix}.variant_summary.csv", emit: variant_summary_csv
+    path("${params.prefix}.typing_summary.csv"), emit: typing_summary_csv
+    path("${params.prefix}.variant_summary.csv"), emit: variant_summary_csv
 
     script:
     """
@@ -86,4 +84,3 @@ process mergeTypingCSVs {
 
     """
 }
-

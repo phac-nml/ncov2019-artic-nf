@@ -1,32 +1,35 @@
 #!/usr/bin/env nextflow
 
 // enable dsl2
-nextflow.preview.dsl = 2
+nextflow.enable.dsl = 2
 
 // import modules
-include {articDownloadScheme } from '../modules/artic.nf' 
-include {readTrimming} from '../modules/illumina.nf' 
-include {indexReference} from '../modules/illumina.nf'
-include {readMapping} from '../modules/illumina.nf' 
-include {trimPrimerSequences} from '../modules/illumina.nf' 
-include {callVariants} from '../modules/illumina.nf'
-include {makeConsensus} from '../modules/illumina.nf' 
-include {cramToFastq} from '../modules/illumina.nf'
+include { articDownloadScheme } from '../modules/artic.nf' 
+include {
+  readTrimming;
+  indexReference;
+  readMapping;
+  trimPrimerSequences;
+  callVariants;
+  makeConsensus;
+  cramToFastq
+} from '../modules/illumina.nf'
 
-include {makeQCCSV} from '../modules/qc.nf'
-include {writeQCSummaryCSV} from '../modules/qc.nf'
+include {
+  makeQCCSV;
+  writeQCSummaryCSV
+} from '../modules/qc.nf'
 
-include {bamToCram} from '../modules/out.nf'
-
-include {collateSamples} from '../modules/upload.nf'
+include { bamToCram } from '../modules/out.nf'
+include { collateSamples } from '../modules/upload.nf'
 
 // import subworkflows
-include {CLIMBrsync} from './upload.nf'
-include {Genotyping} from './typing.nf'
+include { CLIMBrsync } from './upload.nf'
+include { Genotyping } from './typing.nf'
 
 workflow prepareReferenceFiles {
     // Get reference fasta
-    if (params.ref) {
+    if ( params.ref ) {
       Channel.fromPath(params.ref)
               .set{ ch_refFasta }
     } else {
@@ -39,7 +42,7 @@ workflow prepareReferenceFiles {
     /* Either get BWA aux files from reference 
        location or make them fresh */
     
-    if (params.ref) {
+    if ( params.ref ) {
       // Check if all BWA aux files exist, if not, make them
       bwaAuxFiles = []
       refPath = new File(params.ref).getAbsolutePath()
@@ -65,7 +68,7 @@ workflow prepareReferenceFiles {
     /* If bedfile is supplied, use that,
        if not, get it from ARTIC github repo */ 
  
-    if (params.bed ) {
+    if ( params.bed ) {
       Channel.fromPath(params.bed)
              .set{ ch_bedFile }
 
@@ -107,7 +110,7 @@ workflow sequenceAnalysis {
                            header: it[-1] == 'qc_pass'
                            fail: it[-1] == 'FALSE'
                            pass: it[-1] == 'TRUE'
-    		       }
+    		               }
                        .set { qc }
 
       writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
@@ -116,9 +119,9 @@ workflow sequenceAnalysis {
                            .join(makeConsensus.out, by: 0)
                            .join(trimPrimerSequences.out.mapped))     
 
-      if (params.outCram) {
+      if ( params.outCram ) {
         bamToCram(trimPrimerSequences.out.mapped.map{it[0] } 
-                        .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
+                        .join(trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
 
       }
 
@@ -147,7 +150,6 @@ workflow ncovIllumina {
                  .set{ ch_typingYaml }
 
           Genotyping(sequenceAnalysis.out.variants, ch_refGff, prepareReferenceFiles.out.reffasta, ch_typingYaml) 
-
       }
  
       // Upload files to CLIMB
@@ -158,7 +160,6 @@ workflow ncovIllumina {
       
         CLIMBrsync(sequenceAnalysis.out.qc_pass, ch_CLIMBkey )
       }
-
 }
 
 workflow ncovIlluminaCram {
@@ -171,4 +172,3 @@ workflow ncovIlluminaCram {
       // Run standard pipeline
       ncovIllumina(cramToFastq.out)
 }
-

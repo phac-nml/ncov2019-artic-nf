@@ -30,7 +30,7 @@ def init_parser():
 
 def create_sample_archive_df(sample_tsv, directory, output_dir, row_list=[]):
     '''
-    Take input sample sheet, input directory, and output directory to create archives of fast5 files and the df of values needed for IRIDA Uploads
+    Take input sample sheet, input directory, and output directory to create archives of fast5 files and the df of values needed for IRIDA Uploads.
     '''
     df = pd.read_csv(sample_tsv, sep='\t')
     for sample, proj_id, barcode, run in zip(df['sample'], df['project_id'], df['barcode'], df['run']):

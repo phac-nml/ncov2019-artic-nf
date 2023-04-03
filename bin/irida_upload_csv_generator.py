@@ -26,6 +26,7 @@ def init_parser():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--fastq', action='store_true', help="Create SampleList for nanopore fastq files")
     group.add_argument('--fasta', action='store_true', help="Create SampleList for consensus fasta files")
+
     return parser
 
 def create_sample_file_df(sample_tsv, sample_dir, file_type='', file_list=[]):

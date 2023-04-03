@@ -11,4 +11,3 @@ workflow CLIMBrsync {
       prepareUploadDirectory(ch_uploadDirectories.collect())
       uploadToCLIMB(ch_CLIMBkey.combine(prepareUploadDirectory.out))
 }
-

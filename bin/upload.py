@@ -32,6 +32,7 @@ def init_parser():
         action='store_true',
         help='Turns off sample creation for sample names not found in IRIDA'
     )
+
     return parser
 
 def generate_api_instance(config_in):
