@@ -90,6 +90,10 @@ process articMinIONMedaka {
     label 'mediumcpu'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}*", mode: "copy"
 
+    // Specific error strategy here due to bcftools consensus issue occuring semi-frequently
+    maxRetries 3
+    errorStrategy  { task.attempt <= maxRetries  ? 'retry' : 'ignore' }
+
     input:
     tuple file(fastq), file(schemeRepo)
 
