@@ -6,7 +6,7 @@ mkdir -p conda_cache_dir
 
 ### Run Medaka Pipeline Flat ###
 nextflow run ./main.nf \
-    -profile conda,test \
+    -profile mamba,test \
     --cache ./conda_cache_dir \
     --medaka \
     --flat \
