@@ -15,7 +15,7 @@ fi
 
 ### Run Nanopolish Pipeline ###
 nextflow run ./main.nf \
-    -profile conda,test \
+    -profile mamba,test \
     --cache ./conda_cache_dir \
     --nanopolish \
     --prefix 'nml' \
