@@ -330,7 +330,9 @@ def parse_ncov_tsv(file_in, sample, negative=False):
     sample_column = 'sample'
 
     # Finding the data, all samples will be in ncov-tools summary output (as they had data generated)
+    # Implemented not great, should re-visit at some point
     for index, name in enumerate(df[sample_column].tolist()):
+        name = str(name)
         if re.search(sample, name):
             df.loc[index, sample_column] = sample
             df.fillna('NA', inplace=True)
