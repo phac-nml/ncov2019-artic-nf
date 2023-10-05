@@ -13,7 +13,7 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
 
 **This fork** adds a few changes and additions which have been made to optimize running this pipeline for NML Canada's *nanopore* infrastructure. Illumina data is currently not supported with the current implementation of this fork. Changes include:
 - Renaming inputs using a samplesheet
-- Bumping `artic` to v1.2.3
+- Bumping `artic` to v1.2.4
 - Setting up outputs for upload to IRIDA
 - Running [ncov-tools](https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml)
 - More checks and additions to the final QC file
