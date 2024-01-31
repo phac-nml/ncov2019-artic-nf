@@ -13,7 +13,9 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
 
 **This fork** adds a few changes and additions which have been made to optimize running this pipeline for NML Canada's *nanopore* infrastructure. Illumina data is currently not supported with the current implementation of this fork. Changes include:
 - Renaming inputs using a samplesheet
-- Bumping `artic` to v1.2.3
+- Bumping `artic` to v1.2.4
+  - Mostly for medaka version updates and models
+  - Default medaka version is specified as "r941_min_hac_g507"
 - Setting up outputs for upload to IRIDA
 - Running [ncov-tools](https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml)
 - More checks and additions to the final QC file
@@ -35,7 +37,9 @@ You can either:
 
 ------------
 
-Note: We currently only support `conda` for dependency installation/containerization. It is recommended to have conda installed and use that when running this pipeline
+*Note 1*: At this time We currently only support `conda` for dependency installation/containerization. It is required to have conda installed and use that when running this pipeline
+
+*Note 2:* When running this pipeline it is important to specify your conda cache directory with `--cache 'path/to/cacheDir'` as generation of the ncov-tools env can be extremly slow even with mamba. It should resolve but if not, you will have to install it yourself with `mamba env create -f=./ncov-tools/environment.yml -p path/to/cacheDir/ncovtools-<hash>`. The hash is from the nextflow and you will find it in the error for making the environment
 
 #### **Method - Nanopolish**
 
@@ -50,8 +54,6 @@ Command with new optional arguments:
 ```
 nextflow run phac-nml/ncov2019-artic-nf [-profile conda,slurm,lsf,nml] --cache /path/to/conda_cache_dir/ --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt --irida /path/to/samplesheet_with_names.tsv --upload_irida /path/to/irida_uploader/config
 ```
-
-*IMPORTANT:* When running this pipeline it is important to specify your conda cache directory with `--cache 'path/to/cacheDir'` as generation of the ncov-tools env is extremly slow even with mamba. It should resolve but if not, you will have to install it yourself with `mamba env create -f=./ncov-tools/environment.yml -p path/to/cacheDir/ncovtools-<hash>`. The hash is from the nextflow and you will find it in the error for making the environment
 
 ------------
 
@@ -69,9 +71,7 @@ Command with new optional arguments:
 nextflow run phac-nml/ncov2019-artic-nf [-profile conda,slurm,lsf,nml] --cache /path/to/conda_cache_dir/ --medaka --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --medakaModel "Model" --irida /path/to/samplesheet_with_names.tsv --upload_irida /path/to/irida_uploader/config --flat
 ```
 
-*IMPORTANT 1:* The medaka model should be set to the one that most closely matches your data. More info available here: https://github.com/nanoporetech/medaka#models
-
-*IMPORTANT 2:* When running this pipeline it is important to specify your conda cache directory with `--cache 'path/to/cacheDir'` as generation of the ncov-tools env is extremly slow even with mamba. It should resolve but if not, you will have to install it yourself with `mamba env create -f=./ncov-tools/environment.yml -p path/to/cacheDir/ncovtools-<hash>`. The hash is from the nextflow and you will find it in the error for making the environment
+*IMPORTANT 1:* The medaka model should be set to the one that most closely matches your data otherwise the variant calls may be inaccurate. More info available here: https://github.com/nanoporetech/medaka#models. The default model is currently "r941_min_hac_g507"
 
 #### **Nanopore Inputs**
 
@@ -123,7 +123,7 @@ parser = directory
 
 #### --correctN 
 
-This argument is by default set to `true` and can be turned off by passing `--correctN false`. This argument will double check the failed variants file Ns to see if there sufficient evidence in the pileup to call a reference base at the location. This program was created as some spots were noted to fail but have a lot of evidence to have a reference base to call. Most notably are spots 16255-16256 and 24981-24982 which were found to have this issue in 80% of the output data.
+This argument is by default set to `true` and can be turned off by passing `--correctN false`. This argument will double check the failed variants file Ns to see if there sufficient evidence in the pileup to call a reference base at the location. This program was created as some spots were noted to fail but have a lot of evidence to have a reference base to call. Most notably are spots 16255-16256 and 24981-24982 (2020 data) which were found to have this issue in 80% of the output data.
 
 This **does not** overwrite the nanopolish consensus file so both are output for comparison along with a log of what the correctN program has done.
 
@@ -151,24 +151,5 @@ Common configuration options are set in `conf/base.config`. Workflow specific co
 ---------------
 
 ### Illumina - Not Supported in this Fork
-`nextflow run connor-lab/ncov2019-artic-nf [-profile conda,singularity,docker,slurm,lsf] --illumina --prefix "output_file_prefix" --directory /path/to/reads`
 
-You can also use cram file input by passing the --cram flag.
-You can also specify cram file output by passing the --outCram flag.
-
-For production use at large scale, where you will run the workflow many times, you can avoid cloning the scheme repository, creating an ivar bed file and indexing the reference every time by supplying both --ivarBed /path/to/ivar-compatible.bed and --alignerRefPrefix /path/to/bwa-indexed/ref.fa.
-
-Alternatively you can avoid just the cloning of the scheme repository to remain on a fixed revision of it over time by passing --schemeRepoURL /path/to/own/clone/of/github.com/artic-network/artic-ncov2019. This removes any internet access from the workflow except for the optional upload steps.
-
-The Illumina workflow leans heavily on the excellent [ivar](https://github.com/andersen-lab/ivar) for primer trimming and consensus making. This workflow will be updated to follow ivar, as its also in very active development! Use `--illumina` to run the Illumina workflow. Use `--directory` to point to an Illumina output directory usually coded something like: `<date>_<machine_id>_<run_no>_<some_zeros>_<flowcell>`. The workflow will recursively grab all fastq files under this directory, so be sure that what you want is in there, and what you don't, isn't! 
-
-Important config options are:
-
-| Option | Description |
-|:-------|------------:|
-|allowNoprimer | Allow reads that don't have primer sequence? Ligation prep = false, nextera = true|
-|illuminaKeepLen | Length of illumina reads to keep after primer trimming|
-|illuminaQualThreshold | Sliding window quality threshold for keeping reads after primer trimming (illumina)|
-|mpileupDepth | Mpileup depth for ivar|
-|ivarFreqThreshold | ivar frequency threshold for variant|
-|ivarMinDepth | Minimum coverage depth to call variant|
+Running the illumina pipeline in this fork will not work!
