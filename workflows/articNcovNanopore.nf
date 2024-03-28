@@ -541,10 +541,4 @@ workflow articNcovNanopore {
 
           Genotyping(ch_nanopore_vcf, ch_refGff, ch_nanopore_reffasta, ch_typingYaml)
       }
-      if ( params.upload ) {
-        Channel.fromPath("${params.CLIMBkey}")
-               .set{ ch_CLIMBkey }
-
-        CLIMBrsync(sequenceAnalysis.out.qc_pass, ch_CLIMBkey )
-      }
 }
