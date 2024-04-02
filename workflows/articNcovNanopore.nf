@@ -1,9 +1,9 @@
-// ARTIC ncov workflow
-
-// enable dsl2
-nextflow.enable.dsl = 2
-
-// import modules
+/*
+  Main Pipeline Workflows
+    - ARTIC ncov nanopore nanopolish workflow
+    - ARTIC ncov nanopore medata workflow
+*/
+// Modules to include
 include {
   articDownloadScheme;
   articGuppyPlex;
@@ -35,14 +35,14 @@ include {
   outputVersions
 } from '../modules/nml.nf'
 
-include {bamToCram} from '../modules/out.nf'
-include {collateSamples} from '../modules/upload.nf'
+include { bamToCram } from '../modules/out.nf'
 
-// import subworkflows
-include {CLIMBrsync} from './upload.nf'
+// Subworkflows to include
 include {Genotyping} from './typing.nf'
 
-// workflow component for artic pipeline with nanopolish
+/*
+  ARTIC Nanopolish Workflow
+*/
 workflow sequenceAnalysisNanopolish {
     take:
       ch_runFastqDirs
@@ -209,7 +209,9 @@ workflow sequenceAnalysisNanopolish {
       vcf = articMinIONNanopolish.out.vcf
 }
 
-// workflow component for artic pipeline using medaka
+/*
+  ARTIC Medaka Workflow
+*/
 workflow sequenceAnalysisMedaka {
     take:
       ch_runFastqDirs
@@ -363,7 +365,9 @@ workflow sequenceAnalysisMedaka {
       vcf = articMinIONMedaka.out.vcf
 }
 
-// Write new process for analyzing flat directory of nanopore fastq/fastq.gz files
+/*
+  ARTIC Medaka Flat Workflow
+*/
 workflow sequenceAnalysisMedakaFlat {
     take:
       ch_fastqs
@@ -485,7 +489,10 @@ workflow sequenceAnalysisMedakaFlat {
       vcf = articMinIONMedaka.out.vcf
 }
 
-// Process that controls what pipeline to utilize to get results
+/*
+  Control Workflow
+    Controls what pipeline to utilize to get results
+*/
 workflow articNcovNanopore {
     take:
       ch_fastqDirs
