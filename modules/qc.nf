@@ -13,11 +13,7 @@ process makeQCCSV {
     path("${sampleName}.depth.png")
 
     script:
-    if ( params.illumina ) {
-       qcSetting = "--illumina"
-    } else {
-       qcSetting = "--nanopore"
-    }
+    qcSetting = "--nanopore"
 
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
     if ( params.irida )

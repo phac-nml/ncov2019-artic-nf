@@ -15,32 +15,18 @@ process typeVariants {
     path("${sampleName}.csq.vcf"), emit: csq_vcf
 
     script:
-    if( params.illumina )
-        """
-        type_vcf.py \
-        -i ${sampleName} \
-        -y ${yaml} \
-        -ov ${sampleName}.csq.vcf \
-        -ot ${sampleName}.typing.csv \
-        -os ${sampleName}.variants.csv \
-        -dp ${params.csqDpThreshold} \
-        -af ${params.csqAfThreshold} \
-        -t ${variants} \
-        ${gff} ${ref}
-        """
-    else
-        """
-        type_vcf.py \
-        -i ${sampleName} \
-        -y ${yaml} \
-        -ov ${sampleName}.csq.vcf \
-        -ot ${sampleName}.typing.csv \
-        -os ${sampleName}.variants.csv \
-        -dp ${params.csqDpThreshold} \
-        -af ${params.csqAfThreshold} \
-        -v ${variants} \
-        ${gff} ${ref}
-        """
+    """
+    type_vcf.py \
+    -i ${sampleName} \
+    -y ${yaml} \
+    -ov ${sampleName}.csq.vcf \
+    -ot ${sampleName}.typing.csv \
+    -os ${sampleName}.variants.csv \
+    -dp ${params.csqDpThreshold} \
+    -af ${params.csqAfThreshold} \
+    -v ${variants} \
+    ${gff} ${ref}
+    """
 }
 
 process mergeTypingCSVs {
