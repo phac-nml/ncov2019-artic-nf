@@ -61,48 +61,53 @@ workflow {
     // Input barcodes and fastqs check
     // ===============================
     nanoporeBarcodeDirs = file("${params.basecalled_fastq}/barcode*", type: 'dir', maxdepth: 1 )
-    nanoporeNoBarcode = file("${params.basecalled_fastq}/*.fastq*", type: 'file', maxdepth: 1)
+    nanoporeFastqs = file("${params.basecalled_fastq}/*.fastq*", type: 'file', maxdepth: 1)
 
+    // If barcodes, check number of reads and then go to pass/filtered branches
     if ( nanoporeBarcodeDirs ) {
-        // Yes, barcodes!
         Channel.fromPath( nanoporeBarcodeDirs )
-                .filter( ~/.*barcode[0-9]{1,4}$/ )
-                .filter{ d ->
-                        def count = 0
-                        for (x in d.listFiles()) {
-                            if (x.isFile()) {
-                                count += x.countFastq()
-                            }
-                        }
-                        count <= params.minReadsPerBarcode
-                }.set{ ch_badFastqDirs }
-        Channel.fromPath( nanoporeBarcodeDirs )
-                .filter( ~/.*barcode[0-9]{1,4}$/ )
-                .filter{ d ->
-                        def count = 0
-                        for (x in d.listFiles()) {
-                            if (x.isFile()) {
-                                count += x.countFastq()
-                            }
-                        }
-                        count > params.minReadsPerBarcode
-                }.set{ ch_fastqDirs }
+            .filter( ~/.*barcode[0-9]{1,4}$/ )
+            .map{ dir -> 
+                def count = 0
+                for ( x in dir.listFiles() ) {
+                    if ( x.isFile() ) {
+                        count += x.countFastq()
+                    }
+                }
+                return [ dir.baseName, file(dir), count ]
+            }.set{ ch_initial_fastq_dirs }
 
-    } else if ( nanoporeNoBarcode ) {
-        // No, no barcodes
-        Channel.fromPath( "${params.basecalled_fastq}", type: 'dir', maxDepth: 1 )
-                .set{ ch_fastqDirs }
-        ch_badFastqDirs = Channel.empty()
+    // No barcodes, check number of reads in single file and then go to pass/filtered branches
+    } else if ( nanoporeFastqs ) {
+        Channel.fromPath( nanoporeFastqs )
+            .map{ in_f -> 
+                def count = 0
+                if (in_f.isFile()) {
+                    count = in_f.countFastq()
+                }
+                return [ in_f.baseName.replaceAll(~/\.fastq.*$/, ''), file(in_f), count ]
+            }.set{ ch_initial_fastq_dirs }
+
     } else {
         log.error("ERROR: Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to the unmodified guppy output directory.")
         System.exit(1)
     }
 
+    // Final input pathes and filtering
+    ch_initial_fastq_dirs
+        .branch{ it ->
+            pass: it[2] > params.minReadsPerBarcode
+                return [ it[0], it[1] ]
+            filtered: it[2] <= params.minReadsPerBarcode
+                return [ it[0], it[1] ]
+        }
+        .set{ ch_fastqs }
+
     // Execute Main Named process
     main:
-        if ( params.nanopolish || params.medaka ) {
-            articNcovNanopore(ch_fastqDirs, ch_badFastqDirs)
-        } else {
-            println("Please select a workflow with --nanopolish or --medaka")
-        }
+    if ( params.nanopolish || params.medaka ) {
+        articNcovNanopore(ch_fastqs.pass, ch_fastqs.filtered)
+    } else {
+        println("Please select a workflow with --nanopolish or --medaka")
+    }
 }
