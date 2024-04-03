@@ -1,54 +1,53 @@
 process renameSamples {
     // Rename barcoded fastq samples to their name in the --irida {input tsv} param
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
-    label 'smallmem'
     label 'conda_extra'
 
     input:
-    tuple file(fastq), file(sampletsv)
+    tuple val(sampleName), path(fastq)
+    path samplesheet_tsv
 
     output:
-    path('*.fastq')
+    path "*.fastq", emit: fastq
 
     script:
     """
-    rename_fastq.py --fastq ${fastq} --sample_info ${sampletsv}
+    rename_fastq.py --fastq ${fastq} --sample_info ${samplesheet_tsv}
     """
 }
 
 process accountNoReadsInput {
     // Account for no reads in the input barcode folder and rename it --irida given
-    label 'smallmem'
     publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.tsv", mode: "copy"
 
     input:
-    path fastq_dir
-    file sampletsv
+    path fastqs
+    path samplesheet_tsv
 
     output:
-    path('samples_failing_no_input_reads.tsv'), optional: true, emit: count_filter
+    path "samples_failing_no_input_reads.tsv", optional: true, emit: count_filter
 
     // Use shell block so that we don't have to escape bash variables
     shell:
     '''
     ## If we have a samplesheet, we want all info along with a note in the QC Pass column carried along
-    if [ -f !{sampletsv} ]; then 
+    if [ -f !{samplesheet_tsv} ]; then 
         ## Make sure we have barcode column
-        barcode_col=$(awk -v RS='\t' '/barcode/{print NR; exit}' !{sampletsv})
+        barcode_col=$(awk -v RS='\t' '/barcode/{print NR; exit}' !{samplesheet_tsv})
         if [ "$barcode_col" == "" ]; then
             echo "ERROR: Column 'barcode' does not exist and is required"
             exit 1
         fi
 
         ## Set header
-        header=$(head -n 1 !{sampletsv})
+        header=$(head -n 1 !{samplesheet_tsv})
         echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_no_input_reads.tsv
 
         ## Populate
         for barcode in barcode*; do
             barcode_n="${barcode//[!0-9]/}"
             ## Awk line uses the column number of the barcode column found and checks that it matches to the barcode number
-            fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' !{sampletsv})
+            fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' !{samplesheet_tsv})
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
                 echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
@@ -70,32 +69,32 @@ process accountReadFilterFailures {
     publishDir "${params.outdir}/", pattern: "samples_failing_read_size_filter.tsv", mode: "copy"
 
     input:
-    path fastq
-    file sampletsv
+    path fastqs
+    path samplesheet_tsv
 
     output:
-    path('samples_failing_read_size_filter.tsv'), optional: true, emit: size_filter
+    path "samples_failing_read_size_filter.tsv", optional: true, emit: size_filter
 
     shell:
     '''
     ## If we have a samplesheet, use it to keep all of the values
-    if [ -f !{sampletsv} ]; then 
+    if [ -f !{samplesheet_tsv} ]; then 
         ## Make sure we have sample column
-        sample_col=$(awk -v RS='\t' '/sample/{print NR; exit}' !{sampletsv})
+        sample_col=$(awk -v RS='\t' '/sample/{print NR; exit}' !{samplesheet_tsv})
         if [ "$sample_col" == "" ]; then
             echo "ERROR: Column 'sample' does not exist and is required"
             exit 1
         fi
 
         ## Set header
-        header=$(head -n 1 !{sampletsv})
+        header=$(head -n 1 !{samplesheet_tsv})
         echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_read_size_filter.tsv
 
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
             filename="${fastq%%.*}"
             ## Use AWK to get the column as grep is having issues with extra data (barcode not in samplesheet, 'extra_nml_barcode' samples)
-            fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' !{sampletsv})
+            fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' !{samplesheet_tsv})
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
                 echo "$fileline	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
@@ -120,17 +119,17 @@ process generateFastqIridaReport {
     label 'conda_extra'
 
     input:
-    file fastqs
-    file sampletsv
+    path fastqs
+    path samplesheet_tsv
 
     output:
-    path("irida_fastq")
+    path "irida_fastq", emit: fastq_dir
 
     script:
     """
     mkdir irida_fastq
     mv ${fastqs} irida_fastq
-    irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir irida_fastq --fastq
+    irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_fastq --fastq
     """
 }
 
@@ -141,17 +140,17 @@ process generateFastaIridaReport {
     label 'conda_extra'
 
     input:
-    file fastas
-    file sampletsv
+    path fastas
+    path samplesheet_tsv
 
     output:
-    path("irida_consensus")
+    path "irida_consensus", emit: fasta_dir
 
     script:
     """
     mkdir irida_consensus
     mv *.consensus.fasta irida_consensus
-    irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir irida_consensus --fasta
+    irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_consensus --fasta
     """
 }
 
@@ -164,14 +163,14 @@ process generateFast5IridaReport {
 
     input:
     path fast5_dirs
-    file sampletsv
+    path samplesheet_tsv
 
     output:
-    path("irida_fast5")
+    path "irida_fast5", emit: fast5_dir
 
     script:
     """
-    irida_fast5.py --sample_info ${sampletsv} --sample_dir ${fast5_dirs} --output_dir irida_fast5
+    irida_fast5.py --sample_info ${samplesheet_tsv} --sample_dir ${fast5_dirs} --output_dir irida_fast5
     """
 }
 
@@ -185,12 +184,12 @@ process correctFailNs {
 
     input:
     tuple val(sampleName), path(bamfile), path(bambai), path(consensus), path(fail_vcf)
-    file reference
+    path reference
 
     output:
-    path("*.corrected.consensus.fasta"), optional: true, emit: corrected_consensus
-    path("logs/*.log"), optional: true, emit: logs
-    path("*.process.yml"), emit: versions
+    tuple val(sampleName), path("*.corrected.consensus.fasta"), optional: true, emit: corrected_consensus
+    path "logs/*.log", optional: true, emit: logs
+    path "*.process.yml", emit: versions
 
     script:
     """
@@ -219,28 +218,28 @@ process runNcovTools {
     input:
     path config
     path reference
-    path amplicon
+    path amplicon_bed
     path nanopolishresults
-    path bed
-    path metadata
+    path scheme_bed
+    path samplesheet_tsv
     path corrected_fastas
 
     // Currently have the nml_* outputs hardcoded as the config has the run name as nml
     // If you change the ncov-tools config change them as well in all instances below
     output:
-    file("*.pdf")
+    path("*.pdf")
     path("*.tsv")
 
-    path("ncov-tools/lineages/*.csv"), emit: lineage
-    path("nml_summary_qc.tsv"), emit: ncovtools_qc
-    path("nml_negative_control_report.tsv"), emit: ncovtools_negative
-    path("nml_aligned.fasta"), emit: aligned
-    path("ncov-tools/qc_annotation/"), emit: snpeff_path
-    path("*.process.yml"), emit: versions
+    path "ncov-tools/lineages/*.csv", emit: lineage
+    path "nml_summary_qc.tsv", emit: ncovtools_qc
+    path "nml_negative_control_report.tsv", emit: ncovtools_negative
+    path "nml_aligned.fasta", emit: aligned
+    path "ncov-tools/qc_annotation/", emit: snpeff_path
+    path "*.process.yml", emit: versions
 
     script:
     """
-    bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${bed} ${metadata} ${task.cpus}
+    bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${amplicon_bed} ${samplesheet_tsv} ${task.cpus}
 
     # Versions #
     cat <<-END_VERSIONS > ncovtools.process.yml
@@ -262,11 +261,11 @@ process snpDists {
     label 'smallmem'
 
     input:
-    file aligned_fasta
+    path aligned_fasta
 
     output:
-    path("matrix.tsv"), emit: matrix
-    path("*.process.yml"), emit: versions
+    path "matrix.tsv", emit: matrix
+    path "*.process.yml", emit: versions
 
     script:
     """
@@ -280,11 +279,11 @@ process snpDists {
     """
 }
 
-process uploadIridaNanopolish {
-    // Upload all data (Fastq, Fasta, Fast5, and metadata) for nanopolish runs to IRIDA
-    //  If both --irida and --upload_irida params given
+process uploadIridaFiles {
+    // Upload all data to IRIDA
+    //  Includes: Fastq, Fasta, Fast5 (if nanopolish), and metadata 
     publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
-    label 'Upload'
+    label 'upload'
     label 'conda_iridaupload'
     errorStrategy 'terminate' // Don't want to duplicate samples if there is an issue
 
@@ -292,54 +291,29 @@ process uploadIridaNanopolish {
     path fastq_folder
     path consensus_folder
     path fast5_folder
-    file irida_config
-    file metadata_csv
+    path irida_config
+    path pipeline_data_csv
 
     output:
-    path("metadata_upload_status.csv"), emit: upload_metadata
-    path("*.process.yml"), emit: versions
+    path "metadata_upload_status.csv", emit: upload_metadata
+    path "*.process.yml", emit: versions
 
     script:
     """
+    # Always will be uploaded
+    # -----------------------
     irida-uploader --config ${irida_config} -d ${fastq_folder}
     irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
-    upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
-    irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
+    upload.py --config ${irida_config} --metadata_csv  ${pipeline_data_csv}
+
+    # Only if Nanopolish is run
+    # -----------------------
+    if [ -d ${fast5_folder} ]; then
+        irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
+    fi
 
     # Versions #
-    cat <<-END_VERSIONS > upload_all_nanopolish.process.yml
-        "${task.process}":
-            irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
-    END_VERSIONS
-    """
-}
-
-process uploadIridaMedaka {
-    // Upload all data (Fastq, Fasta, and metadata) for medaka runs to IRIDA
-    //  If both --irida and --upload_irida params given
-    publishDir "${params.outdir}", pattern: "metadata_upload_status.csv", mode: "copy"
-    label 'Upload'
-    label 'conda_iridaupload'
-    errorStrategy 'terminate' // Don't want to duplicate samples if there is an issue
-
-    input:
-    path fastq_folder
-    path consensus_folder
-    file irida_config
-    file metadata_csv
-
-    output:
-    path("metadata_upload_status.csv"), emit: upload_metadata
-    path("*.process.yml"), emit: versions
-
-    script:
-    """
-    irida-uploader --config ${irida_config} -d ${fastq_folder}
-    irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
-    upload.py --config ${irida_config} --metadata_csv  ${metadata_csv}
-
-    # Versions #
-    cat <<-END_VERSIONS > upload_all_medaka.process.yml
+    cat <<-END_VERSIONS > upload_all.process.yml
         "${task.process}":
             irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
     END_VERSIONS
@@ -349,20 +323,20 @@ process uploadIridaMedaka {
 process uploadCorrectN {
     // Upload the N corrected consensus sequences to IRIDA
     //  If both --irida and --upload_irida params given
-    label 'Upload'
+    label 'upload'
     label 'conda_iridaupload'
     errorStrategy 'terminate'
 
     input:
-    path fastas
-    file irida_config
-    file sampletsv
+    path corrected_fastas
+    path irida_config
+    path samplesheet_tsv
 
     script:
     """
     mkdir -p corrected_consensus
     mv *.corrected.consensus.fasta corrected_consensus
-    irida_upload_csv_generator.py --sample_info ${sampletsv} --sample_dir corrected_consensus --fasta
+    irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir corrected_consensus --fasta
     irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
     """
 }
@@ -376,7 +350,7 @@ process outputVersions {
     path versions
 
     output:
-    path("process_versions.yml")
+    path "process_versions.yml"
 
     script:
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId

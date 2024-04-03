@@ -9,8 +9,8 @@ process makeQCCSV {
     path pcr_bed
 
     output:
-    path("${params.prefix}.${sampleName}.qc.csv"), emit: csv
-    path("${sampleName}.depth.png")
+    path "${params.prefix}.${sampleName}.qc.csv", emit: csv
+    path "${sampleName}.depth.png"
 
     script:
     qcSetting = "--nanopore"
@@ -67,7 +67,7 @@ process writeQCSummaryCSV {
     val lines
 
     output:
-    file("${params.prefix}.initial.qc.csv")
+    path "${params.prefix}.initial.qc.csv"
 
     exec:
     task.workDir.resolve("${params.prefix}.initial.qc.csv").withWriter { writer ->
@@ -88,7 +88,7 @@ process correctQCSummaryCSV {
     path read_filter_failures
 
     output:
-    file("${params.prefix}.qc.csv")
+    path "${params.prefix}.qc.csv"
 
     // Note: The pipeline will always have values the read_count and read_filter fail files due to placeholders
     script:
