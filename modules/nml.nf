@@ -220,7 +220,7 @@ process runNcovTools {
     path reference
     path amplicon_bed
     path nanopolishresults
-    path scheme_bed
+    path primer_bed
     path samplesheet_tsv
     path corrected_fastas
 
@@ -239,7 +239,7 @@ process runNcovTools {
 
     script:
     """
-    bash run_ncovtools.sh ${config} ${amplicon} ${reference} ${amplicon_bed} ${samplesheet_tsv} ${task.cpus}
+    bash run_ncovtools.sh ${config} ${amplicon_bed} ${reference} ${primer_bed} ${samplesheet_tsv} ${task.cpus}
 
     # Versions #
     cat <<-END_VERSIONS > ncovtools.process.yml

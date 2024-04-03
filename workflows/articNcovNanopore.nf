@@ -210,7 +210,10 @@ workflow articNanopore {
 
     // Concat to final CSV
     writeQCSummaryCSV(
-        qc.header.concat(qc.pass).concat(qc.fail).toList()
+        qc.header
+            .concat(qc.pass)
+            .concat(qc.fail)
+            .toList()
     )
 
     // Fix final CSV
@@ -226,17 +229,17 @@ workflow articNanopore {
     // =============================== //
     // IRIDA Upload Samplesheets made even if not uploading (for tracking)
     if ( ch_irida_metadata ) {
-        generateFastaIridaReport(
-            articMinION.out.consensus_fasta
-              .collect(),
-            ch_irida_metadata
-        )
-
         // Adding size filter for IRIDA uploads, 1kB needed or it breaks
         generateFastqIridaReport(
-            renameSamples.out
-                .filter{ it.size() > 1024 }
-                .collect(),
+            ch_fastqs.pass
+                .concat(ch_fastqs.filtered)
+                .filter{ it[1].size() > 1024 }
+                .collect{ it[1] },
+            ch_irida_metadata
+        )
+        generateFastaIridaReport(
+            articMinION.out.consensus_fasta
+              .collect{ it[1] },
             ch_irida_metadata
         )
 
