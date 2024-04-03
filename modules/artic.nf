@@ -128,7 +128,7 @@ process articMinION {
         $sampleName
 
     # Versions #
-    cat <<-END_VERSIONS > versions.yml
+    cat <<-END_VERSIONS > artic_minion.process.yml
     "${task.process}":
         artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
     END_VERSIONS

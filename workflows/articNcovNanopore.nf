@@ -92,7 +92,7 @@ workflow articNanopore {
     // Rename if we have IRIDA metadata
     if ( ch_irida_metadata ) {
         renameSamples(
-            articGuppyPlex.out.fastq,
+            ch_fastqs,
             ch_irida_metadata
         )
 
@@ -119,7 +119,7 @@ workflow articNanopore {
         .branch{
             pass: it[1].countFastq() > params.minReadsArticGuppyPlex
             filtered: it[1].countFastq() <= params.minReadsArticGuppyPlex
-        }
+        }.set{ ch_fastqs }
     accountReadFilterFailures(
         ch_fastqs.filtered
             .collect{ it[1] },
@@ -134,9 +134,9 @@ workflow articNanopore {
     // =============================== //
     articMinION(
         ch_fastqs.pass,
-        articDownloadScheme.out.scheme,
         ch_fast5s,
         ch_seqsum,
+        articDownloadScheme.out.scheme
     )
     ch_versions = ch_versions.mix(articMinION.out.versions.first())
 
@@ -172,7 +172,7 @@ workflow articNanopore {
             .collect(),
         articDownloadScheme.out.bed,
         ch_irida_metadata,
-        ch_corrected
+        ch_corrected_fasta
             .collect{ it[1] }
             .ifEmpty([])
     )
@@ -186,17 +186,17 @@ workflow articNanopore {
 
     // Making final CSV file with a few steps
     makeQCCSV(
-        articMinIONNanopolish.out.ptrim
-            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
-            .join(articMinIONNanopolish.out.vcf, by: 0)
+        articMinION.out.ptrim
+            .join(articMinION.out.consensus_fasta, by: 0)
+            .join(articMinION.out.vcf, by: 0)
             .combine(articDownloadScheme.out.reffasta)
             .combine(runNcovTools.out.lineage)
             .combine(runNcovTools.out.ncovtools_qc)
             .combine(runNcovTools.out.ncovtools_negative)
-            .combine(ch_irida)
             .combine(runNcovTools.out.snpeff_path)
             .combine(articDownloadScheme.out.bed),
-            params.pcr_primers
+        ch_irida_metadata,
+        params.pcr_primers
     )
 
     // Adding pass/fail column
@@ -227,9 +227,9 @@ workflow articNanopore {
     // IRIDA Upload Samplesheets made even if not uploading (for tracking)
     if ( ch_irida_metadata ) {
         generateFastaIridaReport(
-            articMinIONNanopolish.out.consensus_fasta
+            articMinION.out.consensus_fasta
               .collect(),
-            ch_irida
+            ch_irida_metadata
         )
 
         // Adding size filter for IRIDA uploads, 1kB needed or it breaks
@@ -237,7 +237,7 @@ workflow articNanopore {
             renameSamples.out
                 .filter{ it.size() > 1024 }
                 .collect(),
-            ch_irida
+            ch_irida_metadata
         )
 
         // We upload now if given a config
@@ -281,7 +281,7 @@ workflow articNanopore {
     // =============================== //
     emit:
         reffasta = articDownloadScheme.out.reffasta
-        vcf = articMinIONNanopolish.out.vcf
+        vcf = articMinION.out.vcf
 }
 
 /*

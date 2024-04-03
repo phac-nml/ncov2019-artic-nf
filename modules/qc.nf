@@ -5,7 +5,8 @@ process makeQCCSV {
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple val(sampleName), path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(sample_sheet), path(snp_eff_path), path(scheme_bed)
+    tuple val(sampleName), path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(snp_eff_path), path(scheme_bed)
+    path sample_sheet
     path pcr_bed
 
     output:
