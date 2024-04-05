@@ -17,6 +17,7 @@ fi
 nextflow run ./main.nf \
     -profile mamba,test \
     --cache ./conda_cache_dir \
+    $METADATA \
     --nanopolish \
     --prefix 'nml' \
     --basecalled_fastq $PWD/.github/data/nanopore/fastq_pass/ \
@@ -26,8 +27,7 @@ nextflow run ./main.nf \
     --min_length 800 \
     --max_length 1600 \
     --sequencingTechnology GridION \
-    --schemeRepoURL 'https://github.com/DarianHole/primer-schemes.git' \
-    $METADATA
+    --schemeRepoURL 'https://github.com/DarianHole/primer-schemes.git'
 
 ### Check Outputs ###
 # 1. Num Reads

@@ -31,23 +31,23 @@ process accountNoReadsInput {
     shell:
     '''
     ## If we have a samplesheet, we want all info along with a note in the QC Pass column carried along
-    if [ -f !{samplesheet_tsv} ]; then 
+    if [ -f "!{samplesheet_tsv}" ]; then 
         ## Make sure we have barcode column
-        barcode_col=$(awk -v RS='\t' '/barcode/{print NR; exit}' !{samplesheet_tsv})
+        barcode_col=$(awk -v RS='\t' '/barcode/{print NR; exit}' "!{samplesheet_tsv}")
         if [ "$barcode_col" == "" ]; then
             echo "ERROR: Column 'barcode' does not exist and is required"
             exit 1
         fi
 
         ## Set header
-        header=$(head -n 1 !{samplesheet_tsv})
+        header=$(head -n 1 "!{samplesheet_tsv}")
         echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_no_input_reads.tsv
 
         ## Populate
         for barcode in barcode*; do
             barcode_n="${barcode//[!0-9]/}"
             ## Awk line uses the column number of the barcode column found and checks that it matches to the barcode number
-            fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' !{samplesheet_tsv})
+            fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' "!{samplesheet_tsv}")
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
                 echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
@@ -77,24 +77,24 @@ process accountReadFilterFailures {
 
     shell:
     '''
-    ## If we have a samplesheet, use it to keep all of the values
-    if [ -f !{samplesheet_tsv} ]; then 
+    ## If we have a samplesheet, use it to keep all of metadata the values
+    if [ -f "!{samplesheet_tsv}" ]; then 
         ## Make sure we have sample column
-        sample_col=$(awk -v RS='\t' '/sample/{print NR; exit}' !{samplesheet_tsv})
+        sample_col=$(awk -v RS='\t' '/sample/{print NR; exit}' "!{samplesheet_tsv}")
         if [ "$sample_col" == "" ]; then
             echo "ERROR: Column 'sample' does not exist and is required"
             exit 1
         fi
 
         ## Set header
-        header=$(head -n 1 !{samplesheet_tsv})
+        header=$(head -n 1 "!{samplesheet_tsv}")
         echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_read_size_filter.tsv
 
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
             filename="${fastq%%.*}"
             ## Use AWK to get the column as grep is having issues with extra data (barcode not in samplesheet, 'extra_nml_barcode' samples)
-            fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' !{samplesheet_tsv})
+            fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' "!{samplesheet_tsv}")
             ## No matches, skip line
             if [ "$fileline" != "" ]; then
                 echo "$fileline	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
@@ -106,7 +106,7 @@ process accountReadFilterFailures {
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
             filename="${fastq%%.*}"
-            echo "$filename	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
+            echo "!{params.prefix}_$filename	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
         done
     fi
     '''
