@@ -7,8 +7,7 @@
 include {
     articDownloadScheme ;
     articGuppyPlex ;
-    articMinION ;
-    articRemoveUnmappedReads
+    articMinION
 } from '../modules/artic.nf' 
 
 include {
@@ -139,11 +138,6 @@ workflow articNanopore {
         articDownloadScheme.out.scheme
     )
     ch_versions = ch_versions.mix(articMinION.out.versions.first())
-
-    articRemoveUnmappedReads(
-        articMinION.out.mapped
-    )
-    ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
 
     // =============================== //
     // Failing N Position Adjustment

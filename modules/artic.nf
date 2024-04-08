@@ -27,7 +27,7 @@ process articGuppyPlex {
     tuple val(sampleName), path(fastq)
 
     output:
-    tuple val(sampleName), path("${sampleName}.fastq"), emit: fastq
+    tuple val(sampleName), path("${params.prefix}_${sampleName}.fastq"), emit: fastq
     path "*.process.yml", emit: versions
 
     script:
@@ -38,7 +38,7 @@ process articGuppyPlex {
         artic guppyplex \\
             --min-length ${params.min_length} \\
             --max-length ${params.max_length} \\
-            --output ${sampleName}.fastq \\
+            --output ${params.prefix}_${sampleName}.fastq \\
             --directory $fastq
 
         # Versions #
@@ -54,7 +54,7 @@ process articGuppyPlex {
         artic guppyplex \\
             --min-length ${params.min_length} \\
             --max-length ${params.max_length} \\
-            --output ${sampleName}.fastq \\
+            --output ${params.prefix}_${sampleName}.fastq \\
             --directory input_fastq
 
         # Versions #
@@ -131,29 +131,6 @@ process articMinION {
     cat <<-END_VERSIONS > artic_minion.process.yml
     "${task.process}":
         artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
-    END_VERSIONS
-    """
-}
-
-process articRemoveUnmappedReads {
-    // Remove reads that were not mapped to reference sequence
-    tag { sampleName }
-
-    input:
-    tuple val(sampleName), path(bamfile)
-
-    output:
-    tuple val(sampleName), path("${sampleName}.mapped.sorted.bam"), emit: mapped_bam
-    path "*.process.yml", emit: versions
-
-    script:
-    """
-    samtools view -F4 -o ${sampleName}.mapped.sorted.bam ${bamfile}
-
-    # Versions #
-    cat <<-END_VERSIONS > artic_remove_unmapped.process.yml
-        "${task.process}":
-            samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
     END_VERSIONS
     """
 }
