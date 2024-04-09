@@ -17,7 +17,7 @@ include {
 } from '../modules/qc.nf'
 
 include {
-    renameSamples ;
+    renameBarcodeSamples ;
     accountNoReadsInput ;
     accountReadFilterFailures ;
     generateFastqIridaReport ;
@@ -49,7 +49,10 @@ ch_local_scheme = params.local_scheme ? file(params.local_scheme, type: 'dir', c
 ch_irida_metadata = params.irida ? file(params.irida, type: 'file', checkIfExists: true) : []
 ch_irida_upload_conf = params.upload_irida ? file(params.upload_irida, type: 'file', checkIfExists: true) : []
 
-workflow articNanopore {
+/*
+  Main Workflow
+*/
+workflow articNcovNanopore {
     take:
     ch_fastqs
     ch_filtered_fastqs
@@ -59,7 +62,7 @@ workflow articNanopore {
     ch_versions = Channel.empty()
 
     // =============================== //
-    // Logic Checks - Probably unneeded here
+    // Logic Checks - Probably unneeded here as its in main.nf
     // =============================== //
     if ( params.nanopolish ) { 
         if ( (! ch_fast5s) || (! ch_seqsum) ) {
@@ -90,13 +93,14 @@ workflow articNanopore {
 
     // Rename if we have IRIDA metadata
     if ( ch_irida_metadata ) {
-        renameSamples(
+        // Renames samples that are from barcode directories
+        renameBarcodeSamples(
             ch_fastqs,
             ch_irida_metadata
         )
 
         // Re-map to create samplename path tuple again
-        renameSamples.out.fastq
+        renameBarcodeSamples.out.fastq
           .map{ fastq -> [ fastq.baseName.replaceAll(~/\.fastq.*$/, ''), fastq] }
           .set{ ch_fastqs }
     }
@@ -110,10 +114,11 @@ workflow articNanopore {
         ch_irida_metadata
     )
     accountNoReadsInput.out.count_filter
-        .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
+        .ifEmpty([])
         .set{ ch_noReadsTracking }
     
     // Failing size selection read count check
+    //  Remap fastqs channel to branch the pass/filtered fastq files and use those accordingly
     ch_fastqs
         .branch{
             pass: it[1].countFastq() > params.minReadsArticGuppyPlex
@@ -125,7 +130,7 @@ workflow articNanopore {
         ch_irida_metadata
     )
     accountReadFilterFailures.out.size_filter
-        .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
+        .ifEmpty([])
         .set{ ch_filterReadsTracking }
 
     // =============================== //
@@ -194,6 +199,7 @@ workflow articNanopore {
     )
 
     // Adding pass/fail column
+    //  Not used anymore really but it is still here for now
     makeQCCSV.out.csv.splitCsv()
         .unique()
         .branch {
@@ -221,9 +227,9 @@ workflow articNanopore {
     // =============================== //
     // Uploads and Final Tracking
     // =============================== //
-    // IRIDA Upload Samplesheets made even if not uploading (for tracking)
+    // IRIDA Upload Samplesheets made even if not uploading (for tracking) or after run-check upload
     if ( ch_irida_metadata ) {
-        // Adding size filter for IRIDA uploads, 1kB needed or it breaks
+        // Size filter for IRIDA fastq uploads, 1kB needed or it breaks the upload
         generateFastqIridaReport(
             ch_fastqs.pass
                 .concat(ch_fastqs.filtered)
@@ -237,7 +243,7 @@ workflow articNanopore {
             ch_irida_metadata
         )
 
-        // We upload now if given a config
+        // Upload now if given a config
         if ( ch_irida_upload_conf ) {
             // Fast5s made here as its slow and not needed for normal run tracking
             ch_fast5_upload = Channel.empty()
@@ -271,36 +277,15 @@ workflow articNanopore {
         }
     }
 
+    // =============================== //
+    // Tool versions for tracking
+    // =============================== //
+    //  todo - adjust how the versions are collected and collated
     outputVersions(ch_versions.collect())
 
     // =============================== //
-    // Emit for Genotyping Subworkflow
-    // =============================== //
-    emit:
-        reffasta = articDownloadScheme.out.reffasta
-        vcf = articMinION.out.vcf
-}
-
-/*
-  Control Workflow
-    Controls what pipeline to utilize to get results
-    Could likely be removed as the workflow has been generalized
-*/
-workflow articNcovNanopore {
-    take:
-    ch_fastq_pass
-    ch_fastq_filtered
-
-    main:
-    articNanopore(
-        ch_fastq_pass,
-        ch_fastq_filtered
-    )
-    // For typing workflow
-    ch_nanopore_vcf = articNanopore.out.vcf
-    ch_nanopore_reffasta = articNanopore.out.reffasta
-
     // Typing workflow that isn't really used but can be kept in
+    // =============================== //
     if ( params.gff ) {
         Channel.fromPath("${params.gff}")
             .set{ ch_refGff }
@@ -309,9 +294,9 @@ workflow articNcovNanopore {
             .set{ ch_typingYaml }
 
         Genotyping(
-            ch_nanopore_vcf,
+            articMinION.out.vcf,
             ch_refGff,
-            ch_nanopore_reffasta,
+            articDownloadScheme.out.reffasta,
             ch_typingYaml
         )
     }

@@ -1,27 +1,33 @@
 #!/usr/bin/env nextflow
 
 // enable dsl2
+// ===============================
 nextflow.enable.dsl = 2
 
 // include modules
+// ===============================
 include {printHelp} from './modules/help.nf'
 
-// import subworkflows
+// import main workflow
+// ===============================
 include {articNcovNanopore} from './workflows/articNcovNanopore.nf' 
 
 // Help
+// ===============================
 if ( params.help ) {
     printHelp()
     exit 0
 }
 
 // Simple profile warning
+// ===============================
 if ( params.profile ) {
     log.error("ERROR: Profile should have a single dash: -profile")
     System.exit(1)
 }
 
 // Pipeline required input checks
+// ===============================
 if ( params.nanopolish ) {
     if (! params.basecalled_fastq ) {
         log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
@@ -55,8 +61,8 @@ if ( ! params.prefix ) {
 } 
 
 // Main Workflow
+// ===============================
 workflow {
-
     // ===============================
     // Input barcodes and fastqs check
     // ===============================
@@ -106,7 +112,10 @@ workflow {
     // Execute Main Named process
     main:
     if ( params.nanopolish || params.medaka ) {
-        articNcovNanopore(ch_fastqs.pass, ch_fastqs.filtered)
+        articNcovNanopore(
+            ch_fastqs.pass,
+            ch_fastqs.filtered
+        )
     } else {
         println("Please select a workflow with --nanopolish or --medaka")
     }

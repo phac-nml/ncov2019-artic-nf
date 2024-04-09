@@ -21,24 +21,26 @@ process articGuppyPlex {
     //  Length should be based on amplicon size
     tag { sampleName }
     label 'mediumcpu'
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}*.fastq", mode: "copy"
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${newSampleName}*.fastq", mode: "copy"
 
     input:
     tuple val(sampleName), path(fastq)
 
     output:
-    tuple val(sampleName), path("${params.prefix}_${sampleName}.fastq"), emit: fastq
+    tuple val(newSampleName), path("${newSampleName}.fastq"), emit: fastq
     path "*.process.yml", emit: versions
 
     script:
     // Fastq input can either be a directory or a set of fastq files
     //  Outputs are the same then after allowing a streamlined pipeline
     if ( fastq.isDirectory() ) {
+        // For directories rename with the prefix
+        newSampleName = params.prefix + '_' + sampleName
         """
         artic guppyplex \\
             --min-length ${params.min_length} \\
             --max-length ${params.max_length} \\
-            --output ${params.prefix}_${sampleName}.fastq \\
+            --output ${newSampleName}.fastq \\
             --directory $fastq
 
         # Versions #
@@ -48,13 +50,16 @@ process articGuppyPlex {
         END_VERSIONS
         """
     } else {
+        // For flat files just keep the name
+        //  Still need to set the newSampleName to be added as part of the output tuple
+        newSampleName = sampleName
         """
         mkdir -p input_fastq
         mv $fastq input_fastq/
         artic guppyplex \\
             --min-length ${params.min_length} \\
             --max-length ${params.max_length} \\
-            --output ${params.prefix}_${sampleName}.fastq \\
+            --output ${newSampleName}.fastq \\
             --directory input_fastq
 
         # Versions #
@@ -95,6 +100,10 @@ process articMinION {
     if ( params.medaka ) {
         argsList.add("--medaka")
         argsList.add("--medaka-model ${params.medaka_model}")
+        // Medaka only no longshot
+        if ( params.no_longshot ) {
+            argsList.add("--no-longshot")
+        }
     } else {
         argsList.add("--fast5-directory $fast5_dir")
         argsList.add("--sequencing-summary $sequencing_summary")

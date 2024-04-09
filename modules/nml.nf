@@ -1,5 +1,6 @@
-process renameSamples {
-    // Rename barcoded fastq samples to their name in the --irida {input tsv} param
+process renameBarcodeSamples {
+    // Rename barcoded fastq samples to their name in the samplesheet
+    //  Non-barcoded samples will have this step run but it'll just pass back the input
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "*.fastq", mode: "copy"
     label 'conda_extra'
 
@@ -8,11 +9,14 @@ process renameSamples {
     path samplesheet_tsv
 
     output:
-    path "*.fastq", emit: fastq
+    path "*.fastq", includeInputs: true, emit: fastq
 
     script:
     """
-    rename_fastq.py --fastq ${fastq} --sample_info ${samplesheet_tsv}
+    rename_fastq.py \\
+        --fastq $fastq \\
+        --metadata $samplesheet_tsv \\
+        --barcode $sampleName
     """
 }
 
@@ -21,7 +25,7 @@ process accountNoReadsInput {
     publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.tsv", mode: "copy"
 
     input:
-    path fastqs
+    path reads
     path samplesheet_tsv
 
     output:
@@ -30,34 +34,48 @@ process accountNoReadsInput {
     // Use shell block so that we don't have to escape bash variables
     shell:
     '''
-    ## If we have a samplesheet, we want all info along with a note in the QC Pass column carried along
+    # If we have a samplesheet get the correct columns we need for required info
     if [ -f "!{samplesheet_tsv}" ]; then 
-        ## Make sure we have barcode column
         barcode_col=$(awk -v RS='\t' '/barcode/{print NR; exit}' "!{samplesheet_tsv}")
-        if [ "$barcode_col" == "" ]; then
-            echo "ERROR: Column 'barcode' does not exist and is required"
-            exit 1
-        fi
+        sample_col=$(awk -v RS='\t' '/sample/{print NR; exit}' "!{samplesheet_tsv}")
 
         ## Set header
         header=$(head -n 1 "!{samplesheet_tsv}")
         echo "$header	qc_pass	nextflow_qc_pass" > samples_failing_no_input_reads.tsv
-
-        ## Populate
-        for barcode in barcode*; do
-            barcode_n="${barcode//[!0-9]/}"
-            ## Awk line uses the column number of the barcode column found and checks that it matches to the barcode number
-            fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' "!{samplesheet_tsv}")
-            ## No matches, skip line
-            if [ "$fileline" != "" ]; then
-                echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
+    
+        ## Inputs could be either a directory called barcode## or a fastq file called *.fastq* thus have to have info for both
+        for read_input in !{reads}; do
+            ## Barcode## dir
+            if [ -d $read_input ]; then
+                barcode_n="${read_input//[!0-9]/}"
+                ## Awk line uses the column number of the barcode column found and checks that it matches to the barcode number
+                fileline=$(awk -F'\t' -v col="$barcode_col" -v barcode_n="$barcode_n"  '$col == barcode_n' "!{samplesheet_tsv}")
+                ## No matches, skip line
+                if [ "$fileline" != "" ]; then
+                    echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
+                fi
+            ## Fastq file
+            else
+                ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
+                filename="${read_input%%.*}"
+                ## Use AWK to get the column as grep is having issues with extra data (barcode not in samplesheet, 'extra_nml_barcode' samples)
+                fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' "!{samplesheet_tsv}")
+                ## No matches, skip line
+                if [ "$fileline" != "" ]; then
+                    echo "$fileline	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
+                fi
             fi
         done
-    ## No samplesheet, just track that the barcode failed
+    ## No samplesheet, just track that the input failed
     else
         echo "sample	qc_pass	nextflow_qc_pass" > samples_failing_no_input_reads.tsv
-        for barcode in barcode*; do
-            echo "!{params.prefix}_${barcode}	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
+        for read_input in !{reads}; do
+            if [ -d $read_input ]; then
+                echo "!{params.prefix}_${read_input}	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
+            else
+                filename="${read_input%%.*}"
+                echo "$filename	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
+            fi
         done
     fi
     '''
@@ -101,12 +119,13 @@ process accountReadFilterFailures {
             fi
         done
     ## No samplesheet, just track that the barcode failed
+    ##  No prefix here as artic guppyplex size selection steps adds it
     else
         echo "sample	qc_pass	nextflow_qc_pass" > samples_failing_read_size_filter.tsv
         for fastq in *.fastq; do
             ## Removes all extensions to get the sample name, "." are not allowed in IRIDA sample names anyway
             filename="${fastq%%.*}"
-            echo "!{params.prefix}_$filename	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
+            echo "$filename	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
         done
     fi
     '''
