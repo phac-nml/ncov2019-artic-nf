@@ -85,27 +85,20 @@ process correctQCSummaryCSV {
 
     input:
     path initial_qc_csv
-    path read_count_failures
-    path read_filter_failures
+    path read_count_failure_tsv
+    path read_filter_failure_tsv
 
     output:
     path "${params.prefix}.qc.csv"
 
-    // Note: The pipeline will always have values the read_count and read_filter fail files due to placeholders
     script:
+    def failCountArg = read_count_failure_tsv ? "--count_failure_tsv $read_count_failure_tsv" : ""
+    def filterCountArg = read_filter_failure_tsv ? "--filter_failure_tsv $read_filter_failure_tsv" : ""
     """
-    if [ -f ${read_count_failures} ]; then 
-        READ_FILTER="--read_tsv ${read_count_failures}"
-    else
-        READ_FILTER=""
-    fi
-
-    if [ -f ${read_filter_failures} ]; then
-        MAPPING_FILTER="--mapping_tsv ${read_filter_failures}"
-    else
-        MAPPING_FILTER=""
-    fi
-
-    negative_control_fixes.py --qc_csv ${initial_qc_csv} --output_prefix ${params.prefix} \${READ_FILTER} \${MAPPING_FILTER}
+    negative_control_fixes.py \\
+        $failCountArg \\
+        $filterCountArg \\
+        --qc_csv ${initial_qc_csv} \\
+        --output_prefix ${params.prefix}
     """
 }

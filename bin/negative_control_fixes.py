@@ -20,16 +20,15 @@ def init_parser():
         help='Output file prefix'
     )
     parser.add_argument(
-        '--read_tsv',
+        '--count_failure_tsv',
         required=False,
         help='Path to tsv containing samples failing read count filter'
     )
     parser.add_argument(
-        '--mapping_tsv',
+        '--filter_failure_tsv',
         required=False,
-        help='Path to tsv containing samples failing read mapping count filter'
+        help='Path to tsv containing samples failing read length filter (artic Guppyplex too few reads)'
     )
-
     return parser
 
 def main():
@@ -96,18 +95,18 @@ def main():
     # For the nanopore pipeline fail tracking
     # Rename to match what comes out of qc.py
     rename_columns = {
-            'run': 'run_identifier',
-            'ct': 'qpcr_ct',
-            'date': 'collection_date'
-        }
-    if args.read_tsv:
-        read_df = pd.read_csv(args.read_tsv, sep='\t', dtype=object)
-        read_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
-        frames.append(read_df)
-    if args.mapping_tsv:
-        mapping_df = pd.read_csv(args.mapping_tsv, sep='\t', dtype=object)
-        mapping_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
-        frames.append(mapping_df)
+        'run': 'run_identifier',
+        'ct': 'qpcr_ct',
+        'date': 'collection_date'
+    }
+    if args.count_failure_tsv:
+        count_failure_df = pd.read_csv(args.count_failure_tsv, sep='\t', dtype=object)
+        count_failure_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
+        frames.append(count_failure_df)
+    if args.filter_failure_tsv:
+        filter_failure_df = pd.read_csv(args.filter_failure_tsv, sep='\t', dtype=object)
+        filter_failure_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
+        frames.append(filter_failure_df)
     ### End appending failing samples ###
 
     ### Create final concated df and then output ###

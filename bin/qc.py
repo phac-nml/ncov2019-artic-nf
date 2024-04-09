@@ -477,10 +477,11 @@ def go(args):
 
     else:
         run_identifier = 'NA'
+        barcode = 'NA'
         if args.nanopore:
-            barcode = re.search(r'\d+', args.sample).group(0)
-        else:
-            barcode = 'NA'
+            barcode_check = re.search(r'barcode[\d+]', args.sample)
+            if barcode_check:
+                barcode = barcode_check.group(1)
 
         qc_line = {      'sample' : [args.sample],
                      'project_id' : [args.project_id],
