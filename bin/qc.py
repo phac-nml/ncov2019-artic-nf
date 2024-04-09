@@ -478,7 +478,7 @@ def go(args):
         run_identifier = 'NA'
         barcode = 'NA'
         if args.nanopore:
-            barcode_check = re.search(r'barcode[\d+]', args.sample)
+            barcode_check = re.search(r'barcode(\d+)', args.sample)
             if barcode_check:
                 barcode = barcode_check.group(1)
 
