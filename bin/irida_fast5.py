@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+'''Script to create upload packages of fast5 files and their mapping files'''
 
 import argparse
 import os
@@ -6,10 +7,11 @@ import re
 import subprocess
 import pandas as pd
 
-def init_parser():
-    '''
-    Parser Arguments to pass to script from CL
-    '''
+def init_parser() -> argparse.ArgumentParser:
+    """
+    Specify command line arguments
+    Returns command line parser with inputs
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--sample_dir',
@@ -28,9 +30,24 @@ def init_parser():
     )
     return parser
 
-def create_sample_archive_df(sample_tsv, directory, output_dir, row_list=[]):
+def create_sample_archive_df(sample_tsv: str, directory: str, output_dir: str, row_list=[]) -> pd.DataFrame:
     '''
-    Take input sample sheet, input directory, and output directory to create archives of fast5 files and the df of values needed for IRIDA Uploads.
+    Take input sample sheet, input directory, and output directory to create archives
+    of fast5 files and the df of values needed for IRIDA Uploads
+    
+    INPUTS:
+        sample_tsv: str
+            Path to the input TSV samplesheet file
+        directory: str
+            Path to the input directory
+        output_dir: str
+            Output directory name
+        row_list: list
+            Of samples information to create irida upload sheet, default: []
+
+    RETURNS:
+        pd.Dataframe
+            IRIDA Upload dataframe
     '''
     df = pd.read_csv(sample_tsv, sep='\t')
     for sample, proj_id, barcode, run in zip(df['sample'], df['project_id'], df['barcode'], df['run']):
@@ -91,8 +108,7 @@ def create_sample_archive_df(sample_tsv, directory, output_dir, row_list=[]):
     df_out = pd.DataFrame(row_list, columns=['Sample_Name', 'Project_ID', 'File_Forward', 'File_Reverse'])
     return df_out
 
-
-def main():
+def main() -> None:
     # Init Parser and set arguments
     parser = init_parser()
     args = parser.parse_args()

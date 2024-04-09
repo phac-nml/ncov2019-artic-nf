@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+This script can incorporate as many QC checks as required
+as long as it outputs a csv file containing a final column
+headed with 'qc_pass' and rows for each sample indcating
+'TRUE' if the overall QC check has passed or 'FALSE' if not.
+"""
 
 from Bio import SeqIO
 from functools import reduce
@@ -9,13 +15,6 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import shlex
-
-"""
-This script can incorporate as many QC checks as required
-as long as it outputs a csv file containing a final column
-headed with 'qc_pass' and rows for each sample indcating
-'TRUE' if the overall QC check has passed or 'FALSE' if not.
-"""
 
 def make_qc_plot(depth_pos, n_density, samplename, window=200):
     depth_df = pd.DataFrame( { 'position' : [pos[1] for pos in depth_pos], 'depth' : [dep[2] for dep in depth_pos] } )

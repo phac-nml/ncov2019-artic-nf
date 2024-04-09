@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
+"""Finalize pipeline CSV file by correcting blank values and evaluating controls"""
 
 import argparse
 import pandas as pd
 import numpy as np
 
-def init_parser():
-    '''
-    Parser Arguments to pass to script from CL
-    '''
+def init_parser() -> argparse.ArgumentParser:
+    """
+    Specify command line arguments
+    Returns command line parser with inputs
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--qc_csv',
@@ -31,7 +33,7 @@ def init_parser():
     )
     return parser
 
-def main():
+def main() -> None:
     '''
     One function to:
         - Fix up the negative control columns

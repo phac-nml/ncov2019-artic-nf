@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+'''Script to create IRIDA Uploader SampleList.csv'''
 
 import argparse
 import os
@@ -7,10 +8,11 @@ import re
 import subprocess
 import pandas as pd
 
-def init_parser():
-    '''
-    Parser Arguments to pass to script from CL
-    '''
+def init_parser() -> argparse.ArgumentParser:
+    """
+    Specify command line arguments
+    Returns command line parser with inputs
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--sample_dir',
@@ -26,13 +28,26 @@ def init_parser():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--fastq', action='store_true', help="Create SampleList for nanopore fastq files")
     group.add_argument('--fasta', action='store_true', help="Create SampleList for consensus fasta files")
-
     return parser
 
-def create_sample_file_df(sample_tsv, sample_dir, file_type='', file_list=[]):
+def create_sample_file_df(sample_tsv: str, sample_dir: str, file_type='', file_list=[]) -> pd.DataFrame:
     '''
     Take input sample sheet, directory, and file type to create a df of values needed for IRIDA Uploads
         Rename the files to include the run name for better tracking
+        
+    INPUTS:
+        sample_tsv: str
+            Path to the input TSV samplesheet file
+        sample_dir: str
+            Path to directory containing fastq or fasta samples to create upload sheet for
+        file_type: str
+            Type of file that is being uploaded, either 'fastq' or 'fasta', default: ''
+        file_list: list
+            Found list of files for the sample
+
+    RETURNS:
+        pd.Dataframe
+            IRIDA Upload dataframe
     '''
     # Read in input TSV file
     df = pd.read_csv(sample_tsv, sep='\t')
@@ -68,8 +83,8 @@ def create_sample_file_df(sample_tsv, sample_dir, file_type='', file_list=[]):
     df_out = pd.DataFrame(row_list, columns=['Sample_Name', 'Project_ID', 'File_Forward', 'File_Reverse'])
     return df_out
 
-
-def main():
+def main() -> None:
+    '''Main process'''
     # Init Parser and set arguments
     parser = init_parser()
     args = parser.parse_args()
