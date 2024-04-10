@@ -1,21 +1,4 @@
 // ARTIC processes
-process articDownloadScheme{
-    // Download primer scheme from given repo URL
-    tag { params.schemeRepoURL }
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${params.schemeDir}", mode: "copy"
-
-    output:
-    path("${params.schemeDir}/${params.scheme}/${params.schemeVersion}/${params.scheme}.reference.fasta") , emit: reffasta
-    path("${params.schemeDir}/${params.scheme}/${params.schemeVersion}/${params.scheme}.bed") , emit: bed
-    path("${params.schemeDir}/${params.scheme}/${params.schemeVersion}/ncov-qc_*.scheme.bed") , emit: ncov_amplicon
-    path("${params.schemeDir}") , emit: scheme
-
-    script:
-    """
-    git clone ${params.schemeRepoURL} ${params.schemeDir}
-    """
-}
-
 process articGuppyPlex {
     // Filter reads based on given length
     //  Length should be based on amplicon size
@@ -80,7 +63,7 @@ process articMinION {
     tuple val(sampleName), path(fastq)
     path fast5_dir
     path sequencing_summary
-    path scheme
+    tuple val(scheme_version), path(scheme)
 
     output:
     path "${sampleName}*", emit: all
@@ -131,7 +114,7 @@ process articMinION {
         ${alignerArg} \\
         --threads ${task.cpus} \\
         --read-file $fastq \\
-        --scheme-version ${params.schemeVersion} \\
+        --scheme-version ${scheme_version} \\
         --scheme-directory $scheme \\
         ${params.scheme} \\
         $sampleName

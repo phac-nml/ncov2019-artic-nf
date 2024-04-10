@@ -457,7 +457,8 @@ def go(args):
     if args.sample_sheet:
         sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample, args.project_id, args.sequencing_technology)
 
-        qc_line = {  'sample' : [args.sample],
+        qc_line = {
+            'sample' : [args.sample],
            'num_aligned_reads': [num_reads],
                    'variants' : [variants],
             'protein_variants': [protein_variants],
@@ -469,7 +470,8 @@ def go(args):
               'lineage_notes' : [scorpio_note],
               'pangolin_note' : [pango_note],
                 'script_name' : [args.script_name],
-                   'revision' : [args.revision]}
+                   'revision' : [args.revision]
+        }
 
         qc_df = pd.DataFrame.from_dict(qc_line)
         data_frames = [sample_sheet_df, qc_df, summary_df, negative_df]
@@ -482,7 +484,8 @@ def go(args):
             if barcode_check:
                 barcode = barcode_check.group(1)
 
-        qc_line = {      'sample' : [args.sample],
+        qc_line = {
+                         'sample' : [args.sample],
                      'project_id' : [args.project_id],
                         'barcode' : [barcode],
                'num_aligned_reads': [num_reads],
@@ -498,7 +501,8 @@ def go(args):
                   'pangolin_note' : [pango_note],
                  'run_identifier' : [run_identifier],
                     'script_name' : [args.script_name],
-                       'revision' : [args.revision]}
+                       'revision' : [args.revision]
+        }
 
         qc_df = pd.DataFrame.from_dict(qc_line)
 

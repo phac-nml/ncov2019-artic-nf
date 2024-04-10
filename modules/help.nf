@@ -33,7 +33,6 @@ def printHelp() {
 
       --schemeVersion         ARTIC scheme version (Default: '2kb_resende')
       --schemeRepoURL         Repo to download your primer scheme from (Default: 'https://github.com/phac-nml/resende-ncov2019.git')
-      --schemeDir             Directory within schemeRepoURL that contains primer schemes (Default: 'primer_schemes')
       --scheme                Scheme name (Default: 'nCoV-2019')
 
       --min_length            Minimum read length for artic guppyplex (Default: 1600)

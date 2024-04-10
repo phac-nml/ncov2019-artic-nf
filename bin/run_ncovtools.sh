@@ -7,7 +7,8 @@ AMPLICON_BED=$2
 NCOV_REF=$3
 PRIMER_BED=$4
 METADATA=$5
-CORES=$6
+PRIMER_PREFIX=$6
+CORES=$7
 
 # Moves corrected consensus data to the right header name and replaces the non-corrected ones
 sed -i "s|-updated||" *.corrected.consensus.fasta
@@ -31,7 +32,8 @@ sed -i 's|/ARTIC/medaka||' *.consensus.fasta
 # cp config to allow us to mess with its values
 mv ${AMPLICON_BED} ./ncov-tools/input_amplicon.bed
 cp ${CONFIG} ./ncov-tools
-mv ${NCOV_REF} ${PRIMER_BED} ./ncov-tools
+mv ${NCOV_REF} ./ncov-tools/nCoV-2019.reference.fasta
+mv ${PRIMER_BED} ./ncov-tools/nCoV-2019.bed
 
 # If we have a matching negative control, we modify the config to make sure its gotten
 # If we don't find any, then no negative controls are added
@@ -40,6 +42,9 @@ then
    negative_list=$(grep -i -e ntc -e negative -e water -e blank -e neg ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
    echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${CONFIG}
 fi
+
+# Add in our primerprefix
+echo "primer_prefix: '$PRIMER_PREFIX'" >> ./ncov-tools/${CONFIG}
 
 # Check for metadata file
 # If irida sample sheet is used, we will have some and will move it into ncov-tools folder
@@ -58,7 +63,7 @@ mv *.* ./ncov-tools/run
 
 # Go in, run the commands and generate the indexed reference sequence
 cd ncov-tools
-samtools faidx ${NCOV_REF}
+samtools faidx nCoV-2019.reference.fasta
 snakemake -kp -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -kp -s workflow/Snakefile all --cores ${CORES}
 

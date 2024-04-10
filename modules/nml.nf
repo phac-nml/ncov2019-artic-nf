@@ -242,6 +242,7 @@ process runNcovTools {
     path primer_bed
     path samplesheet_tsv
     path corrected_fastas
+    val primer_prefix
 
     // Currently have the nml_* outputs hardcoded as the config has the run name as nml
     // If you change the ncov-tools config change them as well in all instances below
@@ -258,7 +259,14 @@ process runNcovTools {
 
     script:
     """
-    bash run_ncovtools.sh ${config} ${amplicon_bed} ${reference} ${primer_bed} ${samplesheet_tsv} ${task.cpus}
+    bash run_ncovtools.sh \\
+        $config \\
+        $amplicon_bed \\
+        $reference \\
+        $primer_bed \\
+        $samplesheet_tsv \\
+        $primer_prefix \\
+        ${task.cpus}
 
     # Versions #
     cat <<-END_VERSIONS > ncovtools.process.yml

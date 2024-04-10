@@ -5,7 +5,6 @@
 */
 // Modules to include
 include {
-    articDownloadScheme ;
     articGuppyPlex ;
     articMinION
 } from '../modules/artic.nf' 
@@ -32,7 +31,8 @@ include {
 } from '../modules/nml.nf'
 
 // Subworkflows to include
-include {Genotyping} from './typing.nf'
+include { schemeValidate } from './schemeValidate.nf'
+include { Genotyping } from './typing.nf'
 
 /*
     Initialize channels from params
@@ -45,7 +45,6 @@ ch_seqsum = params.sequencing_summary ? file(params.sequencing_summary, type: 'f
 ch_ncov_config = params.ncov ? file(params.ncov, type: 'file', checkIfExists: true) : []
 
 // Optional channels
-ch_local_scheme = params.local_scheme ? file(params.local_scheme, type: 'dir', checkIfExists: true) : []
 ch_irida_metadata = params.irida ? file(params.irida, type: 'file', checkIfExists: true) : []
 ch_irida_upload_conf = params.upload_irida ? file(params.upload_irida, type: 'file', checkIfExists: true) : []
 
@@ -74,13 +73,12 @@ workflow articNcovNanopore {
     // =============================== //
     // Scheme and Reference
     // =============================== //
-    if (! ch_local_scheme) {
-        articDownloadScheme()
-        // Correct scheme and create files subworkflow to-do
-    } else {
-        articDownloadScheme() // remove later for just the check below
-        // Correct scheme and create files subworkflow to-do
-    }
+    schemeValidate()
+    ch_scheme = schemeValidate.out.scheme               // channel: [ val(scheme_version), path(scheme) ]
+    ch_reference = schemeValidate.out.reference         // channel: [ path(reference.fasta) ]
+    ch_primer_bed = schemeValidate.out.primer_bed       // channel: [ path(primer_bed) ]
+    ch_amplicon = schemeValidate.out.amplicon_bed       // channel: [ path(amplicon_bed) ]
+    ch_primer_prefix = schemeValidate.out.primer_prefix // channel: [ val(primer_prefix) ]
 
     // =============================== //
     // Artic Size Filtering and Renaming
@@ -140,7 +138,7 @@ workflow articNcovNanopore {
         ch_fastqs.pass,
         ch_fast5s,
         ch_seqsum,
-        articDownloadScheme.out.scheme
+        ch_scheme
     )
     ch_versions = ch_versions.mix(articMinION.out.versions.first())
 
@@ -154,7 +152,7 @@ workflow articNcovNanopore {
                 .join(articMinION.out.ptrimbai, by:0)
                 .join(articMinION.out.consensus_fasta, by:0)
                 .join(articMinION.out.fail_vcf, by:0),
-            articDownloadScheme.out.reffasta
+            ch_reference
         )
         ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
         ch_corrected_fasta = correctFailNs.out.corrected_consensus
@@ -165,15 +163,16 @@ workflow articNcovNanopore {
     // =============================== //
     runNcovTools(
         ch_ncov_config, 
-        articDownloadScheme.out.reffasta, 
-        articDownloadScheme.out.ncov_amplicon, 
+        ch_reference, 
+        ch_amplicon, 
         articMinION.out.all
             .collect(),
-        articDownloadScheme.out.bed,
+        ch_primer_bed,
         ch_irida_metadata,
         ch_corrected_fasta
             .collect{ it[1] }
-            .ifEmpty([])
+            .ifEmpty([]),
+        ch_primer_prefix
     )
     ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
 
@@ -188,12 +187,12 @@ workflow articNcovNanopore {
         articMinION.out.ptrim
             .join(articMinION.out.consensus_fasta, by: 0)
             .join(articMinION.out.vcf, by: 0)
-            .combine(articDownloadScheme.out.reffasta)
+            .combine(ch_reference)
             .combine(runNcovTools.out.lineage)
             .combine(runNcovTools.out.ncovtools_qc)
             .combine(runNcovTools.out.ncovtools_negative)
             .combine(runNcovTools.out.snpeff_path)
-            .combine(articDownloadScheme.out.bed),
+            .combine(ch_primer_bed),
         ch_irida_metadata,
         params.pcr_primers
     )
@@ -296,7 +295,7 @@ workflow articNcovNanopore {
         Genotyping(
             articMinION.out.vcf,
             ch_refGff,
-            articDownloadScheme.out.reffasta,
+            ch_reference,
             ch_typingYaml
         )
     }
