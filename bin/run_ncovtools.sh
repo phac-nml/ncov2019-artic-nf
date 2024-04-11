@@ -40,10 +40,6 @@ cp ${CONFIG} ./ncov-tools
 mv ${REFERENCE} ./ncov-tools/nCoV-2019.reference.fasta
 mv ${PRIMER_BED} ./ncov-tools/nCoV-2019.bed
 
-# Move all the artic minion files into a folder to run on
-mkdir ./ncov-tools/run
-mv *.* ./ncov-tools/run
-
 ## Adjust config for what we find
 # Add in negative control names if we find any matching our pattern
 if $(ls | grep -q -i "negative\|neg\|ntc\|water\|blank")
@@ -65,6 +61,11 @@ then
 else
     sed -i -e 's/^metadata/#metadata/' ./ncov-tools/${CONFIG}
 fi
+
+## Add all the files in
+# Move all the artic minion files into a folder to run on
+mkdir ./ncov-tools/run
+mv *.* ./ncov-tools/run
 
 ## Run ncov-tools
 # Go into folder, run the commands and generate the indexed reference sequence
