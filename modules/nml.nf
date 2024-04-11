@@ -19,7 +19,6 @@ process renameBarcodeSamples {
         --barcode $sampleName
     """
 }
-
 process accountNoReadsInput {
     // Account for no reads in the input barcode folder and rename it --irida given
     publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.tsv", mode: "copy"
@@ -80,7 +79,6 @@ process accountNoReadsInput {
     fi
     '''
 }
-
 process accountReadFilterFailures {
     // Account for samples that fail after the read filtering step
     label 'smallmem'
@@ -130,7 +128,6 @@ process accountReadFilterFailures {
     fi
     '''
 }
-
 process generateFastqIridaReport {
     // Create directory for fastq files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"
@@ -151,7 +148,6 @@ process generateFastqIridaReport {
     irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_fastq --fastq
     """
 }
-
 process generateFastaIridaReport {
     // Create directory for fasta files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_consensus", mode: "copy"
@@ -172,7 +168,6 @@ process generateFastaIridaReport {
     irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_consensus --fasta
     """
 }
-
 process generateFast5IridaReport {
     // Create directory for fast5 files that can be uploaded to IRIDA.
     //  Only ran with --upload_irida as it is an intensive process
@@ -192,7 +187,6 @@ process generateFast5IridaReport {
     irida_fast5.py --sample_info ${samplesheet_tsv} --sample_dir ${fast5_dirs} --output_dir irida_fast5
     """
 }
-
 process correctFailNs {
     // Nanopore - Correct positions that are designated as an N but can be called a reference base based on bcftools
     tag { sampleName }
@@ -224,7 +218,6 @@ process correctFailNs {
     END_VERSIONS
     """
 }
-
 process runNcovTools {
     // Run ncov-tools with the bash script in the bin
     //  Script written to not have to escape a lot of variables
@@ -251,9 +244,9 @@ process runNcovTools {
     path("*.tsv")
 
     path "ncov-tools/lineages/*.csv", emit: lineage
-    path "nml_summary_qc.tsv", emit: ncovtools_qc
-    path "nml_negative_control_report.tsv", emit: ncovtools_negative
-    path "nml_aligned.fasta", emit: aligned
+    path "${params.prefix}_summary_qc.tsv", emit: ncovtools_qc
+    path "${params.prefix}_negative_control_report.tsv", emit: ncovtools_negative
+    path "${params.prefix}_aligned.fasta", emit: aligned
     path "ncov-tools/qc_annotation/", emit: snpeff_path
     path "*.process.yml", emit: versions
 
@@ -266,6 +259,7 @@ process runNcovTools {
         $primer_bed \\
         $samplesheet_tsv \\
         $primer_prefix \\
+        ${params.prefix} \\
         ${task.cpus}
 
     # Versions #
@@ -281,7 +275,6 @@ process runNcovTools {
     END_VERSIONS
     """
 }
-
 process snpDists {
     // Run snpDist check for samples in the analysis
     publishDir "${params.outdir}/", pattern: "matrix.tsv", mode: "copy"
@@ -305,7 +298,6 @@ process snpDists {
     END_VERSIONS
     """
 }
-
 process uploadIridaFiles {
     // Upload all data to IRIDA
     //  Includes: Fastq, Fasta, Fast5 (if nanopolish), and metadata 
@@ -346,7 +338,6 @@ process uploadIridaFiles {
     END_VERSIONS
     """
 }
-
 process uploadCorrectN {
     // Upload the N corrected consensus sequences to IRIDA
     //  If both --irida and --upload_irida params given
@@ -367,7 +358,6 @@ process uploadCorrectN {
     irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
     """
 }
-
 process outputVersions {
     // Output versions for each process
     label 'smallmem'
