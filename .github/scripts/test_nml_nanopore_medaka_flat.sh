@@ -9,15 +9,13 @@ nextflow run ./main.nf \
     -profile mamba,test \
     --cache ./conda_cache_dir \
     --medaka \
-    --flat \
     --prefix 'nml' \
     --basecalled_fastq $PWD/.github/data/nanopore/fastq_pass/barcode78/ \
-    --medakaModel r941_min_hac_g507 \
+    --medaka_model r941_min_hac_g507 \
     --schemeVersion freed_V2_nml \
     --min_length 800 \
     --max_length 1600 \
     --sequencingTechnology GridION \
-    --schemeRepoURL 'https://github.com/DarianHole/primer-schemes.git' \
     --irida $PWD/.github/data/metadata.tsv
 
 ### Check Outputs ###

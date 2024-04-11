@@ -25,9 +25,7 @@ nextflow run ./main.nf \
     --sequencing_summary $PWD/.github/data/nanopore/sequencing_summary.txt \
     --schemeVersion freed_V2_nml \
     --min_length 800 \
-    --max_length 1600 \
-    --sequencingTechnology GridION \
-    --schemeRepoURL 'https://github.com/DarianHole/primer-schemes.git'
+    --max_length 1600
 
 ### Check Outputs ###
 # 1. Num Reads

@@ -53,7 +53,7 @@ then
 fi
 
 # Add in our primer prefix and run prefix
-echo "run_name: '$RUN_PREFIX'" >> ./ncov-tools/${CONFIG}
+echo "run_name: $RUN_PREFIX" >> ./ncov-tools/${CONFIG}
 echo "primer_prefix: '$PRIMER_PREFIX'" >> ./ncov-tools/${CONFIG}
 
 # Adjust for metadata file if given

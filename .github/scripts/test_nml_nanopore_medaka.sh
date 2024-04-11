@@ -15,8 +15,6 @@ nextflow run ./main.nf \
     --schemeVersion freed_V2_nml \
     --min_length 800 \
     --max_length 1600 \
-    --sequencingTechnology GridION \
-    --schemeRepoURL 'https://github.com/DarianHole/primer-schemes.git' \
     --irida $PWD/.github/data/metadata.tsv
 
 ### Check Outputs ###
