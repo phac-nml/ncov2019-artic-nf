@@ -119,8 +119,8 @@ workflow articNcovNanopore {
     //  Remap fastqs channel to branch the pass/filtered fastq files and use those accordingly
     ch_fastqs
         .branch{
-            pass: it[1].countFastq() > params.minReadsArticGuppyPlex
-            filtered: it[1].countFastq() <= params.minReadsArticGuppyPlex
+            pass: it[1].countFastq() > params.minReadsGuppyPlex
+            filtered: it[1].countFastq() <= params.minReadsGuppyPlex
         }.set{ ch_fastqs }
     accountReadFilterFailures(
         ch_fastqs.filtered
