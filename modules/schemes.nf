@@ -18,17 +18,25 @@ process validateScheme {
     path scheme
 
     output:
-    path "primer-schemes/${params.scheme}/${schemeVersion}/*.reference.fasta", emit: reference
-    path "primer-schemes/${params.scheme}/${schemeVersion}/*.primer.bed", emit: primer_bed
+    path "primer-schemes/${params.scheme}/${schemeFolder}/*.reference.fasta", emit: reference
+    path "primer-schemes/${params.scheme}/${schemeFolder}/*.primer.bed", emit: primer_bed // primer.bed for now as the repos have some conflicting scheme.bed
     tuple val(schemeVersion), path("primer-schemes"), emit: scheme
 
     script:
-    // Check for starting with a V as that is required by artic
+    /*
+        ARTIC Requires the following:
+            - Scheme folder starting with a V (ex. Vfreed/)
+            - Scheme input not starting with a V (ex. freed)
+
+        So a few checks to attempt to meet those requirements
+        Note that no def for the params as we need them in the outputs
+    */
     schemeVersion = params.schemeVersion
-    def adjust_scheme_version = false
+    schemeFolder = params.schemeVersion
     if ( ! schemeVersion.startsWith("V") ) {
-        schemeVersion = "V" + schemeVersion
-        adjust_scheme_version = true
+        schemeFolder = "V" + schemeFolder
+    } else {
+        schemeVersion = schemeVersion.substring(1)
     }
     """
     # Check for local scheme name to match everything up
@@ -36,17 +44,22 @@ process validateScheme {
         mv $scheme primer-schemes
     fi
 
-    # Adjust version if required
-    if $adjust_scheme_version; then
-        mv primer-schemes/${params.scheme}/${params.schemeVersion} primer-schemes/${params.scheme}/${schemeVersion}
+    # Adjust folder if required
+    if [ ! -d primer-schemes/${params.scheme}/${schemeFolder} ]; then
+        if [ -d primer-schemes/${params.scheme}/${schemeVersion} ]; then
+            mv primer-schemes/${params.scheme}/${schemeVersion} primer-schemes/${params.scheme}/${schemeFolder}
+        else
+            echo "ERROR: Cannot find input scheme version ${schemeVersion}"
+            exit 1
+        fi
     fi
 
     # File checks
-    if [ ! -f primer-schemes/${params.scheme}/${schemeVersion}/*reference.fasta ]; then
-        echo "ERROR: Reference Fasta not found in 'primer-schemes/${params.scheme}/${schemeVersion}/*reference.fasta'"
+    if [ ! -f primer-schemes/${params.scheme}/${schemeFolder}/*reference.fasta ]; then
+        echo "ERROR: Reference Fasta not found in 'primer-schemes/${params.scheme}/${schemeFolder}/*reference.fasta'"
         exit 1
-    elif [ ! -f primer-schemes/${params.scheme}/${schemeVersion}/*scheme.bed ]; then
-        echo "ERROR: Scheme bed file not found in 'primer-schemes/${params.scheme}/${schemeVersion}/*primer.bed'"
+    elif [ ! -f primer-schemes/${params.scheme}/${schemeFolder}/*scheme.bed ]; then
+        echo "ERROR: Scheme bed file not found in 'primer-schemes/${params.scheme}/${schemeFolder}/*primer.bed'"
         exit 1
     fi
     """
