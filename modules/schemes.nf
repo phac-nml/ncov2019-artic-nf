@@ -26,7 +26,7 @@ process validateScheme {
     /*
         ARTIC Requires the following:
             - Scheme folder starting with a V (ex. Vfreed/)
-            - Scheme input not starting with a V (ex. freed)
+            - Scheme input also starting with a V (ex. Vfreed)
 
         So a few checks to attempt to meet those requirements
         Note that no def for the params as we need them in the outputs
@@ -34,22 +34,22 @@ process validateScheme {
     schemeVersion = params.schemeVersion
     schemeFolder = params.schemeVersion
     if ( ! schemeVersion.startsWith("V") ) {
+        schemeVersion = "V" + schemeVersion
         schemeFolder = "V" + schemeFolder
-    } else {
-        schemeVersion = schemeVersion.substring(1)
     }
     """
-    # Check for local scheme name to match everything up
+    # Check for directory being called primer-schemes to match everything up
     if [[ "$scheme" != "primer-schemes" ]]; then
         mv $scheme primer-schemes
     fi
 
-    # Adjust folder if required
+    # Adjust folder to make sure it starts with a V
+    #  If we can't find the V{schemeVersion} folder, then check for just {schemeVersion} folder and add the V
     if [ ! -d primer-schemes/${params.scheme}/${schemeFolder} ]; then
-        if [ -d primer-schemes/${params.scheme}/${schemeVersion} ]; then
-            mv primer-schemes/${params.scheme}/${schemeVersion} primer-schemes/${params.scheme}/${schemeFolder}
+        if [ -d primer-schemes/${params.scheme}/${params.schemeVersion} ]; then
+            mv primer-schemes/${params.scheme}/${params.schemeVersion} primer-schemes/${params.scheme}/${schemeFolder}
         else
-            echo "ERROR: Cannot find input scheme version ${schemeVersion}"
+            echo "ERROR: Cannot find input scheme version ${params.schemeVersion} or adjusted ${schemeVersion}"
             exit 1
         fi
     fi
