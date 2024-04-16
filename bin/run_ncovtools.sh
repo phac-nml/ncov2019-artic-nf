@@ -78,8 +78,11 @@ snakemake -kp -s workflow/Snakefile all --cores ${CORES}
 # Move files out so that they can be more easily viewable in the output nextflow results folder
 mv ./plots/*.pdf ../
 mv ./qc_reports/*.tsv ../
-mv ./qc_analysis/${RUN_PREFIX}_aligned.fasta ../
 mv ./qc_analysis/${RUN_PREFIX}_amplicon_coverage_table.tsv ../
+# Less than 2 samples may not create MSA and will not create a tree (iqtree needs 3)
+if [ -f ./qc_analysis/${RUN_PREFIX}_aligned.fasta ]; then
+    mv ./qc_analysis/${RUN_PREFIX}_aligned.fasta ../
+fi
 cd ..
 
 # Touching a negative control so that there always is one

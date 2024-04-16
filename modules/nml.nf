@@ -246,8 +246,8 @@ process runNcovTools {
     path "ncov-tools/lineages/*.csv", emit: lineage
     path "${params.prefix}_summary_qc.tsv", emit: ncovtools_qc
     path "${params.prefix}_negative_control_report.tsv", emit: ncovtools_negative
-    path "${params.prefix}_aligned.fasta", emit: aligned
     path "ncov-tools/qc_annotation/", emit: snpeff_path
+    path "${params.prefix}_aligned.fasta", optional: true, emit: aligned // Optional as <2 samples will not always create
     path "*.process.yml", emit: versions
 
     script:
