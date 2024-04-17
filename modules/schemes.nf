@@ -19,14 +19,14 @@ process validateScheme {
 
     output:
     path "primer-schemes/${params.scheme}/${schemeFolder}/*.reference.fasta", emit: reference
-    path "primer-schemes/${params.scheme}/${schemeFolder}/*.primer.bed", emit: primer_bed // primer.bed for now as the repos have some conflicting scheme.bed
+    path "primer-schemes/${params.scheme}/${schemeFolder}/*.primer.bed", emit: primer_bed // primer.bed for now as the repos have some conflicting scheme.bed files
     tuple val(schemeVersion), path("primer-schemes"), emit: scheme
 
     script:
     /*
         ARTIC Requires the following:
             - Scheme folder starting with a V (ex. Vfreed/)
-            - Scheme input also starting with a V (ex. Vfreed)
+            - Scheme input shouldn't start with a V (ex. freed)
 
         So a few checks to attempt to meet those requirements
         Note that no def for the params as we need them in the outputs
@@ -34,8 +34,9 @@ process validateScheme {
     schemeVersion = params.schemeVersion
     schemeFolder = params.schemeVersion
     if ( ! schemeVersion.startsWith("V") ) {
-        schemeVersion = "V" + schemeVersion
         schemeFolder = "V" + schemeFolder
+    } else {
+        schemeVersion = schemeVersion.substring(1)
     }
     """
     # Check for directory being called primer-schemes to match everything up

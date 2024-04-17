@@ -47,7 +47,7 @@ then
 fi
 
 # Add in our primer prefix and run prefix
-echo "run_name: $RUN_PREFIX" >> ./ncov-tools/config.yaml
+echo "run_name: '$RUN_PREFIX'" >> ./ncov-tools/config.yaml
 echo "primer_prefix: '$PRIMER_PREFIX'" >> ./ncov-tools/config.yaml
 
 # Adjust for metadata file if given

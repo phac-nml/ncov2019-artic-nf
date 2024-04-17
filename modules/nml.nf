@@ -253,14 +253,14 @@ process runNcovTools {
     script:
     """
     bash run_ncovtools.sh \\
-        $config \\
-        $amplicon_bed \\
-        $reference \\
-        $primer_bed \\
-        $primer_prefix \\
+        ${config} \\
+        ${amplicon_bed} \\
+        ${reference} \\
+        ${primer_bed} \\
+        ${primer_prefix} \\
         ${params.prefix} \\
         ${task.cpus} \\
-        $samplesheet_tsv
+        ${samplesheet_tsv}
 
     # Versions #
     cat <<-END_VERSIONS > ncovtools.process.yml

@@ -19,7 +19,7 @@ nextflow run ./main.nf \
     --cache ../conda_cache \
     $METADATA \
     --nanopolish \
-    --prefix nml \
+    --prefix 'nml' \
     --basecalled_fastq $PWD/.github/data/nanopore/fastq_pass/ \
     --fast5_pass $PWD/.github/data/nanopore/fast5_pass/ \
     --sequencing_summary $PWD/.github/data/nanopore/sequencing_summary.txt \
