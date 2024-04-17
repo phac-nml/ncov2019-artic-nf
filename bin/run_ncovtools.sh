@@ -7,21 +7,19 @@ CONFIG=$1
 AMPLICON_BED=$2
 REFERENCE=$3
 PRIMER_BED=$4
-METADATA=$5
-PRIMER_PREFIX=$6
-RUN_PREFIX=$7
-CORES=$8
+PRIMER_PREFIX=$5
+RUN_PREFIX=$6
+CORES=$7
+METADATA=$8
 
 ## Corrected consensus (if any)
 # Updates the corrected consensus header lines to match the normal output
 sed -i "s|-updated||" *.corrected.consensus.fasta
 
 # Overwrites the original consensus files so that we use the corrected ones
-for corrected_consensus in *.corrected.consensus.fasta
-do
+for corrected_consensus in *.corrected.consensus.fasta; do
     # Names match fully before the first `.` so use that
     name="${corrected_consensus%%.*}"
-    echo $name
     mv $corrected_consensus ${name}.consensus.fasta
 done
 
@@ -36,7 +34,7 @@ sed -i 's|/ARTIC/medaka||' *.consensus.fasta
 # Move files to their correct spot
 #  cp config to allow us to mess with its values
 mv ${AMPLICON_BED} ./ncov-tools/input_amplicon.bed
-cp ${CONFIG} ./ncov-tools
+cp ${CONFIG} ./ncov-tools/config.yaml
 mv ${REFERENCE} ./ncov-tools/nCoV-2019.reference.fasta
 mv ${PRIMER_BED} ./ncov-tools/nCoV-2019.bed
 
@@ -45,21 +43,20 @@ mv ${PRIMER_BED} ./ncov-tools/nCoV-2019.bed
 if $(ls | grep -q -i "negative\|neg\|ntc\|water\|blank")
 then
    negative_list=$(grep -i -e ntc -e negative -e water -e blank -e neg ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
-   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${CONFIG}
+   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/config.yaml
 fi
 
 # Add in our primer prefix and run prefix
-echo "run_name: $RUN_PREFIX" >> ./ncov-tools/${CONFIG}
-echo "primer_prefix: '$PRIMER_PREFIX'" >> ./ncov-tools/${CONFIG}
+echo "run_name: $RUN_PREFIX" >> ./ncov-tools/config.yaml
+echo "primer_prefix: '$PRIMER_PREFIX'" >> ./ncov-tools/config.yaml
 
 # Adjust for metadata file if given
 #  If we pass one, we add it to the ncov-tools folder
 #  If we don't, then we comment out that config line so it isn't run
-if [ -f "$METADATA" ];
-then
+if [ -f "$METADATA" ]; then
     mv ${METADATA} ./ncov-tools/metadata.tsv
 else
-    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/${CONFIG}
+    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/config.yaml
 fi
 
 ## Add all the files in
@@ -86,5 +83,5 @@ fi
 cd ..
 
 # Touching a negative control so that there always is one
-#   This just allows an easier control of flow when combining files
+#  This just allows an easier control of flow when combining files
 touch ${RUN_PREFIX}_negative_control_report.tsv

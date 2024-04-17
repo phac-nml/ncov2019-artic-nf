@@ -257,10 +257,10 @@ process runNcovTools {
         $amplicon_bed \\
         $reference \\
         $primer_bed \\
-        $samplesheet_tsv \\
         $primer_prefix \\
         ${params.prefix} \\
-        ${task.cpus}
+        ${task.cpus} \\
+        $samplesheet_tsv
 
     # Versions #
     cat <<-END_VERSIONS > ncovtools.process.yml
