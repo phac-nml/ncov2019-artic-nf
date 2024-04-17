@@ -39,7 +39,7 @@ variants_pattern: "{data_root}/{sample}.pass.vcf.gz"
 # in the tree by providing a fasta file here
 #tree_include_consensus: some_genomes_from_gisaid.fasta
 
-# some plots can by annotated with external metadata. this
+# some plots can by annotated with external metadata. This
 # file contains the metadata in simple tab-delimited format
 # one column must be 'sample'
 metadata: metadata.tsv
