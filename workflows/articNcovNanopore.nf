@@ -40,6 +40,7 @@ include {collateSamples} from '../modules/upload.nf'
 
 // import subworkflows
 include {CLIMBrsync} from './upload.nf'
+include { schemeValidate } from './schemeValidate.nf'
 include {Genotyping} from './typing.nf'
 
 // workflow component for artic pipeline with nanopolish
@@ -56,6 +57,16 @@ workflow sequenceAnalysisNanopolish {
       ch_versions = Channel.empty()
 
       articDownloadScheme()
+
+      // =============================== //
+      // Scheme and Reference
+      // =============================== //
+      schemeValidate()
+      ch_scheme = schemeValidate.out.scheme               // channel: [ val(scheme_version), path(scheme) ]
+      ch_reference = schemeValidate.out.reference         // channel: [ path(reference.fasta) ]
+      ch_primer_bed = schemeValidate.out.primer_bed       // channel: [ path(primer_bed) ]
+      ch_amplicon = schemeValidate.out.amplicon_bed       // channel: [ path(amplicon_bed) ]
+      ch_primer_prefix = schemeValidate.out.primer_prefix // channel: [ val(primer_prefix) ]
 
       // Tracking barcodes that fail initial read count checks
       accountNoReadsInput(ch_badFastqDirs.collect(),
@@ -129,10 +140,10 @@ workflow sequenceAnalysisNanopolish {
              .set{ ch_ncov }
 
       runNcovTools(ch_ncov, 
-                      articDownloadScheme.out.reffasta, 
-                      articDownloadScheme.out.ncov_amplicon, 
+                      ch_reference, 
+                      ch_amplicon, 
                       articMinIONNanopolish.out[0].collect(),
-                      articDownloadScheme.out.bed,
+                      ch_primer_bed,
                       ch_irida,
                       ch_corrected)
       ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
