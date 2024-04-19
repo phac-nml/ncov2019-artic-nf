@@ -151,9 +151,15 @@ process generateFastqIridaReport {
 
     script:
     """
+    # Create folder for upload
     mkdir irida_fastq
     mv ${fastqs} irida_fastq
-    irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_fastq --fastq
+
+    # Create SampleList.csv
+    irida_upload_csv_generator.py \\
+        --sample_info ${samplesheet_tsv} \\
+        --sample_dir irida_fastq \\
+        --fastq
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -179,9 +185,15 @@ process generateFastaIridaReport {
 
     script:
     """
+    # Create folder for upload
     mkdir irida_consensus
     mv *.consensus.fasta irida_consensus
-    irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_consensus --fasta
+
+    # Create SampleList.csv
+    irida_upload_csv_generator.py \\
+        --sample_info ${samplesheet_tsv} \\
+        --sample_dir irida_consensus \\
+        --fasta
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -208,7 +220,10 @@ process generateFast5IridaReport {
 
     script:
     """
-    irida_fast5.py --sample_info ${samplesheet_tsv} --sample_dir ${fast5_dirs} --output_dir irida_fast5
+    irida_fast5.py \\
+        --sample_info ${samplesheet_tsv} \\
+        --sample_dir ${fast5_dirs} \\
+        --output_dir irida_fast5
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -238,8 +253,18 @@ process correctFailNs {
 
     script:
     """
+    # Zip fail vcf so it can be read by script
     gzip -f $fail_vcf
-    correct_n.py --bam $bamfile --consensus $consensus --reference $reference --fail_vcf ${fail_vcf}.gz --force
+
+    # Run correct N
+    correct_n.py \\
+        --bam $bamfile \\
+        --consensus $consensus \\
+        --reference $reference \\
+        --fail_vcf ${fail_vcf}.gz \\
+        --force
+    
+    # Log output for tracking
     mkdir -p logs
     mv *.log logs/
 
@@ -387,9 +412,17 @@ process uploadCorrectN {
 
     script:
     """
+    # Create folder for upload
     mkdir -p corrected_consensus
     mv *.corrected.consensus.fasta corrected_consensus
-    irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir corrected_consensus --fasta
+
+    # Create SampleList.csv
+    irida_upload_csv_generator.py \\
+        --sample_info ${samplesheet_tsv} \\
+        --sample_dir corrected_consensus \\
+        --fasta
+
+    # Upload
     irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
 
     # Versions #
