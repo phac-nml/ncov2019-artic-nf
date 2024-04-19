@@ -92,7 +92,7 @@ workflow articNcovNanopore {
     articGuppyPlex(
         ch_fastqs
     )
-    ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
+    ch_versions = ch_versions.mix(articGuppyPlex.out.versions)
     ch_fastqs = articGuppyPlex.out.fastq
 
     // Rename if we have IRIDA metadata
@@ -146,7 +146,7 @@ workflow articNcovNanopore {
         ch_seqsum,
         ch_scheme
     )
-    ch_versions = ch_versions.mix(articMinION.out.versions.first())
+    ch_versions = ch_versions.mix(articMinION.out.versions)
 
     // =============================== //
     // Failing N Position Adjustment
@@ -160,7 +160,7 @@ workflow articNcovNanopore {
                 .join(articMinION.out.fail_vcf, by:0),
             ch_reference
         )
-        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
+        ch_versions = ch_versions.mix(correctFailNs.out.versions)
         ch_corrected_fasta = correctFailNs.out.corrected_consensus
     }
 
@@ -180,7 +180,7 @@ workflow articNcovNanopore {
             .ifEmpty([]),
         ch_primer_prefix
     )
-    ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
+    ch_versions = ch_versions.mix(runNcovTools.out.versions)
 
     // =============================== //
     // Run nextclade
@@ -189,16 +189,18 @@ workflow articNcovNanopore {
         params.nextclade_dataset,
         params.nextclade_tag
     )
+    ch_versions = ch_versions.mix(nextcladeDatasetGet.out.versions)
     nextcladeRun(
         articMinION.out.consensus_fasta,
         nextcladeDatasetGet.out.dataset
     )
+    ch_versions = ch_versions.mix(nextcladeRun.out.versions)
 
     // =============================== //
     // Run QC
     // =============================== //
     snpDists(runNcovTools.out.aligned)
-    ch_versions = ch_versions.mix(snpDists.out.versions.first())
+    ch_versions = ch_versions.mix(snpDists.out.versions)
 
     // Making final CSV file with a few steps
     makeQCCSV(
@@ -282,7 +284,7 @@ workflow articNcovNanopore {
                 ch_irida_upload_conf,
                 correctQCSummaryCSV.out
             )
-            ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions.first())
+            ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions)
 
             // Upload corrected fasta files if any
             if ( params.correctN ) {
@@ -299,8 +301,12 @@ workflow articNcovNanopore {
     // =============================== //
     // Tool versions for tracking
     // =============================== //
-    //  todo - adjust how the versions are collected and collated
-    outputVersions(ch_versions.collect())
+    // Using nf-core version output
+    outputVersions(
+        ch_versions
+            .unique()
+            .collectFile(name: 'collated_versions.yml')
+    )
 
     // =============================== //
     // Typing workflow that isn't really used but can be kept in

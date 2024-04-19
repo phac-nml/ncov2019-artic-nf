@@ -202,7 +202,7 @@ process correctFailNs {
     output:
     tuple val(sampleName), path("*.corrected.consensus.fasta"), optional: true, emit: corrected_consensus
     path "logs/*.log", optional: true, emit: logs
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -212,9 +212,9 @@ process correctFailNs {
     mv *.log logs/
 
     # Versions #
-    cat <<-END_VERSIONS > ncorrection.process.yml
-        "${task.process}":
-            correct_n.py: 0.1.0
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        correct_n.py: 0.1.0
     END_VERSIONS
     """
 }
@@ -246,7 +246,7 @@ process runNcovTools {
     path "${params.prefix}_negative_control_report.tsv", emit: ncovtools_negative
     path "ncov-tools/qc_annotation/", emit: snpeff_path
     path "${params.prefix}_aligned.fasta", optional: true, emit: aligned // Optional as <2 samples will not always create
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -261,15 +261,15 @@ process runNcovTools {
         ${samplesheet_tsv}
 
     # Versions #
-    cat <<-END_VERSIONS > ncovtools.process.yml
-        "${task.process}":
-            augur: \$(echo \$(augur --version | sed 's/augur //'))
-            bedtools: \$(echo \$(bedtools --version | sed 's/bedtools v//'))
-            minimap2: \$(echo \$(minimap2 --version))
-            pangolin: \$(echo \$(pangolin --version | sed 's/pangolin //'))
-            samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
-            snakemake: \$(echo \$(snakemake --version))
-            snpEff: \$(echo \$(snpEff -version))
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        augur: \$(echo \$(augur --version | sed 's/augur //'))
+        bedtools: \$(echo \$(bedtools --version | sed 's/bedtools v//'))
+        minimap2: \$(echo \$(minimap2 --version))
+        pangolin: \$(echo \$(pangolin --version | sed 's/pangolin //'))
+        samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
+        snakemake: \$(echo \$(snakemake --version))
+        snpEff: \$(echo \$(snpEff -version))
     END_VERSIONS
     """
 }
@@ -283,16 +283,16 @@ process snpDists {
 
     output:
     path "matrix.tsv", emit: matrix
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     """
     snp-dists ${aligned_fasta} > matrix.tsv
 
     # Versions #
-    cat <<-END_VERSIONS > snpdists.process.yml
-        "${task.process}":
-            snp-dists: \$(echo \$(snp-dists -v | sed 's/snp-dists //'))
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        snp-dists: \$(echo \$(snp-dists -v | sed 's/snp-dists //'))
     END_VERSIONS
     """
 }
@@ -313,7 +313,7 @@ process uploadIridaFiles {
 
     output:
     path "metadata_upload_status.csv", emit: upload_metadata
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -330,9 +330,9 @@ process uploadIridaFiles {
     fi
 
     # Versions #
-    cat <<-END_VERSIONS > upload_all.process.yml
-        "${task.process}":
-            irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
     END_VERSIONS
     """
 }
@@ -357,7 +357,7 @@ process uploadCorrectN {
     """
 }
 process outputVersions {
-    // Output versions for each process
+    // Output final version information into one file
     label 'smallmem'
     publishDir "${params.outdir}", pattern: "process_versions.yml", mode: "copy"
 
@@ -368,9 +368,13 @@ process outputVersions {
     path "process_versions.yml"
 
     script:
-    def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
     """
-    echo '"articNcovNanopore-${rev}":' > process_versions.yml
-    cat *.process.yml >> process_versions.yml
+    cat <<-END_VERSIONS > process_versions.yml
+    "Workflow":
+        ${workflow.manifest.name}: ${workflow.manifest.version}
+        Nextflow: ${nextflow.version}
+    END_VERSIONS
+
+    cat $versions >> process_versions.yml
     """
 }

@@ -9,6 +9,7 @@ process nextcladeDatasetGet {
 
     output:
     path "$dataset", emit: dataset
+    path "versions.yml", emit: versions
 
     script:
     def tag_version = tag ? "--tag ${tag}" : ""
@@ -17,6 +18,16 @@ process nextcladeDatasetGet {
         --name $dataset \\
         $tag_version \\
         --output-dir $dataset
+
+    # From Katherine's tracking
+    name=\$(grep -m 1 "name" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
+    tag=\$(grep -m 1 "tag" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        nextclade: \$(echo \$(nextclade --version 2>&1) | sed 's/^.*nextclade //; s/ .*\$//')
+        nextclade_db: \$name \$tag
+    END_VERSIONS
     """
 }
 process nextcladeRun {
@@ -30,7 +41,7 @@ process nextcladeRun {
 
     output:
     tuple val(sampleName), path("${sampleName}_nextclade.tsv"), emit: tsv
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -44,7 +55,7 @@ process nextcladeRun {
     name=\$(grep -m 1 "name" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
     tag=\$(grep -m 1 "tag" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
 
-    cat <<-END_VERSIONS > nextclade.process.yml
+    cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         nextclade: \$(echo \$(nextclade --version 2>&1) | sed 's/^.*nextclade //; s/ .*\$//')
         nextclade_db: \$name \$tag

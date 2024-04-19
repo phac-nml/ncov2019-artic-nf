@@ -11,7 +11,7 @@ process articGuppyPlex {
 
     output:
     tuple val(newSampleName), path("${newSampleName}.fastq"), emit: fastq
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     // Fastq input can either be a directory or a set of fastq files
@@ -27,7 +27,7 @@ process articGuppyPlex {
             --directory $fastq
 
         # Versions #
-        cat <<-END_VERSIONS > artic_guppyplex.process.yml
+        cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
         END_VERSIONS
@@ -46,7 +46,7 @@ process articGuppyPlex {
             --directory input_fastq
 
         # Versions #
-        cat <<-END_VERSIONS > artic_guppyplex.process.yml
+        cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
         END_VERSIONS
@@ -75,7 +75,7 @@ process articMinION {
     tuple val(sampleName), path("${sampleName}.consensus.fasta"), emit: consensus_fasta
     tuple val(sampleName), path("${sampleName}.pass.vcf.gz"), emit: vcf
     tuple val(sampleName), path("${sampleName}.fail.vcf"), emit: fail_vcf
-    path "*.process.yml", emit: versions
+    path "versions.yml", emit: versions
 
     script:
     // Setup args for medaka vs nanopolish
@@ -120,7 +120,7 @@ process articMinION {
         $sampleName
 
     # Versions #
-    cat <<-END_VERSIONS > artic_minion.process.yml
+    cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
     END_VERSIONS
