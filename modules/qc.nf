@@ -19,6 +19,7 @@ process makeQCCSV {
     output:
     path "${params.prefix}.${sampleName}.qc.csv", emit: csv
     path "${sampleName}.depth.png"
+    path "versions.yml", emit: versions
 
     script:
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
@@ -26,25 +27,33 @@ process makeQCCSV {
     def pcr_bed_arg = pcr_bed ? "--pcr_bed ${pcr_bed}" : ""
     """
     qc.py \\
-    --nanopore \\
-    --outfile ${params.prefix}.${sampleName}.qc.csv \\
-    --sample ${sampleName} \\
-    --ref ${ref} \\
-    --bam ${bam} \\
-    --fasta ${fasta} \\
-    --pangolin ${lineage_csv} \\
-    --ncov_summary ${ncov_summary} \\
-    --ncov_negative ${ncov_negative} \\
-    --vcf ${vcf} \\
-    --revision ${rev} \\
-    --scheme ${params.schemeVersion} \\
-    --scheme_bed ${scheme_bed} \\
-    --script_name 'nml-ncov2019-artic-nf' \\
-    --sequencing_technology ${seq_tech} \\
-    --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \\
-    --nextclade_tsv $nextclade_tsv \\
-    $sample_sheet_arg \\
-    $pcr_bed_arg
+        --nanopore \\
+        --outfile ${params.prefix}.${sampleName}.qc.csv \\
+        --sample ${sampleName} \\
+        --ref ${ref} \\
+        --bam ${bam} \\
+        --fasta ${fasta} \\
+        --pangolin ${lineage_csv} \\
+        --ncov_summary ${ncov_summary} \\
+        --ncov_negative ${ncov_negative} \\
+        --vcf ${vcf} \\
+        --revision ${rev} \\
+        --scheme ${params.schemeVersion} \\
+        --scheme_bed ${scheme_bed} \\
+        --script_name 'nml-ncov2019-artic-nf' \\
+        --sequencing_technology ${seq_tech} \\
+        --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \\
+        --nextclade_tsv $nextclade_tsv \\
+        $sample_sheet_arg \\
+        $pcr_bed_arg
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        pandas: \$(python -c "import pandas as pd; print(pd.__version__)")
+        samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+    END_VERSIONS
     """
 }
 
@@ -77,7 +86,8 @@ process correctQCSummaryCSV {
     path read_filter_failure_tsv
 
     output:
-    path "${params.prefix}.qc.csv"
+    path "${params.prefix}.qc.csv", emit: final_csv
+    path "versions.yml", emit: versions
 
     script:
     def failCountArg = read_count_failure_tsv ? "--count_failure_tsv $read_count_failure_tsv" : ""
@@ -88,5 +98,12 @@ process correctQCSummaryCSV {
         $filterCountArg \\
         --qc_csv ${initial_qc_csv} \\
         --output_prefix ${params.prefix}
+    
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        pandas: \$(python -c "import pandas as pd; print(pd.__version__)")
+    END_VERSIONS
     """
 }

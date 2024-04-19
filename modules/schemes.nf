@@ -76,6 +76,7 @@ process generateAmpliconBed {
     path "amplicon.bed", emit: amplicon_bed
     path "tiling_region.bed", emit: tiling_bed
     env PREFIX, emit: primer_prefix
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -83,5 +84,12 @@ process generateAmpliconBed {
         --bed $primer_bed
 
     PREFIX=\$(cat primer_prefix.txt)
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        primers_to_amplicons: 0.1.0
+        python: \$(python --version | sed 's/Python //g')
+    END_VERSIONS
     """
 }

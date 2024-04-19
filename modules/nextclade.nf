@@ -19,6 +19,7 @@ process nextcladeDatasetGet {
         $tag_version \\
         --output-dir $dataset
 
+    # Versions #
     # From Katherine's tracking
     name=\$(grep -m 1 "name" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
     tag=\$(grep -m 1 "tag" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
@@ -51,6 +52,7 @@ process nextcladeRun {
         -j ${task.cpus} \\
         $fasta
 
+    # Versions #
     # From Katherine's tracking
     name=\$(grep -m 1 "name" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)
     tag=\$(grep -m 1 "tag" ${dataset}/pathogen.json | sed 's/ \\|,\\|"//g' | cut -d ":" -f 2)

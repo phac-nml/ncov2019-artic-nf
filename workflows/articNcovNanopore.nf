@@ -86,6 +86,9 @@ workflow articNcovNanopore {
     ch_amplicon = schemeValidate.out.amplicon_bed       // channel: [ path(amplicon_bed) ]
     ch_primer_prefix = schemeValidate.out.primer_prefix // channel: [ val(primer_prefix) ]
 
+    // Version tracking update from subworkflow
+    ch_versions = ch_versions.mix(schemeValidate.out.versions)
+
     // =============================== //
     // Artic Size Filtering and Renaming
     // =============================== //
@@ -102,6 +105,7 @@ workflow articNcovNanopore {
             ch_fastqs,
             ch_irida_metadata
         )
+        ch_versions = ch_versions.mix(renameBarcodeSamples.out.versions)
 
         // Re-map to create samplename path tuple again
         renameBarcodeSamples.out.fastq
@@ -119,7 +123,7 @@ workflow articNcovNanopore {
     )
     accountNoReadsInput.out.count_filter
         .ifEmpty([])
-        .set{ ch_noReadsTracking }
+        .set{ ch_no_reads_tracking }
     
     // Failing size selection read count check
     //  Remap fastqs channel to branch the pass/filtered fastq files and use those accordingly
@@ -135,7 +139,7 @@ workflow articNcovNanopore {
     )
     accountReadFilterFailures.out.size_filter
         .ifEmpty([])
-        .set{ ch_filterReadsTracking }
+        .set{ ch_filtered_reads_tracking }
 
     // =============================== //
     // Artic nCoV Minion Pipleine
@@ -190,6 +194,7 @@ workflow articNcovNanopore {
         params.nextclade_tag
     )
     ch_versions = ch_versions.mix(nextcladeDatasetGet.out.versions)
+
     nextcladeRun(
         articMinION.out.consensus_fasta,
         nextcladeDatasetGet.out.dataset
@@ -199,7 +204,9 @@ workflow articNcovNanopore {
     // =============================== //
     // Run QC
     // =============================== //
-    snpDists(runNcovTools.out.aligned)
+    snpDists(
+        runNcovTools.out.aligned
+    )
     ch_versions = ch_versions.mix(snpDists.out.versions)
 
     // Making final CSV file with a few steps
@@ -218,10 +225,12 @@ workflow articNcovNanopore {
         ch_pcr_primers,
         params.sequencingTechnology
     )
+    ch_versions = ch_versions.mix(makeQCCSV.out.versions)
 
     // Adding pass/fail column
     //  Not used anymore really but it is still here for now
-    makeQCCSV.out.csv.splitCsv()
+    makeQCCSV.out.csv
+        .splitCsv()
         .unique()
         .branch {
             header: it[-1] == 'nextflow_qc_pass'
@@ -241,9 +250,10 @@ workflow articNcovNanopore {
     //  Null values, neg controls, read tracking, etc.
     correctQCSummaryCSV(
         writeQCSummaryCSV.out,
-        ch_noReadsTracking,
-        ch_filterReadsTracking
+        ch_no_reads_tracking,
+        ch_filtered_reads_tracking
     )
+    ch_versions = ch_versions.mix(correctQCSummaryCSV.out.versions)
 
     // =============================== //
     // Uploads and Final Tracking
@@ -258,11 +268,14 @@ workflow articNcovNanopore {
                 .collect{ it[1] },
             ch_irida_metadata
         )
+        ch_versions = ch_versions.mix(generateFastqIridaReport.out.versions)
+
         generateFastaIridaReport(
             articMinION.out.consensus_fasta
               .collect{ it[1] },
             ch_irida_metadata
         )
+        ch_versions = ch_versions.mix(generateFastaIridaReport.out.versions)
 
         // Upload now if given a config
         if ( ch_irida_upload_conf ) {
@@ -273,6 +286,7 @@ workflow articNcovNanopore {
                     ch_fast5Pass,
                     ch_irida_metadata
                 )
+                ch_versions = ch_versions.mix(generateFast5IridaReport.out.versions)
                 ch_fast5_upload = generateFast5IridaReport.out.fast5_dir
             }
 
@@ -282,7 +296,7 @@ workflow articNcovNanopore {
                 ch_fast5_upload
                     .ifEmpty([]),
                 ch_irida_upload_conf,
-                correctQCSummaryCSV.out
+                correctQCSummaryCSV.out.final_csv
             )
             ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions)
 
@@ -294,6 +308,7 @@ workflow articNcovNanopore {
                     ch_irida_upload_conf,
                     ch_irida_metadata
                 )
+                ch_versions = ch_versions.mix(uploadCorrectN.out.versions)
             }
         }
     }
@@ -313,16 +328,16 @@ workflow articNcovNanopore {
     // =============================== //
     if ( params.gff ) {
         Channel.fromPath("${params.gff}")
-            .set{ ch_refGff }
+            .set{ ch_ref_gff }
 
         Channel.fromPath("${params.yaml}")
-            .set{ ch_typingYaml }
+            .set{ ch_typing_yaml }
 
         Genotyping(
             articMinION.out.vcf,
-            ch_refGff,
+            ch_ref_gGff,
             ch_reference,
-            ch_typingYaml
+            ch_typing_yaml
         )
     }
 }

@@ -10,6 +10,7 @@ process renameBarcodeSamples {
 
     output:
     path "*.fastq", includeInputs: true, emit: fastq
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -17,6 +18,12 @@ process renameBarcodeSamples {
         --fastq $fastq \\
         --metadata $samplesheet_tsv \\
         --barcode $sampleName
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+    END_VERSIONS
     """
 }
 process accountNoReadsInput {
@@ -140,12 +147,20 @@ process generateFastqIridaReport {
 
     output:
     path "irida_fastq", emit: fastq_dir
+    path "versions.yml", emit: versions
 
     script:
     """
     mkdir irida_fastq
     mv ${fastqs} irida_fastq
     irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_fastq --fastq
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        pandas: \$(python -c "import pandas as pd; print(pd.__version__)")
+    END_VERSIONS
     """
 }
 process generateFastaIridaReport {
@@ -160,12 +175,20 @@ process generateFastaIridaReport {
 
     output:
     path "irida_consensus", emit: fasta_dir
+    path "versions.yml", emit: versions
 
     script:
     """
     mkdir irida_consensus
     mv *.consensus.fasta irida_consensus
     irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir irida_consensus --fasta
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        pandas: \$(python -c "import pandas as pd; print(pd.__version__)")
+    END_VERSIONS
     """
 }
 process generateFast5IridaReport {
@@ -181,10 +204,19 @@ process generateFast5IridaReport {
 
     output:
     path "irida_fast5", emit: fast5_dir
+    path "versions.yml", emit: versions
 
     script:
     """
     irida_fast5.py --sample_info ${samplesheet_tsv} --sample_dir ${fast5_dirs} --output_dir irida_fast5
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        pandas: \$(python -c "import pandas as pd; print(pd.__version__)")
+        pigz: \$(pigz --version 2>&1 | tee | sed 's/pigz //g')
+    END_VERSIONS
     """
 }
 process correctFailNs {
@@ -215,6 +247,8 @@ process correctFailNs {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         correct_n.py: 0.1.0
+        python: \$(python --version | sed 's/Python //g')
+        bcftools: \$(bcftools --version 2>&1 | head -n1 | sed 's/^.*bcftools //; s/ .*\$//')
     END_VERSIONS
     """
 }
@@ -269,7 +303,7 @@ process runNcovTools {
         pangolin: \$(echo \$(pangolin --version | sed 's/pangolin //'))
         samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
         snakemake: \$(echo \$(snakemake --version))
-        snpEff: \$(echo \$(snpEff -version))
+        snpeff: \$(echo \$(snpEff -version 2>&1) | cut -f 2 -d ' ')
     END_VERSIONS
     """
 }
@@ -348,12 +382,21 @@ process uploadCorrectN {
     path irida_config
     path samplesheet_tsv
 
+    output:
+    path "versions.yml", emit: versions
+
     script:
     """
     mkdir -p corrected_consensus
     mv *.corrected.consensus.fasta corrected_consensus
     irida_upload_csv_generator.py --sample_info ${samplesheet_tsv} --sample_dir corrected_consensus --fasta
     irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
+
+    # Versions #
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        irida-uploader: \$(echo \$(irida-uploader --version | sed 's/IRIDA Uploader //'))
+    END_VERSIONS
     """
 }
 process outputVersions {
