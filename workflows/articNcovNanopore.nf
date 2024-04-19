@@ -30,6 +30,11 @@ include {
     outputVersions
 } from '../modules/nml.nf'
 
+include {
+    nextcladeDatasetGet ;
+    nextcladeRun
+} from '../modules/nextclade.nf'
+
 // Subworkflows to include
 include { schemeValidate } from './schemeValidate.nf'
 include { Genotyping } from './typing.nf'
@@ -47,6 +52,7 @@ ch_ncov_config = params.ncov ? file(params.ncov, type: 'file', checkIfExists: tr
 // Optional channels
 ch_irida_metadata = params.irida ? file(params.irida, type: 'file', checkIfExists: true) : []
 ch_irida_upload_conf = params.upload_irida ? file(params.upload_irida, type: 'file', checkIfExists: true) : []
+ch_pcr_primers = params.pcr_primers ? file(params.pcr_primers, type: 'file', checkIfExists: true) : []
 
 /*
   Main Workflow
@@ -177,6 +183,18 @@ workflow articNcovNanopore {
     ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
 
     // =============================== //
+    // Run nextclade
+    // =============================== //
+    nextcladeDatasetGet(
+        params.nextclade_dataset,
+        params.nextclade_tag
+    )
+    nextcladeRun(
+        articMinION.out.consensus_fasta,
+        nextcladeDatasetGet.out.dataset
+    )
+
+    // =============================== //
     // Run QC
     // =============================== //
     snpDists(runNcovTools.out.aligned)
@@ -187,14 +205,16 @@ workflow articNcovNanopore {
         articMinION.out.ptrim
             .join(articMinION.out.consensus_fasta, by: 0)
             .join(articMinION.out.vcf, by: 0)
-            .combine(ch_reference)
-            .combine(runNcovTools.out.lineage)
-            .combine(runNcovTools.out.ncovtools_qc)
-            .combine(runNcovTools.out.ncovtools_negative)
-            .combine(runNcovTools.out.snpeff_path)
-            .combine(ch_primer_bed),
+            .join(nextcladeRun.out.tsv, by: 0),
+        ch_reference,
+        runNcovTools.out.lineage,
+        runNcovTools.out.ncovtools_qc,
+        runNcovTools.out.ncovtools_negative,
+        runNcovTools.out.snpeff_path,
+        ch_primer_bed,
         ch_irida_metadata,
-        params.pcr_primers
+        ch_pcr_primers,
+        params.sequencingTechnology
     )
 
     // Adding pass/fail column

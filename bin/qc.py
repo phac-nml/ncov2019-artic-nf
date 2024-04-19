@@ -434,7 +434,9 @@ def go(args):
             variants, variant_locations = get_vcf_variants(args.vcf)
 
     # Find any overlap of variants in the pcr primer regions
-    primer_statement = find_pcrprimer_mutations(args.pcr_bed, variant_locations)
+    primer_statement = 'NA'
+    if args.pcr_bed:
+        primer_statement = find_pcrprimer_mutations(args.pcr_bed, variant_locations)
 
     # Find any overlap of variants in sequencing primers
     if variants == 'None':
@@ -456,7 +458,6 @@ def go(args):
     # If we have a samplesheet, use its values to create final output
     if args.sample_sheet:
         sample_sheet_df = get_samplesheet_info(args.sample_sheet, args.sample, args.project_id, args.sequencing_technology)
-
         qc_line = {
             'sample' : [args.sample],
            'num_aligned_reads': [num_reads],
@@ -472,10 +473,8 @@ def go(args):
                 'script_name' : [args.script_name],
                    'revision' : [args.revision]
         }
-
         qc_df = pd.DataFrame.from_dict(qc_line)
         data_frames = [sample_sheet_df, qc_df, summary_df, negative_df]
-
     else:
         run_identifier = 'NA'
         barcode = 'NA'
@@ -483,7 +482,6 @@ def go(args):
             barcode_check = re.search(r'barcode(\d+)', args.sample)
             if barcode_check:
                 barcode = barcode_check.group(1)
-
         qc_line = {
                          'sample' : [args.sample],
                      'project_id' : [args.project_id],
@@ -503,9 +501,7 @@ def go(args):
                     'script_name' : [args.script_name],
                        'revision' : [args.revision]
         }
-
         qc_df = pd.DataFrame.from_dict(qc_line)
-
         data_frames = [qc_df, summary_df, negative_df]
 
     # Merge all dataframes together
@@ -546,7 +542,8 @@ def main():
     parser.add_argument('--scheme_bed', required=True)
     parser.add_argument('--script_name', required=True)
     parser.add_argument('--snpeff_tsv', required=True)
-    parser.add_argument('--pcr_bed', required=True)
+    parser.add_argument('--nextclade_tsv', required=True)
+    parser.add_argument('--pcr_bed', required=False)
     parser.add_argument('--project_id', required=False, default="NA")
     parser.add_argument('--sample_sheet', required=False)
 

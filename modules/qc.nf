@@ -5,59 +5,47 @@ process makeQCCSV {
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
-    tuple val(sampleName), path(bam), path(fasta), path(vcf), path(ref), path(lineage), path(ncov_summary), path(ncov_negative), path(snp_eff_path), path(scheme_bed)
+    tuple val(sampleName), path(bam), path(fasta), path(vcf), path(nextclade_tsv)
+    path ref
+    path lineage_csv
+    path ncov_summary
+    path ncov_negative
+    path snp_eff_path
+    path scheme_bed
     path sample_sheet
     path pcr_bed
+    val seq_tech
 
     output:
     path "${params.prefix}.${sampleName}.qc.csv", emit: csv
     path "${sampleName}.depth.png"
 
     script:
-    qcSetting = "--nanopore"
-
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
-    if ( params.irida )
-        """
-        qc.py ${qcSetting} \
-        --outfile ${params.prefix}.${sampleName}.qc.csv \
-        --sample ${sampleName} \
-        --ref ${ref} \
-        --bam ${bam} \
-        --fasta ${fasta} \
-        --pangolin ${lineage} \
-        --ncov_summary ${ncov_summary} \
-        --ncov_negative ${ncov_negative} \
-        --vcf ${vcf} \
-        --sample_sheet ${sample_sheet} \
-        --revision ${rev} \
-        --scheme ${params.schemeVersion} \
-        --scheme_bed ${scheme_bed} \
-        --script_name 'nml-ncov2019-artic-nf' \
-        --sequencing_technology ${params.sequencingTechnology} \
-        --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
-        --pcr_bed ${pcr_bed}
-        """
-    else
-        """
-        qc.py ${qcSetting} \
-        --outfile ${params.prefix}.${sampleName}.qc.csv \
-        --sample ${sampleName} \
-        --ref ${ref} \
-        --bam ${bam} \
-        --fasta ${fasta} \
-        --pangolin ${lineage} \
-        --ncov_summary ${ncov_summary} \
-        --ncov_negative ${ncov_negative} \
-        --vcf ${vcf} \
-        --revision ${rev} \
-        --scheme ${params.schemeVersion} \
-        --scheme_bed ${scheme_bed} \
-        --script_name 'nml-ncov2019-artic-nf' \
-        --sequencing_technology ${params.sequencingTechnology} \
-        --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \
-        --pcr_bed ${pcr_bed}
-        """
+    def sample_sheet_arg = sample_sheet ? "--sample_sheet $sample_sheet" : ""
+    def pcr_bed_arg = pcr_bed ? "--pcr_bed ${pcr_bed}" : ""
+    """
+    qc.py \\
+    --nanopore \\
+    --outfile ${params.prefix}.${sampleName}.qc.csv \\
+    --sample ${sampleName} \\
+    --ref ${ref} \\
+    --bam ${bam} \\
+    --fasta ${fasta} \\
+    --pangolin ${lineage_csv} \\
+    --ncov_summary ${ncov_summary} \\
+    --ncov_negative ${ncov_negative} \\
+    --vcf ${vcf} \\
+    --revision ${rev} \\
+    --scheme ${params.schemeVersion} \\
+    --scheme_bed ${scheme_bed} \\
+    --script_name 'nml-ncov2019-artic-nf' \\
+    --sequencing_technology ${seq_tech} \\
+    --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \\
+    --nextclade_tsv $nextclade_tsv \\
+    $sample_sheet_arg \\
+    $pcr_bed_arg
+    """
 }
 
 process writeQCSummaryCSV {

@@ -237,8 +237,6 @@ process runNcovTools {
     path corrected_fastas
     val primer_prefix
 
-    // Currently have the nml_* outputs hardcoded as the config has the run name as nml
-    // If you change the ncov-tools config change them as well in all instances below
     output:
     path("*.pdf")
     path("*.tsv")
