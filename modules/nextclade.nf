@@ -12,11 +12,11 @@ process nextcladeDatasetGet {
     path "versions.yml", emit: versions
 
     script:
-    def tag_version = tag ? "--tag ${tag}" : ""
+    def tagVersion = tag ? "--tag ${tag}" : ""
     """
     nextclade dataset get \\
         --name $dataset \\
-        $tag_version \\
+        ${tagVersion} \\
         --output-dir $dataset
 
     # Versions #

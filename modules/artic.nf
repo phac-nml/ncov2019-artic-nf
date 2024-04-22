@@ -63,7 +63,7 @@ process articMinION {
     tuple val(sampleName), path(fastq)
     path fast5_dir
     path sequencing_summary
-    tuple val(scheme_version), path(scheme)
+    tuple val(schemeVersion), path(scheme)
 
     output:
     path "${sampleName}*", emit: all
@@ -114,7 +114,7 @@ process articMinION {
         ${alignerArg} \\
         --threads ${task.cpus} \\
         --read-file $fastq \\
-        --scheme-version ${scheme_version} \\
+        --scheme-version ${schemeVersion} \\
         --scheme-directory $scheme \\
         ${params.scheme} \\
         $sampleName

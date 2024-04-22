@@ -12,7 +12,7 @@ process makeQCCSV {
     path ncov_negative
     path snp_eff_path
     path scheme_bed
-    path sample_sheet
+    path samplesheet
     path pcr_bed
     val seq_tech
 
@@ -23,29 +23,29 @@ process makeQCCSV {
 
     script:
     def rev = workflow.commitId ?: workflow.revision ?: workflow.scriptId
-    def sample_sheet_arg = sample_sheet ? "--sample_sheet $sample_sheet" : ""
-    def pcr_bed_arg = pcr_bed ? "--pcr_bed ${pcr_bed}" : ""
+    def samplesheetArg = samplesheet ? "--sample_sheet $samplesheet" : ""
+    def pcrBedArg = pcr_bed ? "--pcr_bed ${pcr_bed}" : ""
     """
     qc.py \\
         --nanopore \\
         --outfile ${params.prefix}.${sampleName}.qc.csv \\
         --sample ${sampleName} \\
-        --ref ${ref} \\
-        --bam ${bam} \\
-        --fasta ${fasta} \\
-        --pangolin ${lineage_csv} \\
-        --ncov_summary ${ncov_summary} \\
-        --ncov_negative ${ncov_negative} \\
-        --vcf ${vcf} \\
+        --ref $ref \\
+        --bam $bam \\
+        --fasta $fasta \\
+        --pangolin $lineage_csv \\
+        --ncov_summary $ncov_summary \\
+        --ncov_negative $ncov_negative \\
+        --vcf $vcf \\
         --revision ${rev} \\
         --scheme ${params.schemeVersion} \\
-        --scheme_bed ${scheme_bed} \\
+        --scheme_bed $scheme_bed \\
         --script_name 'nml-ncov2019-artic-nf' \\
         --sequencing_technology ${seq_tech} \\
         --snpeff_tsv ${snp_eff_path}/${sampleName}_aa_table.tsv \\
         --nextclade_tsv $nextclade_tsv \\
-        $sample_sheet_arg \\
-        $pcr_bed_arg
+        $samplesheetArg \\
+        $pcrBedArg
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -96,9 +96,9 @@ process correctQCSummaryCSV {
     negative_control_fixes.py \\
         $failCountArg \\
         $filterCountArg \\
-        --qc_csv ${initial_qc_csv} \\
+        --qc_csv $initial_qc_csv \\
         --output_prefix ${params.prefix}
-    
+
     # Versions #
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

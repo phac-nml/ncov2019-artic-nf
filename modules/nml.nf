@@ -17,7 +17,7 @@ process renameBarcodeSamples {
     rename_fastq.py \\
         --fastq $fastq \\
         --metadata $samplesheet_tsv \\
-        --barcode $sampleName
+        --barcode ${sampleName}
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -153,11 +153,11 @@ process generateFastqIridaReport {
     """
     # Create folder for upload
     mkdir irida_fastq
-    mv ${fastqs} irida_fastq
+    mv $fastqs irida_fastq
 
     # Create SampleList.csv
     irida_upload_csv_generator.py \\
-        --sample_info ${samplesheet_tsv} \\
+        --sample_info $samplesheet_tsv \\
         --sample_dir irida_fastq \\
         --fastq
 
@@ -187,11 +187,11 @@ process generateFastaIridaReport {
     """
     # Create folder for upload
     mkdir irida_consensus
-    mv *.consensus.fasta irida_consensus
+    mv $fastas irida_consensus
 
     # Create SampleList.csv
     irida_upload_csv_generator.py \\
-        --sample_info ${samplesheet_tsv} \\
+        --sample_info $samplesheet_tsv \\
         --sample_dir irida_consensus \\
         --fasta
 
@@ -221,8 +221,8 @@ process generateFast5IridaReport {
     script:
     """
     irida_fast5.py \\
-        --sample_info ${samplesheet_tsv} \\
-        --sample_dir ${fast5_dirs} \\
+        --sample_info $samplesheet_tsv \\
+        --sample_dir $fast5_dirs \\
         --output_dir irida_fast5
 
     # Versions #
@@ -310,14 +310,14 @@ process runNcovTools {
     script:
     """
     bash run_ncovtools.sh \\
-        ${config} \\
-        ${amplicon_bed} \\
-        ${reference} \\
-        ${primer_bed} \\
+        $config \\
+        $amplicon_bed \\
+        $reference \\
+        $primer_bed \\
         ${primer_prefix} \\
         ${params.prefix} \\
         ${task.cpus} \\
-        ${samplesheet_tsv}
+        $samplesheet_tsv
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -346,7 +346,7 @@ process snpDists {
 
     script:
     """
-    snp-dists ${aligned_fasta} > matrix.tsv
+    snp-dists $aligned_fasta > matrix.tsv
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -378,14 +378,14 @@ process uploadIridaFiles {
     """
     # Always will be uploaded
     # -----------------------
-    irida-uploader --config ${irida_config} -d ${fastq_folder}
-    irida-uploader --config ${irida_config} -d ${consensus_folder} --upload_mode=assemblies
-    upload.py --config ${irida_config} --metadata_csv  ${pipeline_data_csv}
+    irida-uploader --config $irida_config -d $fastq_folder
+    irida-uploader --config $irida_config -d $consensus_folder --upload_mode=assemblies
+    upload.py --config $irida_config --metadata_csv  $pipeline_data_csv
 
     # Only if Nanopolish is run
     # -----------------------
-    if [ -d ${fast5_folder} ]; then
-        irida-uploader --config ${irida_config} -d ${fast5_folder} --upload_mode=fast5
+    if [ -d $fast5_folder ]; then
+        irida-uploader --config $irida_config -d $fast5_folder --upload_mode=fast5
     fi
 
     # Versions #
@@ -414,16 +414,16 @@ process uploadCorrectN {
     """
     # Create folder for upload
     mkdir -p corrected_consensus
-    mv *.corrected.consensus.fasta corrected_consensus
+    mv $corrected_fastas corrected_consensus
 
     # Create SampleList.csv
     irida_upload_csv_generator.py \\
-        --sample_info ${samplesheet_tsv} \\
+        --sample_info $samplesheet_tsv \\
         --sample_dir corrected_consensus \\
         --fasta
 
     # Upload
-    irida-uploader --config ${irida_config} -d corrected_consensus --upload_mode=assemblies
+    irida-uploader --config $irida_config -d corrected_consensus --upload_mode=assemblies
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
