@@ -67,16 +67,6 @@ workflow articNcovNanopore {
     ch_versions = Channel.empty()
 
     // =============================== //
-    // Logic Checks - Probably unneeded here as its in main.nf
-    // =============================== //
-    if ( params.nanopolish ) { 
-        if ( (! ch_fast5s) || (! ch_seqsum) ) {
-            log.error("ERROR: Nanopolish given as input pipeline but the fast5 pass directory or sequencing_summary file weren't found")
-            System.exit(1)
-        }
-    }
-
-    // =============================== //
     // Scheme and Reference
     // =============================== //
     schemeValidate()
@@ -283,7 +273,7 @@ workflow articNcovNanopore {
             ch_fast5_upload = Channel.empty()
             if ( params.fast5_pass ) {
                 generateFast5IridaReport(
-                    ch_fast5Pass,
+                    ch_fast5s,
                     ch_irida_metadata
                 )
                 ch_versions = ch_versions.mix(generateFast5IridaReport.out.versions)

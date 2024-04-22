@@ -28,6 +28,7 @@ if ( params.profile ) {
 
 // Pipeline required input checks
 // ===============================
+// Nanopolish
 if ( params.nanopolish ) {
     if (! params.basecalled_fastq ) {
         log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
@@ -39,9 +40,13 @@ if ( params.nanopolish ) {
         log.error("ERROR: Please supply the path to the sequencing_summary.txt file from your run with --sequencing_summary")
         System.exit(1)
     }
+// Medaka
 } else if ( params.medaka ) {
     if (! params.basecalled_fastq ) {
         log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
+        System.exit(1)
+    } else if (! params.medaka_model ) {
+        log.error("ERROR: Please supply a medaka model with `--medaka_model MODEL` to run the medaka pipeline")
         System.exit(1)
     }
 } else {
@@ -49,6 +54,7 @@ if ( params.nanopolish ) {
     System.exit(1)
 }
 
+// Prefix existance and formatting check
 if ( ! params.prefix ) {
     log.error("ERROR: Please supply a prefix for your output files with --prefix")
     log.error("ERROR: For more information use --help to print help statement")
@@ -95,7 +101,7 @@ workflow {
             }.set{ ch_initial_fastq_dirs }
 
     } else {
-        log.error("ERROR: Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to the unmodified guppy output directory.")
+        log.error("ERROR: Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to either the guppy output directory or a directory of flat fastq files.")
         System.exit(1)
     }
 
@@ -111,12 +117,9 @@ workflow {
 
     // Execute Main Named process
     main:
-    if ( params.nanopolish || params.medaka ) {
-        articNcovNanopore(
-            ch_fastqs.pass,
-            ch_fastqs.filtered
-        )
-    } else {
-        println("Please select a workflow with --nanopolish or --medaka")
-    }
+    articNcovNanopore(
+        ch_fastqs.pass,
+        ch_fastqs.filtered
+    )
 }
+// :)
