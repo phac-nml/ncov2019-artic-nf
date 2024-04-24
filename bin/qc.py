@@ -343,25 +343,24 @@ def parse_ncov_tsv(file_in, sample, negative=False):
 
     return negative_df
 
-def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, ncov_df: pd.DataFrame) -> pd.DataFrame:
+def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, ncov_df: pd.DataFrame) -> None:
     '''
     Parse the nextclade dataframe for the presence of frameshift indels and update the qc_pass flag
-    if they exist. Not adding the nextclade values at the moment
+    in the ncov summary df if they do not match
     INPUTS:
         sample  --> `str` sample name from input
         next_df --> `df` from nextclade 
-        ncov_df --> `df` Parsed ncov-tools df containing
-    RETURNS:
-        df
+        ncov_df --> `df` Parsed ncov-tools summary df
     '''
     # Adding in a column for tracking if correction occured
+    ncov_df.reset_index(inplace=True, drop=True)
     ncov_df['nc_frameshift_adjustment'] = 'False'
     
     # Filter down nextclade df to just the wanted sample
     #  It should only be 1 sample but just in case
     next_df = next_df.loc[next_df['seqName'] == sample]
     if next_df.empty:
-        return ncov_df
+        return
 
     # Determine if there are any non-ignored frameshifts
     #  Both df are 1 line now so can just pull the first value
@@ -371,7 +370,7 @@ def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, nco
 
     # If its not in the list we don't worry
     if 'POSSIBLE_FRAMESHIFT_INDELS' not in ncov_qc_value_list:
-        return ncov_df
+        return
     # Otherwise check if nc fs values show a non-ignored fs and adapt the output
     elif total_fs - ignored_fs == 0:
         ncov_qc_value_list.remove('POSSIBLE_FRAMESHIFT_INDELS')
@@ -380,8 +379,8 @@ def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, nco
 
         ncov_df.at[0, 'qc_pass'] = ';'.join(ncov_qc_value_list)
         ncov_df['nc_frameshift_adjustment'] = 'True'
-
-    return ncov_df
+        
+    return
 
 def get_samplesheet_info(sample_tsv, sample_name, project_id, sequencing_tech):
     '''
@@ -496,7 +495,7 @@ def go(args):
     
     # Nextclade double check of fs mutations
     next_df = pd.read_csv(args.nextclade_tsv, sep='\t')
-    summary_df = compare_nextclade_fs_to_ncovtools_fs(args.sample, next_df, summary_df)
+    compare_nextclade_fs_to_ncovtools_fs(args.sample, next_df, summary_df)
 
     # If we have a samplesheet, use its values to create final output
     if args.sample_sheet:

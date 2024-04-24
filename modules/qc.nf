@@ -2,6 +2,7 @@ process makeQCCSV {
     // Make singular sample qc.csv files
     tag { sampleName }
     label 'conda_extra'
+    label 'smallmem'
     publishDir "${params.outdir}/qc_plots", pattern: "${sampleName}.depth.png", mode: 'copy'
 
     input:
