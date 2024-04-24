@@ -46,6 +46,10 @@ process nextcladeRun {
 
     script:
     """
+    # Correct header for nc output line
+    sed -iE 's|/ARTIC/.*||g' $fasta
+
+    # Run nc
     nextclade run \\
         -D $dataset \\
         -t ${sampleName}_nextclade.tsv \\
