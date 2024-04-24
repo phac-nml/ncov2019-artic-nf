@@ -123,6 +123,11 @@ def main() -> None:
     key_cols = [x for x in key_cols if x in cols]
     extra_cols = [x for x in cols if (x not in key_cols) and (x not in negative_columns)]
     final_df = final_df[key_cols+extra_cols+negative_columns]
+
+    # Drop any additional columns
+    final_df.drop(['nextflow_qc_pass'], axis=1, inplace=True)
+
+    # Final Output
     final_df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
 
 if __name__ == "__main__":

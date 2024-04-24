@@ -354,7 +354,7 @@ def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, nco
     '''
     # Adding in a column for tracking if correction occured
     ncov_df.reset_index(inplace=True, drop=True)
-    ncov_df['nc_frameshift_adjustment'] = 'False'
+    ncov_df['qc_adjustment_from_nextclade'] = 'No adjustment'
     
     # Filter down nextclade df to just the wanted sample
     #  It should only be 1 sample but just in case
@@ -376,10 +376,11 @@ def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, nco
         ncov_qc_value_list.remove('POSSIBLE_FRAMESHIFT_INDELS')
         if ncov_qc_value_list == []:
             ncov_qc_value_list = ['PASS']
+            ncov_df['qc_adjustment_from_nextclade'] = 'Adjusted FS flag to PASS'
+        else:
+            ncov_df['qc_adjustment_from_nextclade'] = 'Removed FS flag'
 
-        ncov_df.at[0, 'qc_pass'] = ';'.join(ncov_qc_value_list)
-        ncov_df['nc_frameshift_adjustment'] = 'True'
-        
+    ncov_df.at[0, 'qc_pass'] = ';'.join(ncov_qc_value_list)
     return
 
 def get_samplesheet_info(sample_tsv, sample_name, project_id, sequencing_tech):
