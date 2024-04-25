@@ -80,6 +80,9 @@ process articMinION {
     script:
     // Setup args for medaka vs nanopolish
     def argsList = []
+    def variantVersionCMD = ""
+    def modelVersionCMD = ""
+
     if ( params.medaka ) {
         argsList.add("--medaka")
         argsList.add("--medaka-model ${params.medaka_model}")
@@ -87,9 +90,12 @@ process articMinION {
         if ( params.no_longshot ) {
             argsList.add("--no-longshot")
         }
+        variantVersionCMD = "medaka: \$(echo \$(medaka --version | sed 's/medaka //'))"
+        modelVersionCMD = "medaka_model: ${params.medaka_model}"
     } else {
         argsList.add("--fast5-directory $fast5_dir")
         argsList.add("--sequencing-summary $sequencing_summary")
+        variantVersionCMD = "nanopolish: \$(echo \$(nanopolish --version | grep nanopolish | sed 's/nanopolish version //'))"
     }
     if ( params.normalise ) {
         argsList.add("--normalise ${params.normalise}")
@@ -106,7 +112,6 @@ process articMinION {
     if ( params.bwa ) {
         alignerArg = "--bwa"
     }
-
     // Cmd
     """
     artic minion \\
@@ -123,6 +128,12 @@ process articMinION {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
+        artic-tools: \$(artic-tools --version)
+        bcftools: \$(echo \$(bcftools --version | grep bcftools | sed 's/bcftools //'))
+        minimap2: \$(echo \$(minimap2 --version))
+        samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
+        $variantVersionCMD
+        $modelVersionCMD
     END_VERSIONS
     """
 }
