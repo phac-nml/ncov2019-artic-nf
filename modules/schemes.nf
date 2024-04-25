@@ -31,8 +31,8 @@ process validateScheme {
         So a few checks to attempt to meet those requirements
         Note that no def for the params as we need them in the outputs
     */
-    schemeVersion = params.scheme_version
-    schemeFolder = params.scheme_version
+    schemeVersion = "$params.scheme_version"
+    schemeFolder = "$params.scheme_version"
     if ( ! schemeVersion.startsWith("V") ) {
         schemeFolder = "V" + schemeFolder
     } else {
@@ -50,7 +50,7 @@ process validateScheme {
         if [ -d primer-schemes/${params.scheme}/${params.scheme_version} ]; then
             mv primer-schemes/${params.scheme}/${params.scheme_version} primer-schemes/${params.scheme}/${schemeFolder}
         else
-            echo "ERROR: Cannot find input scheme version ${params.scheme_version} or adjusted ${schemeVersion}"
+            echo "ERROR: Cannot find input scheme version ${params.scheme_version} or scheme version folder ${schemeFolder}"
             exit 1
         fi
     fi
@@ -59,7 +59,7 @@ process validateScheme {
     if [ ! -f primer-schemes/${params.scheme}/${schemeFolder}/*reference.fasta ]; then
         echo "ERROR: Reference Fasta not found in 'primer-schemes/${params.scheme}/${schemeFolder}/*reference.fasta'"
         exit 1
-    elif [ ! -f primer-schemes/${params.scheme}/${schemeFolder}/*scheme.bed ]; then
+    elif [ ! -f primer-schemes/${params.scheme}/${schemeFolder}/*primer.bed ]; then
         echo "ERROR: Scheme bed file not found in 'primer-schemes/${params.scheme}/${schemeFolder}/*primer.bed'"
         exit 1
     fi

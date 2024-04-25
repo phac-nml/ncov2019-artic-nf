@@ -384,7 +384,7 @@ process uploadIridaFiles {
 
     # Only if Nanopolish is run
     # -----------------------
-    if [ -d $fast5_folder ]; then
+    if [ -d "$fast5_folder" ]; then
         irida-uploader --config $irida_config -d $fast5_folder --upload_mode=fast5
     fi
 

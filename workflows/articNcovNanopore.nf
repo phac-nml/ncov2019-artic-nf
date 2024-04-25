@@ -280,7 +280,7 @@ workflow articNcovNanopore {
                 ch_fast5_upload = generateFast5IridaReport.out.fast5_dir
             }
 
-            uploadIridaNanopolish(
+            uploadIridaFiles(
                 generateFastqIridaReport.out.fastq_dir,
                 generateFastaIridaReport.out.fasta_dir,
                 ch_fast5_upload
@@ -288,7 +288,7 @@ workflow articNcovNanopore {
                 ch_irida_upload_conf,
                 correctQCSummaryCSV.out.final_csv
             )
-            ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions)
+            ch_versions = ch_versions.mix(uploadIridaFiles.out.versions)
 
             // Upload corrected fasta files if any
             if ( ! params.skip_correct_n ) {

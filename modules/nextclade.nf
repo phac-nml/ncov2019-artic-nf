@@ -1,18 +1,19 @@
 process nextcladeDatasetGet {
+    tag { version_tag }
     label 'smallmem'
     label 'nextclade'
     publishDir "${params.outdir}/nextclade", pattern: "$dataset", mode: "copy"
 
     input:
     val dataset
-    val tag
+    val version_tag
 
     output:
     path "$dataset", emit: dataset
     path "versions.yml", emit: versions
 
     script:
-    def tagVersion = tag ? "--tag ${tag}" : ""
+    def tagVersion = version_tag ? "--tag ${version_tag}" : ""
     """
     nextclade dataset get \\
         --name $dataset \\
@@ -32,6 +33,7 @@ process nextcladeDatasetGet {
     """
 }
 process nextcladeRun {
+    tag { sampleName }
     label 'smallmem'
     label 'nextclade'
     publishDir "${params.outdir}/nextclade", pattern: "${sampleName}_nextclade.tsv", mode: "copy"
