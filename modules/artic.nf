@@ -103,7 +103,7 @@ process articMinION {
 
     // Aligner
     def alignerArg = "--minimap2"
-    if ( params.use_bwa ) {
+    if ( params.bwa ) {
         alignerArg = "--bwa"
     }
 

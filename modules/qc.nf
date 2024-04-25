@@ -39,7 +39,7 @@ process makeQCCSV {
         --ncov_negative $ncov_negative \\
         --vcf $vcf \\
         --revision ${rev} \\
-        --scheme ${params.schemeVersion} \\
+        --scheme ${params.scheme_version} \\
         --scheme_bed $scheme_bed \\
         --script_name 'nml-ncov2019-artic-nf' \\
         --sequencing_technology ${seq_tech} \\

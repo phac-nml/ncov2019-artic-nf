@@ -12,10 +12,10 @@ nextflow run ./main.nf \
     --medaka_model r941_min_hac_g507 \
     --prefix 'nml' \
     --basecalled_fastq $PWD/.github/data/nanopore/fastq_pass/barcode78/ \
-    --schemeVersion freed_V2_nml \
+    --scheme_version freed_V2_nml \
     --min_length 800 \
     --max_length 1600 \
-    --sequencingTechnology GridION \
+    --sequencing_technology GridION \
     --irida $PWD/.github/data/metadata.tsv
 
 ### Check Outputs ###

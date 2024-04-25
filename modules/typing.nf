@@ -22,8 +22,8 @@ process typeVariants {
         -ov ${sampleName}.csq.vcf \\
         -ot ${sampleName}.typing.csv \\
         -os ${sampleName}.variants.csv \\
-        -dp ${params.csqDpThreshold} \\
-        -af ${params.csqAfThreshold} \\
+        -dp ${params.csq_dp_threshold} \\
+        -af ${params.csq_af_threshold} \\
         -v $variants \\
         $gff $ref
     """

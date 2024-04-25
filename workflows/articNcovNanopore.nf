@@ -119,8 +119,8 @@ workflow articNcovNanopore {
     //  Remap fastqs channel to branch the pass/filtered fastq files and use those accordingly
     ch_fastqs
         .branch{
-            pass: it[1].countFastq() > params.minReadsGuppyPlex
-            filtered: it[1].countFastq() <= params.minReadsGuppyPlex
+            pass: it[1].countFastq() > params.min_reads_guppyplex
+            filtered: it[1].countFastq() <= params.min_reads_guppyplex
         }.set{ ch_fastqs }
     accountReadFilterFailures(
         ch_fastqs.filtered
@@ -146,7 +146,7 @@ workflow articNcovNanopore {
     // Failing N Position Adjustment
     // =============================== //
     ch_corrected_fasta = Channel.empty()
-    if ( params.correctN ) {
+    if ( ! params.skip_correct_n ) {
         correctFailNs(
             articMinION.out.ptrim
                 .join(articMinION.out.ptrimbai, by:0)
@@ -213,7 +213,7 @@ workflow articNcovNanopore {
         ch_primer_bed,
         ch_irida_metadata,
         ch_pcr_primers,
-        params.sequencingTechnology
+        params.sequencing_technology
     )
     ch_versions = ch_versions.mix(makeQCCSV.out.versions)
 
@@ -291,7 +291,7 @@ workflow articNcovNanopore {
             ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions)
 
             // Upload corrected fasta files if any
-            if ( params.correctN ) {
+            if ( ! params.skip_correct_n ) {
                 uploadCorrectN(
                     ch_corrected_fasta
                       .collect{ it[1] },

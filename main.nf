@@ -6,17 +6,36 @@ nextflow.enable.dsl = 2
 
 // include modules
 // ===============================
-include {printHelp} from './modules/help.nf'
+include { printHelp } from './modules/help.nf'
 
 // import main workflow
 // ===============================
-include {articNcovNanopore} from './workflows/articNcovNanopore.nf' 
+include { articNcovNanopore } from './workflows/articNcovNanopore.nf' 
 
 // Help
 // ===============================
 if ( params.help ) {
     printHelp()
     exit 0
+}
+
+// Previous param warnings/exit
+def previousParams = [
+    'medakaModel',
+    'schemeRepoURL',
+    'schemeVersion',
+    'minReadsPerBarcode',
+    'minReadsGuppyPlex',
+    'correctN',
+    'sequencingTechnology',
+    'csqAfThreshold',
+    'csqDpThreshold',
+]
+
+def overlap = previousParams.intersect(params.keySet())
+if ( overlap != [] ) {
+    log.error("ERROR: Previous params: '$overlap' were given. Please resubmit with the new parameters that can be found when running the help command")
+    System.exit(1)
 }
 
 // Simple profile warning
@@ -108,9 +127,9 @@ workflow {
     // Final input pathes and filtering
     ch_initial_fastq_dirs
         .branch{ it ->
-            pass: it[2] > params.minReadsPerBarcode
+            pass: it[2] > params.min_reads_per_barcode
                 return [ it[0], it[1] ]
-            filtered: it[2] <= params.minReadsPerBarcode
+            filtered: it[2] <= params.min_reads_per_barcode
                 return [ it[0], it[1] ]
         }
         .set{ ch_fastqs }

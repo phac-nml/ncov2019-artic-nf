@@ -23,7 +23,7 @@ nextflow run ./main.nf \
     --basecalled_fastq $PWD/.github/data/nanopore/fastq_pass/ \
     --fast5_pass $PWD/.github/data/nanopore/fast5_pass/ \
     --sequencing_summary $PWD/.github/data/nanopore/sequencing_summary.txt \
-    --schemeVersion freed_V2_nml \
+    --scheme_version freed_V2_nml \
     --min_length 800 \
     --max_length 1600
 

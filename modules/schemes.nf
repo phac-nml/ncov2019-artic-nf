@@ -1,14 +1,14 @@
 // Scheme related processes to go with scheme subworkflow
 process downloadScheme {
     // Download primer scheme from given repo URL to primer-schemes directory
-    tag { params.schemeRepoURL }
+    tag { params.scheme_repo_url }
 
     output:
     path "primer-schemes", emit: scheme
 
     script:
     """
-    git clone ${params.schemeRepoURL} primer-schemes
+    git clone ${params.scheme_repo_url} primer-schemes
     """
 }
 process validateScheme {
@@ -31,8 +31,8 @@ process validateScheme {
         So a few checks to attempt to meet those requirements
         Note that no def for the params as we need them in the outputs
     */
-    schemeVersion = params.schemeVersion
-    schemeFolder = params.schemeVersion
+    schemeVersion = params.scheme_version
+    schemeFolder = params.scheme_version
     if ( ! schemeVersion.startsWith("V") ) {
         schemeFolder = "V" + schemeFolder
     } else {
@@ -47,10 +47,10 @@ process validateScheme {
     # Adjust folder to make sure it starts with a V
     #  If we can't find the V{schemeVersion} folder, then check for just {schemeVersion} folder and add the V
     if [ ! -d primer-schemes/${params.scheme}/${schemeFolder} ]; then
-        if [ -d primer-schemes/${params.scheme}/${params.schemeVersion} ]; then
-            mv primer-schemes/${params.scheme}/${params.schemeVersion} primer-schemes/${params.scheme}/${schemeFolder}
+        if [ -d primer-schemes/${params.scheme}/${params.scheme_version} ]; then
+            mv primer-schemes/${params.scheme}/${params.scheme_version} primer-schemes/${params.scheme}/${schemeFolder}
         else
-            echo "ERROR: Cannot find input scheme version ${params.schemeVersion} or adjusted ${schemeVersion}"
+            echo "ERROR: Cannot find input scheme version ${params.scheme_version} or adjusted ${schemeVersion}"
             exit 1
         fi
     fi
