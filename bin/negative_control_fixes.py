@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
+"""Finalize pipeline CSV file by correcting blank values and evaluating controls"""
 
 import argparse
 import pandas as pd
 import numpy as np
 
-def init_parser():
-    '''
-    Parser Arguments to pass to script from CL
-    '''
+def init_parser() -> argparse.ArgumentParser:
+    """
+    Specify command line arguments
+    Returns command line parser with inputs
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--qc_csv',
@@ -20,19 +22,18 @@ def init_parser():
         help='Output file prefix'
     )
     parser.add_argument(
-        '--read_tsv',
+        '--count_failure_tsv',
         required=False,
         help='Path to tsv containing samples failing read count filter'
     )
     parser.add_argument(
-        '--mapping_tsv',
+        '--filter_failure_tsv',
         required=False,
-        help='Path to tsv containing samples failing read mapping count filter'
+        help='Path to tsv containing samples failing read length filter (artic Guppyplex too few reads)'
     )
-
     return parser
 
-def main():
+def main() -> None:
     '''
     One function to:
         - Fix up the negative control columns
@@ -96,18 +97,18 @@ def main():
     # For the nanopore pipeline fail tracking
     # Rename to match what comes out of qc.py
     rename_columns = {
-            'run': 'run_identifier',
-            'ct': 'qpcr_ct',
-            'date': 'collection_date'
-        }
-    if args.read_tsv:
-        read_df = pd.read_csv(args.read_tsv, sep='\t', dtype=object)
-        read_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
-        frames.append(read_df)
-    if args.mapping_tsv:
-        mapping_df = pd.read_csv(args.mapping_tsv, sep='\t', dtype=object)
-        mapping_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
-        frames.append(mapping_df)
+        'run': 'run_identifier',
+        'ct': 'qpcr_ct',
+        'date': 'collection_date'
+    }
+    if args.count_failure_tsv:
+        count_failure_df = pd.read_csv(args.count_failure_tsv, sep='\t', dtype=object)
+        count_failure_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
+        frames.append(count_failure_df)
+    if args.filter_failure_tsv:
+        filter_failure_df = pd.read_csv(args.filter_failure_tsv, sep='\t', dtype=object)
+        filter_failure_df.rename(columns={key: val for key, val in rename_columns.items() if val in df_columns}, inplace=True)
+        frames.append(filter_failure_df)
     ### End appending failing samples ###
 
     ### Create final concated df and then output ###
@@ -122,6 +123,11 @@ def main():
     key_cols = [x for x in key_cols if x in cols]
     extra_cols = [x for x in cols if (x not in key_cols) and (x not in negative_columns)]
     final_df = final_df[key_cols+extra_cols+negative_columns]
+
+    # Drop any additional columns
+    final_df.drop(['nextflow_qc_pass'], axis=1, inplace=True)
+
+    # Final Output
     final_df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
 
 if __name__ == "__main__":

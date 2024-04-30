@@ -1,550 +1,333 @@
-// ARTIC ncov workflow
-
-// enable dsl2
-nextflow.enable.dsl = 2
-
-// import modules
+/*
+    Main Pipeline Workflows
+        - ARTIC ncov nanopore nanopolish workflow
+        - ARTIC ncov nanopore medata workflow
+*/
+// Modules to include
 include {
-  articDownloadScheme;
-  articGuppyPlex;
-  articGuppyPlexFlat;
-  articMinIONNanopolish;
-  articMinIONMedaka;
-  articRemoveUnmappedReads
+    articGuppyPlex ;
+    articMinION
 } from '../modules/artic.nf' 
 
 include {
-  makeQCCSV;
-  writeQCSummaryCSV;
-  correctQCSummaryCSV
+    makeQCCSV ;
+    writeQCSummaryCSV ;
+    correctQCSummaryCSV
 } from '../modules/qc.nf'
 
 include {
-  accountNoReadsInput;
-  renameSamples;
-  accountReadFilterFailures;
-  generateFastqIridaReport;
-  generateFastaIridaReport;
-  generateFast5IridaReport;
-  correctFailNs;
-  runNcovTools;
-  snpDists;
-  uploadIridaNanopolish;
-  uploadIridaMedaka;
-  uploadCorrectN;
-  outputVersions
+    renameBarcodeSamples ;
+    accountNoReadsInput ;
+    accountReadFilterFailures ;
+    generateFastqIridaReport ;
+    generateFastaIridaReport ;
+    generateFast5IridaReport ;
+    correctFailNs ;
+    runNcovTools ;
+    snpDists ;
+    uploadIridaFiles ;
+    uploadCorrectN ;
+    outputVersions
 } from '../modules/nml.nf'
 
-include {bamToCram} from '../modules/out.nf'
-include {collateSamples} from '../modules/upload.nf'
-
-// import subworkflows
-include {CLIMBrsync} from './upload.nf'
-include {Genotyping} from './typing.nf'
-
-// workflow component for artic pipeline with nanopolish
-workflow sequenceAnalysisNanopolish {
-    take:
-      ch_runFastqDirs
-      ch_badFastqDirs
-      ch_fast5Pass
-      ch_seqSummary
-      ch_irida
-    
-    main:
-
-      ch_versions = Channel.empty()
-
-      articDownloadScheme()
-
-      // Tracking barcodes that fail initial read count checks
-      accountNoReadsInput(ch_badFastqDirs.collect(),
-                          ch_irida)
-      accountNoReadsInput.out.count_filter
-                         .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
-                         .set{ ch_noReadsTracking }
-      
-      articGuppyPlex(ch_runFastqDirs.flatten())
-      ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
-
-      // If IRIDA TSV passed, we rename barcode## to the given sample name and do upload CSV generation
-      if ( params.irida ) {
-        renameSamples(articGuppyPlex.out.fastq
-                                    .combine(ch_irida))
-
-        accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
-                                  ch_irida)
-        accountReadFilterFailures.out.size_filter
-                                 .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
-                                 .set{ ch_filterReadsTracking }
-
-        articMinIONNanopolish(renameSamples.out
-                                           .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
-                                           .combine(articDownloadScheme.out.scheme)
-                                           .combine(ch_fast5Pass)
-                                           .combine(ch_seqSummary))
-        ch_versions = ch_versions.mix(articMinIONNanopolish.out.versions.first())
-
-        // Adding size filter for IRIDA uploads, 1kB needed
-        generateFastqIridaReport(renameSamples.out
-                                              .filter{ it.size() > 1024 }
-                                              .collect(),
-                                 ch_irida)
-
-        generateFastaIridaReport(articMinIONNanopolish.out.consensus_fasta.collect(),
-                                 ch_irida)
-      } else {
-        accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
-                                  ch_irida)
-        accountReadFilterFailures.out.size_filter
-                                 .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
-                                 .set{ ch_filterReadsTracking }
-
-        articMinIONNanopolish(articGuppyPlex.out.fastq
-                                            .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
-                                            .combine(articDownloadScheme.out.scheme)
-                                            .combine(ch_fast5Pass)
-                                            .combine(ch_seqSummary))
-        ch_versions = ch_versions.mix(articMinIONNanopolish.out.versions.first())
-      }
-
-      articRemoveUnmappedReads(articMinIONNanopolish.out.mapped)
-      ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
-
-      if ( params.correctN ) {
-        correctFailNs(articMinIONNanopolish.out.ptrim
-                                           .join(articMinIONNanopolish.out.ptrimbai, by:0)
-                                           .join(articMinIONNanopolish.out.consensus_fasta, by:0)
-                                           .join(articMinIONNanopolish.out.fail_vcf, by:0),
-                      articDownloadScheme.out.reffasta)
-        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
-
-        correctFailNs.out.corrected_consensus.collect()
-                     .ifEmpty(file('placeholder.txt'))
-                     .set{ ch_corrected }
-      }
-
-      // Set ncov-tools config file
-      Channel.fromPath("${params.ncov}")
-             .set{ ch_ncov }
-
-      runNcovTools(ch_ncov, 
-                      articDownloadScheme.out.reffasta, 
-                      articDownloadScheme.out.ncov_amplicon, 
-                      articMinIONNanopolish.out[0].collect(),
-                      articDownloadScheme.out.bed,
-                      ch_irida,
-                      ch_corrected)
-      ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
-      
-      snpDists(runNcovTools.out.aligned)
-      ch_versions = ch_versions.mix(snpDists.out.versions.first())
-
-      // Making final CSV file with a few steps
-      makeQCCSV(articMinIONNanopolish.out.ptrim
-                                     .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
-                                     .join(articMinIONNanopolish.out.vcf, by: 0)
-                                     .combine(articDownloadScheme.out.reffasta)
-                                     .combine(runNcovTools.out.lineage)
-                                     .combine(runNcovTools.out.ncovtools_qc)
-                                     .combine(runNcovTools.out.ncovtools_negative)
-                                     .combine(ch_irida)
-                                     .combine(runNcovTools.out.snpeff_path)
-                                     .combine(articDownloadScheme.out.bed),
-                params.pcr_primers)
-
-      makeQCCSV.out.csv.splitCsv()
-                       .unique()
-                       .branch {
-                           header: it[-1] == 'nextflow_qc_pass'
-                           fail: it[-1] == 'FALSE'
-                           pass: it[-1] == 'TRUE'
-                       }
-                       .set { qc }
-
-      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
-
-      correctQCSummaryCSV(writeQCSummaryCSV.out,
-                          ch_noReadsTracking,
-                          ch_filterReadsTracking)
-
-      collateSamples(qc.pass.map{ it[0] }
-                            .join(articMinIONNanopolish.out.consensus_fasta, by: 0)
-                            .join(articRemoveUnmappedReads.out.mapped_bam))
-
-      if ( params.outCram ) {
-        bamToCram(articMinIONNanopolish.out.ptrim.map{ it[0] } 
-                                       .join (articDownloadScheme.out.reffasta.combine(ch_preparedRef.map{ it[0] })))
-      }
-
-      // Uploads to IRIDA
-      if ( params.irida ) {
-        if ( params.upload_irida ) {
-          Channel.fromPath("${params.upload_irida}")
-                 .set{ ch_upload }
-
-          generateFast5IridaReport(ch_fast5Pass,
-                                   ch_irida)
-
-          uploadIridaNanopolish(generateFastqIridaReport.out,
-                                generateFastaIridaReport.out,
-                                generateFast5IridaReport.out,
-                                ch_upload,
-                                correctQCSummaryCSV.out)
-          ch_versions = ch_versions.mix(uploadIridaNanopolish.out.versions.first())
-
-          if (params.correctN) {
-            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
-                           ch_upload,
-                           ch_irida)
-          }
-        }
-      }
-
-      outputVersions(ch_versions.collect())
-
-    emit:
-      qc_pass = collateSamples.out
-      reffasta = articDownloadScheme.out.reffasta
-      vcf = articMinIONNanopolish.out.vcf
-}
-
-// workflow component for artic pipeline using medaka
-workflow sequenceAnalysisMedaka {
-    take:
-      ch_runFastqDirs
-      ch_badFastqDirs
-      ch_irida
-
-    main:
-    
-      ch_versions = Channel.empty()
-
-      articDownloadScheme()
-
-      // Tracking barcodes that fail initial read count checks
-      accountNoReadsInput(ch_badFastqDirs.collect(),
-                          ch_irida)
-      accountNoReadsInput.out.count_filter
-                         .ifEmpty(file('placeholder_accountNoReadsInput.txt'))
-                         .set{ ch_noReadsTracking }
-
-      articGuppyPlex(ch_runFastqDirs.flatten())
-      ch_versions = ch_versions.mix(articGuppyPlex.out.versions.first())
-
-      // If IRIDA TSV passed, we rename barcode## to the given sample name and do upload CSV generation
-      if ( params.irida ) {
-        renameSamples(articGuppyPlex.out.fastq
-                                    .combine(ch_irida))
-
-        accountReadFilterFailures(renameSamples.out.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
-                                  ch_irida)
-        accountReadFilterFailures.out.size_filter
-                                 .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
-                                 .set{ ch_filterReadsTracking }
-
-        articMinIONMedaka(renameSamples.out
-                                       .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
-                                       .combine(articDownloadScheme.out.scheme))
-        ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
-        
-        // Adding size filter for IRIDA uploads, 1kB needed
-        generateFastqIridaReport(renameSamples.out
-                                              .filter{ it.size() > 1024 }
-                                              .collect(),
-                                 ch_irida)
-
-        generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(),
-                                 ch_irida)
-      } else {
-        accountReadFilterFailures(articGuppyPlex.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
-                                  ch_irida)
-        accountReadFilterFailures.out.size_filter
-                                 .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
-                                 .set{ ch_filterReadsTracking }
-
-        articMinIONMedaka(articGuppyPlex.out.fastq
-                                        .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
-                                        .combine(articDownloadScheme.out.scheme))
-        ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
-      }
-
-      articRemoveUnmappedReads(articMinIONMedaka.out.mapped)
-      ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
-
-      if ( params.correctN ) {
-        correctFailNs(articMinIONMedaka.out.ptrim
-                                       .join(articMinIONMedaka.out.ptrimbai, by:0)
-                                       .join(articMinIONMedaka.out.consensus_fasta, by:0)
-                                       .join(articMinIONMedaka.out.fail_vcf, by:0),
-                      articDownloadScheme.out.reffasta)
-        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
-
-        correctFailNs.out.corrected_consensus.collect()
-                     .ifEmpty(file('placeholder.txt'))
-                     .set{ ch_corrected }
-      }
-
-      // Set ncov-tools config file
-      Channel.fromPath("${params.ncov}")
-             .set{ ch_ncov }
-
-      runNcovTools(ch_ncov, 
-                      articDownloadScheme.out.reffasta, 
-                      articDownloadScheme.out.ncov_amplicon, 
-                      articMinIONMedaka.out[0].collect(),
-                      articDownloadScheme.out.bed,
-                      ch_irida,
-                      ch_corrected)
-      ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
-      
-      snpDists(runNcovTools.out.aligned)
-      ch_versions = ch_versions.mix(snpDists.out.versions.first())
-
-      // Making final CSV file with a few steps
-      makeQCCSV(articMinIONMedaka.out.ptrim
-                                     .join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                                     .join(articMinIONMedaka.out.vcf, by: 0)
-                                     .combine(articDownloadScheme.out.reffasta)
-                                     .combine(runNcovTools.out.lineage)
-                                     .combine(runNcovTools.out.ncovtools_qc)
-                                     .combine(runNcovTools.out.ncovtools_negative)
-                                     .combine(ch_irida)
-                                     .combine(runNcovTools.out.snpeff_path)
-                                     .combine(articDownloadScheme.out.bed),
-                params.pcr_primers)
-
-      makeQCCSV.out.csv.splitCsv()
-                       .unique()
-                       .branch {
-                           header: it[-1] == 'nextflow_qc_pass'
-                           fail: it[-1] == 'FALSE'
-                           pass: it[-1] == 'TRUE'
-                       }
-                       .set { qc }
-
-      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
-
-      correctQCSummaryCSV(writeQCSummaryCSV.out,
-                          ch_noReadsTracking,
-                          ch_filterReadsTracking)
-
-      collateSamples(qc.pass.map{ it[0] }
-                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                            .join(articRemoveUnmappedReads.out.mapped_bam))
-
-      if ( params.outCram ) {
-        bamToCram(articMinIONMedaka.out.ptrim.map{ it[0] } 
-                                   .join(articDownloadScheme.out.reffasta.combine(ch_preparedRef.map{ it[0] })))
-      }
-
-      // Uploads to IRIDA if given
-      if ( params.irida ) {
-        if (params.upload_irida) {
-          Channel.fromPath("${params.upload_irida}")
-                 .set{ ch_upload }
-
-          uploadIridaMedaka(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, correctQCSummaryCSV.out)
-          ch_versions = ch_versions.mix(uploadIridaMedaka.out.versions.first())
-
-          if ( params.correctN ) {
-            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
-                           ch_upload,
-                           ch_irida)
-          }
-        }
-      }
-
-      outputVersions(ch_versions.collect())
-
-    emit:
-      qc_pass = collateSamples.out
-      reffasta = articDownloadScheme.out.reffasta
-      vcf = articMinIONMedaka.out.vcf
-}
-
-// Write new process for analyzing flat directory of nanopore fastq/fastq.gz files
-workflow sequenceAnalysisMedakaFlat {
-    take:
-      ch_fastqs
-      ch_irida
-
-    main:
-    
-      ch_versions = Channel.empty()
-      // Won't check this but still need it to get the final value
-      Channel.fromPath('placeholder_accountNoReadsInput.txt')
-             .set{ ch_noReadsTracking }
-
-      articDownloadScheme()
-
-      articGuppyPlexFlat(ch_fastqs)
-      ch_versions = ch_versions.mix(articGuppyPlexFlat.out.versions.first())
-
-      accountReadFilterFailures(articGuppyPlexFlat.out.fastq.filter{ it.countFastq() <= params.minReadsArticGuppyPlex }.collect(),
-                                ch_irida)
-      accountReadFilterFailures.out.size_filter
-                               .ifEmpty(file('placeholder_accountReadFilterFailures.txt'))
-                               .set{ ch_filterReadsTracking }
-
-      articMinIONMedaka(articGuppyPlexFlat.out.fastq
-                                          .filter{ it.countFastq() > params.minReadsArticGuppyPlex }
-                                          .combine(articDownloadScheme.out.scheme))
-      ch_versions = ch_versions.mix(articMinIONMedaka.out.versions.first())
-
-      articRemoveUnmappedReads(articMinIONMedaka.out.mapped)
-      ch_versions = ch_versions.mix(articRemoveUnmappedReads.out.versions.first())
-
-      if ( params.correctN ) {
-        correctFailNs(articMinIONMedaka.out.ptrim
-                                       .join(articMinIONMedaka.out.ptrimbai, by:0)
-                                       .join(articMinIONMedaka.out.consensus_fasta, by:0)
-                                       .join(articMinIONMedaka.out.fail_vcf, by:0),
-                      articDownloadScheme.out.reffasta)
-        ch_versions = ch_versions.mix(correctFailNs.out.versions.first())
-
-        correctFailNs.out.corrected_consensus.collect()
-                     .ifEmpty(file('placeholder.txt'))
-                     .set{ ch_corrected }
-      }
-
-      // Add ncov-tools config file
-      Channel.fromPath("${params.ncov}")
-             .set{ ch_ncov }
-
-      runNcovTools(ch_ncov, 
-                      articDownloadScheme.out.reffasta, 
-                      articDownloadScheme.out.ncov_amplicon, 
-                      articMinIONMedaka.out[0].collect(),
-                      articDownloadScheme.out.bed,
-                      ch_irida,
-                      ch_corrected)
-      ch_versions = ch_versions.mix(runNcovTools.out.versions.first())
-      
-      snpDists(runNcovTools.out.aligned)
-      ch_versions = ch_versions.mix(snpDists.out.versions.first())
-
-      makeQCCSV(articMinIONMedaka.out.ptrim
-                                     .join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                                     .join(articMinIONMedaka.out.vcf, by: 0)
-                                     .combine(articDownloadScheme.out.reffasta)
-                                     .combine(runNcovTools.out.lineage)
-                                     .combine(runNcovTools.out.ncovtools_qc)
-                                     .combine(runNcovTools.out.ncovtools_negative)
-                                     .combine(ch_irida)
-                                     .combine(runNcovTools.out.snpeff_path)
-                                     .combine(articDownloadScheme.out.bed),
-                params.pcr_primers)
-
-      makeQCCSV.out.csv.splitCsv()
-                       .unique()
-                       .branch {
-                           header: it[-1] == 'nextflow_qc_pass'
-                           fail: it[-1] == 'FALSE'
-                           pass: it[-1] == 'TRUE'
-                       }
-                       .set { qc }
-
-      writeQCSummaryCSV(qc.header.concat(qc.pass).concat(qc.fail).toList())
-
-      correctQCSummaryCSV(writeQCSummaryCSV.out,
-                          ch_noReadsTracking,
-                          ch_filterReadsTracking)
-
-      collateSamples(qc.pass.map{ it[0] }
-                            .join(articMinIONMedaka.out.consensus_fasta, by: 0)
-                            .join(articRemoveUnmappedReads.out.mapped_bam))
-
-      // Upload Data to IRIDA if params given
-      if ( params.irida ) {
-        if ( params.upload_irida ) {
-          Channel.fromPath("${params.upload_irida}")
-                 .set{ ch_upload }
-
-          // Generate upload datasets
-          generateFastqIridaReport(articGuppyPlexFlat.out.fastq.filter{ it.size() > 1024 }.collect(), ch_irida)
-          generateFastaIridaReport(articMinIONMedaka.out.consensus_fasta.collect(), ch_irida)
-
-          // Upload
-          uploadIridaMedaka(generateFastqIridaReport.out, generateFastaIridaReport.out, ch_upload, correctQCSummaryCSV.out)
-          ch_versions = ch_versions.mix(uploadIridaMedaka.out.versions.first())
-
-          if ( params.correctN ) {
-            uploadCorrectN(correctFailNs.out.corrected_consensus.collect(),
-                           ch_upload,
-                           ch_irida)
-          }
-        }
-      }
-
-      outputVersions(ch_versions.collect())
-
-    emit:
-      qc_pass = collateSamples.out
-      reffasta = articDownloadScheme.out.reffasta
-      vcf = articMinIONMedaka.out.vcf
-}
-
-// Process that controls what pipeline to utilize to get results
+include {
+    nextcladeDatasetGet ;
+    nextcladeRun
+} from '../modules/nextclade.nf'
+
+// Subworkflows to include
+include { schemeValidate } from './schemeValidate.nf'
+include { Genotyping } from './typing.nf'
+
+/*
+    Initialize channels from params
+*/
+// Nanopolish required channels, will be ignored when running medaka but still passed to the process
+ch_fast5s = params.fast5_pass ? file(params.fast5_pass, type: 'dir', checkIfExists: true) : []
+ch_seqsum = params.sequencing_summary ? file(params.sequencing_summary, type: 'file', checkIfExists: true) : []
+
+// ncov-tools config file channel
+ch_ncov_config = params.ncov ? file(params.ncov, type: 'file', checkIfExists: true) : []
+
+// Optional channels
+ch_irida_metadata = params.irida ? file(params.irida, type: 'file', checkIfExists: true) : []
+ch_irida_upload_conf = params.upload_irida ? file(params.upload_irida, type: 'file', checkIfExists: true) : []
+ch_pcr_primers = params.pcr_primers ? file(params.pcr_primers, type: 'file', checkIfExists: true) : []
+
+/*
+  Main Workflow
+*/
 workflow articNcovNanopore {
     take:
-      ch_fastqDirs
-      ch_badFastqDirs
-    
+    ch_fastqs
+    ch_filtered_fastqs
+
     main:
-      // Add metadata (if there is any, otherwise this will just become false which will work when passed to different processes)
-      Channel.fromPath("${params.irida}")
-             .set{ ch_irida }
+    // Tool version tracking
+    ch_versions = Channel.empty()
 
-      // Actually run the different pipeline processes
-      if ( params.nanopolish ) {
-          Channel.fromPath("${params.fast5_pass}")
-                 .set{ ch_fast5Pass }
+    // =============================== //
+    // Scheme and Reference
+    // =============================== //
+    schemeValidate()
+    ch_scheme = schemeValidate.out.scheme               // channel: [ val(scheme_version), path(scheme) ]
+    ch_reference = schemeValidate.out.reference         // channel: [ path(reference.fasta) ]
+    ch_primer_bed = schemeValidate.out.primer_bed       // channel: [ path(primer_bed) ]
+    ch_amplicon = schemeValidate.out.amplicon_bed       // channel: [ path(amplicon_bed) ]
+    ch_primer_prefix = schemeValidate.out.primer_prefix // channel: [ val(primer_prefix) ]
 
-          Channel.fromPath("${params.sequencing_summary}")
-                 .set{ ch_seqSummary }
+    // Version tracking update from subworkflow
+    ch_versions = ch_versions.mix(schemeValidate.out.versions)
 
-          // Workflow
-          sequenceAnalysisNanopolish(ch_fastqDirs, ch_badFastqDirs, ch_fast5Pass, ch_seqSummary, ch_irida)
+    // =============================== //
+    // Artic Size Filtering and Renaming
+    // =============================== //
+    articGuppyPlex(
+        ch_fastqs
+    )
+    ch_versions = ch_versions.mix(articGuppyPlex.out.versions)
+    ch_fastqs = articGuppyPlex.out.fastq
 
-          // Emits
-          sequenceAnalysisNanopolish.out.vcf.set{ ch_nanopore_vcf }
-          sequenceAnalysisNanopolish.out.reffasta.set{ ch_nanopore_reffasta }
+    // Rename if we have IRIDA metadata
+    if ( ch_irida_metadata ) {
+        // Renames samples that are from barcode directories
+        renameBarcodeSamples(
+            ch_fastqs,
+            ch_irida_metadata
+        )
+        ch_versions = ch_versions.mix(renameBarcodeSamples.out.versions)
 
-      } else if ( params.flat ) {
-          Channel.fromPath("${params.basecalled_fastq}/*.fastq*", type: 'file', maxDepth: 1)
-                 .set{ ch_fastqs }
+        // Re-map to create samplename path tuple again
+        renameBarcodeSamples.out.fastq
+          .map{ fastq -> [ fastq.baseName.replaceAll(~/\.fastq.*$/, ''), fastq] }
+          .set{ ch_fastqs }
+    }
 
-          // Workflow
-          sequenceAnalysisMedakaFlat(ch_fastqs, ch_irida)
+    // =============================== //
+    // Failed Sample Tracking
+    // =============================== //
+    // Failing input read count check
+    accountNoReadsInput(
+        ch_filtered_fastqs.collect{ it[1] },
+        ch_irida_metadata
+    )
+    accountNoReadsInput.out.count_filter
+        .ifEmpty([])
+        .set{ ch_no_reads_tracking }
+    
+    // Failing size selection read count check
+    //  Remap fastqs channel to branch the pass/filtered fastq files and use those accordingly
+    ch_fastqs
+        .branch{
+            pass: it[1].countFastq() > params.min_reads_guppyplex
+            filtered: it[1].countFastq() <= params.min_reads_guppyplex
+        }.set{ ch_fastqs }
+    accountReadFilterFailures(
+        ch_fastqs.filtered
+            .collect{ it[1] },
+        ch_irida_metadata
+    )
+    accountReadFilterFailures.out.size_filter
+        .ifEmpty([])
+        .set{ ch_filtered_reads_tracking }
 
-          // Emits
-          sequenceAnalysisMedakaFlat.out.vcf.set{ ch_nanopore_vcf }
-          sequenceAnalysisMedakaFlat.out.reffasta.set{ ch_nanopore_reffasta }
-      
-      } else if ( params.medaka ) {
-          // Workflow
-          sequenceAnalysisMedaka(ch_fastqDirs, ch_badFastqDirs, ch_irida)
+    // =============================== //
+    // Artic nCoV Minion Pipleine
+    // =============================== //
+    articMinION(
+        ch_fastqs.pass,
+        ch_fast5s,
+        ch_seqsum,
+        ch_scheme
+    )
+    ch_versions = ch_versions.mix(articMinION.out.versions)
 
-          // Emits
-          sequenceAnalysisMedaka.out.vcf.set{ ch_nanopore_vcf }
-          sequenceAnalysisMedaka.out.reffasta.set{ ch_nanopore_reffasta }
-      }
+    // =============================== //
+    // Failing N Position Adjustment
+    // =============================== //
+    ch_corrected_fasta = Channel.empty()
+    if ( ! params.skip_correct_n ) {
+        correctFailNs(
+            articMinION.out.ptrim
+                .join(articMinION.out.ptrimbai, by:0)
+                .join(articMinION.out.consensus_fasta, by:0)
+                .join(articMinION.out.fail_vcf, by:0),
+            ch_reference
+        )
+        ch_versions = ch_versions.mix(correctFailNs.out.versions)
+        ch_corrected_fasta = correctFailNs.out.corrected_consensus
+    }
 
-      // Additional workflows we do not use
-      if ( params.gff ) {
-          Channel.fromPath("${params.gff}")
-                 .set{ ch_refGff }
+    // =============================== //
+    // Run ncov-tools
+    // =============================== //
+    runNcovTools(
+        ch_ncov_config, 
+        ch_reference, 
+        ch_amplicon, 
+        articMinION.out.all
+            .collect(),
+        ch_primer_bed,
+        ch_irida_metadata,
+        ch_corrected_fasta
+            .collect{ it[1] }
+            .ifEmpty([]),
+        ch_primer_prefix
+    )
+    ch_versions = ch_versions.mix(runNcovTools.out.versions)
 
-          Channel.fromPath("${params.yaml}")
-                 .set{ ch_typingYaml }
+    // =============================== //
+    // Run nextclade
+    // =============================== //
+    nextcladeDatasetGet(
+        params.nextclade_dataset,
+        params.nextclade_tag
+    )
+    ch_versions = ch_versions.mix(nextcladeDatasetGet.out.versions)
 
-          Genotyping(ch_nanopore_vcf, ch_refGff, ch_nanopore_reffasta, ch_typingYaml)
-      }
-      if ( params.upload ) {
-        Channel.fromPath("${params.CLIMBkey}")
-               .set{ ch_CLIMBkey }
+    nextcladeRun(
+        articMinION.out.consensus_fasta,
+        nextcladeDatasetGet.out.dataset
+    )
+    ch_versions = ch_versions.mix(nextcladeRun.out.versions)
 
-        CLIMBrsync(sequenceAnalysis.out.qc_pass, ch_CLIMBkey )
-      }
+    // =============================== //
+    // Run QC
+    // =============================== //
+    snpDists(
+        runNcovTools.out.aligned
+    )
+    ch_versions = ch_versions.mix(snpDists.out.versions)
+
+    // Making final CSV file with a few steps
+    makeQCCSV(
+        articMinION.out.ptrim
+            .join(articMinION.out.consensus_fasta, by: 0)
+            .join(articMinION.out.vcf, by: 0)
+            .join(nextcladeRun.out.tsv, by: 0),
+        ch_reference,
+        runNcovTools.out.lineage,
+        runNcovTools.out.ncovtools_qc,
+        runNcovTools.out.ncovtools_negative,
+        runNcovTools.out.snpeff_path,
+        ch_primer_bed,
+        ch_irida_metadata,
+        ch_pcr_primers,
+        params.sequencing_technology
+    )
+    ch_versions = ch_versions.mix(makeQCCSV.out.versions)
+
+    // Adding pass/fail column
+    //  Not used anymore really but it is still here for now
+    makeQCCSV.out.csv
+        .splitCsv()
+        .unique()
+        .branch {
+            header: it[-1] == 'nextflow_qc_pass'
+            fail: it[-1] == 'FALSE'
+            pass: it[-1] == 'TRUE'
+        }.set { qc }
+
+    // Concat to final CSV
+    writeQCSummaryCSV(
+        qc.header
+            .concat(qc.pass)
+            .concat(qc.fail)
+            .toList()
+    )
+
+    // Fix final CSV
+    //  Null values, neg controls, read tracking, etc.
+    correctQCSummaryCSV(
+        writeQCSummaryCSV.out,
+        ch_no_reads_tracking,
+        ch_filtered_reads_tracking
+    )
+    ch_versions = ch_versions.mix(correctQCSummaryCSV.out.versions)
+
+    // =============================== //
+    // Uploads and Final Tracking
+    // =============================== //
+    // IRIDA Upload Samplesheets made even if not uploading (for tracking) or after run-check upload
+    if ( ch_irida_metadata ) {
+        // Size filter for IRIDA fastq uploads, 1kB needed or it breaks the upload
+        generateFastqIridaReport(
+            ch_fastqs.pass
+                .concat(ch_fastqs.filtered)
+                .filter{ it[1].size() > 1024 }
+                .collect{ it[1] },
+            ch_irida_metadata
+        )
+        ch_versions = ch_versions.mix(generateFastqIridaReport.out.versions)
+
+        generateFastaIridaReport(
+            articMinION.out.consensus_fasta
+              .collect{ it[1] },
+            ch_irida_metadata
+        )
+        ch_versions = ch_versions.mix(generateFastaIridaReport.out.versions)
+
+        // Upload now if given a config
+        if ( ch_irida_upload_conf ) {
+            // Fast5s made here as its slow and not needed for normal run tracking
+            ch_fast5_upload = Channel.empty()
+            if ( params.fast5_pass ) {
+                generateFast5IridaReport(
+                    ch_fast5s,
+                    ch_irida_metadata
+                )
+                ch_versions = ch_versions.mix(generateFast5IridaReport.out.versions)
+                ch_fast5_upload = generateFast5IridaReport.out.fast5_dir
+            }
+
+            uploadIridaFiles(
+                generateFastqIridaReport.out.fastq_dir,
+                generateFastaIridaReport.out.fasta_dir,
+                ch_fast5_upload
+                    .ifEmpty([]),
+                ch_irida_upload_conf,
+                correctQCSummaryCSV.out.final_csv
+            )
+            ch_versions = ch_versions.mix(uploadIridaFiles.out.versions)
+
+            // Upload corrected fasta files if any
+            if ( ! params.skip_correct_n ) {
+                uploadCorrectN(
+                    ch_corrected_fasta
+                      .collect{ it[1] },
+                    ch_irida_upload_conf,
+                    ch_irida_metadata
+                )
+                ch_versions = ch_versions.mix(uploadCorrectN.out.versions)
+            }
+        }
+    }
+
+    // =============================== //
+    // Tool versions for tracking
+    // =============================== //
+    // Using nf-core version output
+    outputVersions(
+        ch_versions
+            .unique()
+            .collectFile(name: 'collated_versions.yml')
+    )
+
+    // =============================== //
+    // Typing workflow that isn't really used but can be kept in
+    // =============================== //
+    if ( params.gff ) {
+        Channel.fromPath("${params.gff}")
+            .set{ ch_ref_gff }
+
+        Channel.fromPath("${params.yaml}")
+            .set{ ch_typing_yaml }
+
+        Genotyping(
+            articMinION.out.vcf,
+            ch_ref_gGff,
+            ch_reference,
+            ch_typing_yaml
+        )
+    }
 }

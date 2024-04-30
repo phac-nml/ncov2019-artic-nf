@@ -1,74 +1,87 @@
 #!/bin/bash
+# Basic script to organize inputs and run ncov-tools
 
+## Variables
 # Get the needed variables from the pipeline
-# Names are the same to avoid confusion!
 CONFIG=$1
 AMPLICON_BED=$2
-NCOV_REF=$3
+REFERENCE=$3
 PRIMER_BED=$4
-METADATA=$5
-CORES=$6
+PRIMER_PREFIX=$5
+RUN_PREFIX=$6
+CORES=$7
+METADATA=$8
 
-# Moves corrected consensus data to the right header name and replaces the non-corrected ones
+## Corrected consensus (if any)
+# Updates the corrected consensus header lines to match the normal output
 sed -i "s|-updated||" *.corrected.consensus.fasta
 
 # Overwrites the original consensus files so that we use the corrected ones
-for corrected_consensus in *.corrected.consensus.fasta
-    do
-        name="${corrected_consensus%%.*}"
-        echo $name
-        mv $corrected_consensus ${name}.consensus.fasta
-    done
+for corrected_consensus in *.corrected.consensus.fasta; do
+    # Names match fully before the first `.` so use that
+    name="${corrected_consensus%%.*}"
+    mv $corrected_consensus ${name}.consensus.fasta
+done
 
+## Setup
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
 
-# Remove the /ARTIC/nanopolish or /ARTIC/medaka from the files
+# Remove the /ARTIC/nanopolish or /ARTIC/medaka from fasta file headers (for matching later)
 sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
 sed -i 's|/ARTIC/medaka||' *.consensus.fasta
 
-#### Moving files and modifying the config to get what we expect based on inputs ####
-# cp config to allow us to mess with its values
+# Move files to their correct spot
+#  cp config to allow us to mess with its values
 mv ${AMPLICON_BED} ./ncov-tools/input_amplicon.bed
-cp ${CONFIG} ./ncov-tools
-mv ${NCOV_REF} ${PRIMER_BED} ./ncov-tools
+cp ${CONFIG} ./ncov-tools/config.yaml
+mv ${REFERENCE} ./ncov-tools/nCoV-2019.reference.fasta
+mv ${PRIMER_BED} ./ncov-tools/nCoV-2019.bed
 
-# If we have a matching negative control, we modify the config to make sure its gotten
-# If we don't find any, then no negative controls are added
-if $(ls | grep -q -i "negative\|ntc\|water\|blank")
+## Adjust config for what we find
+# Add in negative control names if we find any matching our pattern
+if $(ls | grep -q -i "negative\|neg\|ntc\|water\|blank")
 then
    negative_list=$(grep -i -e ntc -e negative -e water -e blank -e neg ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
-   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/${CONFIG}
+   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/config.yaml
 fi
 
-# Check for metadata file
-# If irida sample sheet is used, we will have some and will move it into ncov-tools folder
-# If not, then we will have false passed and will comment out the metadata line to allow ncov-tools to run
-if [ -f "$METADATA" ];
-then
+# Add in our primer prefix and run prefix
+echo "run_name: '$RUN_PREFIX'" >> ./ncov-tools/config.yaml
+echo "primer_prefix: '$PRIMER_PREFIX'" >> ./ncov-tools/config.yaml
+
+# Adjust for metadata file if given
+#  If we pass one, we add it to the ncov-tools folder
+#  If we don't, then we comment out that config line so it isn't run
+if [ -f "$METADATA" ]; then
     mv ${METADATA} ./ncov-tools/metadata.tsv
 else
-    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/${CONFIG}
+    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/config.yaml
 fi
 
-# mv all the files into a folder to run on
+## Add all the files in
+# Move all the artic minion files into a folder to run on
 mkdir ./ncov-tools/run
 mv *.* ./ncov-tools/run
 
-
-# Go in, run the commands and generate the indexed reference sequence
+## Run ncov-tools
+# Go into folder, run the commands and generate the indexed reference sequence
 cd ncov-tools
-samtools faidx ${NCOV_REF}
+samtools faidx nCoV-2019.reference.fasta
 snakemake -kp -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -kp -s workflow/Snakefile all --cores ${CORES}
 
-# Move files out so that they can be easily detected by nextflow
+## Postprocessing
+# Move files out so that they can be more easily viewable in the output nextflow results folder
 mv ./plots/*.pdf ../
 mv ./qc_reports/*.tsv ../
-mv ./qc_analysis/nml_aligned.fasta ../
-mv ./qc_analysis/nml_amplicon_coverage_table.tsv ../
+mv ./qc_analysis/${RUN_PREFIX}_amplicon_coverage_table.tsv ../
+# Less than 2 samples may not create MSA and will not create a tree (iqtree needs 3)
+if [ -f ./qc_analysis/${RUN_PREFIX}_aligned.fasta ]; then
+    mv ./qc_analysis/${RUN_PREFIX}_aligned.fasta ../
+fi
 cd ..
 
-# Touching a negative control so that there always is one (even if we remove the check)
-# This will allow us to always smash together all qc outputs into one file!
-touch nml_negative_control_report.tsv
+# Touching a negative control so that there always is one
+#  This just allows an easier control of flow when combining files
+touch ${RUN_PREFIX}_negative_control_report.tsv

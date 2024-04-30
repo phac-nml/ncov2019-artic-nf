@@ -2,21 +2,19 @@
 set -eo pipefail
 
 # Create a Cache Dir
-mkdir -p conda_cache_dir
+mkdir -p ../conda_cache
 
 ### Run Medaka Pipeline ###
 nextflow run ./main.nf \
     -profile mamba,test \
-    --cache ./conda_cache_dir \
+    --cache ../conda_cache \
     --medaka \
+    --medaka_model r941_min_hac_g507 \
     --prefix 'nml' \
     --basecalled_fastq $PWD/.github/data/nanopore/fastq_pass/ \
-    --medakaModel r941_min_hac_g507 \
-    --schemeVersion freed_V2_nml \
+    --scheme_version freed_V2_nml \
     --min_length 800 \
     --max_length 1600 \
-    --sequencingTechnology GridION \
-    --schemeRepoURL 'https://github.com/DarianHole/primer-schemes.git' \
     --irida $PWD/.github/data/metadata.tsv
 
 ### Check Outputs ###
