@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.0.1 - [2024-07-15]
+Version 2.0.1 fixes a minor bug in which all numeric sample names (ex. 231301) were not being compared to the nextclade output for frameshift reporting and adjustments along with updating the nextclade dataset to default to 'latest'
+
+### `Changed`:
+- Bugfix in `qc.py` such to allow numeric sample names to be properly compared to the nextclade output for frameshift reporting
+- Default nextclade dataset set to 'latest'
+
 ## v2.0.0 - [2024-04-25]
 Overall version 2.0.0 has the all the same outputs as version 1.1.0 but with some adjustments to the output locations and the input parameter names. This makes this release incompatible with previous automation unfortunately but it is ultimately for a more robust  and easier to run/develop pipeline
 

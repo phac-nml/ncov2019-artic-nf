@@ -24,6 +24,13 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
 ### Release Notes
 For full changes visit the [CHANGELOG](CHANGELOG.md)
 
+#### *v2.0.1*
+Version 2.0.1 fixes a minor bug in which all numeric sample names (ex. 231301) were not being compared to the nextclade output for frameshift reporting and adjustments along with updating the nextclade dataset to 'latest'
+
+`Changed`:
+- Bugfix in `qc.py` such to allow numeric sample names to be properly compared to the nextclade output for frameshift reporting
+- Default nextclade dataset set to 'latest'
+
 #### *v2.0.0*
 Overall version 2.0.0 has the all the same outputs as version 1.1.0 but with some adjustments to the output locations and the input parameter names. This makes this release incompatible with previous automation unfortunately but it is ultimately for a more robust  and easier to run/develop pipeline
 
