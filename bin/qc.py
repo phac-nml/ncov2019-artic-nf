@@ -343,14 +343,14 @@ def parse_ncov_tsv(file_in, sample, negative=False):
 
     return negative_df
 
-def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, ncov_df: pd.DataFrame) -> None:
+def compare_nextclade_fs_to_ncovtools_fs(sample: str, nextclade_df: pd.DataFrame, ncov_df: pd.DataFrame) -> None:
     '''
     Parse the nextclade dataframe for the presence of frameshift indels and update the qc_pass flag
     in the ncov summary df if they do not match
     INPUTS:
-        sample  --> `str` sample name from input
-        next_df --> `df` from nextclade 
-        ncov_df --> `df` Parsed ncov-tools summary df
+        sample       --> `str` sample name from input
+        nextclade_df --> `df` from nextclade 
+        ncov_df      --> `df` Parsed ncov-tools summary df
     '''
     # Adding in a column for tracking if correction occured
     ncov_df.reset_index(inplace=True, drop=True)
@@ -358,14 +358,14 @@ def compare_nextclade_fs_to_ncovtools_fs(sample: str, next_df: pd.DataFrame, nco
     
     # Filter down nextclade df to just the wanted sample
     #  It should only be 1 sample but just in case
-    next_df = next_df.loc[next_df['seqName'] == sample]
-    if next_df.empty:
+    nextclade_df = nextclade_df.loc[nextclade_df['seqName'] == sample]
+    if nextclade_df.empty:
         return
 
     # Determine if there are any non-ignored frameshifts
     #  Both df are 1 line now so can just pull the first value
-    total_fs = next_df['qc.frameShifts.totalFrameShifts'].values[0]
-    ignored_fs = next_df['qc.frameShifts.totalFrameShiftsIgnored'].values[0]
+    total_fs = nextclade_df['qc.frameShifts.totalFrameShifts'].values[0]
+    ignored_fs = nextclade_df['qc.frameShifts.totalFrameShiftsIgnored'].values[0]
     ncov_qc_value_list = ncov_df['qc_pass'].values[0].split(';')
 
     # If its not in the list we don't worry
@@ -495,8 +495,10 @@ def go(args):
     negative_df = parse_ncov_tsv(args.ncov_negative, args.sample, negative=True)
     
     # Nextclade double check of fs mutations
-    next_df = pd.read_csv(args.nextclade_tsv, sep='\t')
-    compare_nextclade_fs_to_ncovtools_fs(args.sample, next_df, summary_df)
+    nextclade_df = pd.read_csv(args.nextclade_tsv, sep='\t')
+    # Convert the seqName column type to string in case of all integer sample names
+    nextclade_df = nextclade_df.astype({'seqName': 'str'})
+    compare_nextclade_fs_to_ncovtools_fs(args.sample, nextclade_df, summary_df)
 
     # If we have a samplesheet, use its values to create final output
     if args.sample_sheet:
