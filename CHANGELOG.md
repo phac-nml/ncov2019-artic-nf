@@ -3,6 +3,9 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.0.2 - [2024-07-23]
+Version 2.0.2 adjusts internal retry resources
+
 ## v2.0.1 - [2024-07-15]
 Version 2.0.1 fixes a minor bug in which all numeric sample names (ex. 231301) were not being compared to the nextclade output for frameshift reporting and adjustments along with updating the nextclade dataset to default to 'latest'
 
