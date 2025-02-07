@@ -31,8 +31,8 @@ process validateScheme {
         So a few checks to attempt to meet those requirements
         Note that no def for the params as we need them in the outputs
     */
-    schemeVersion = "$params.scheme_version"
-    schemeFolder = "$params.scheme_version"
+    def schemeVersion = "$params.scheme_version"
+    def schemeFolder = "$params.scheme_version"
     if ( ! schemeVersion.startsWith("V") ) {
         schemeFolder = "V" + schemeFolder
     } else {

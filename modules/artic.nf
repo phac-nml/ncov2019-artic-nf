@@ -61,9 +61,8 @@ process articMinION {
 
     input:
     tuple val(sampleName), path(fastq)
-    path fast5_dir
-    path sequencing_summary
-    tuple val(schemeVersion), path(scheme)
+    path reference
+    path primer_bed
 
     output:
     path "${sampleName}*", emit: all
@@ -78,25 +77,10 @@ process articMinION {
     path "versions.yml", emit: versions
 
     script:
-    // Setup args for medaka vs nanopolish
+    // --model or --model-dir based on if input is a model string or a path or nothing
+    
+    // Nextflow parameters to minion args
     def argsList = []
-    def variantVersionCMD = ""
-    def modelVersionCMD = ""
-
-    if ( params.medaka ) {
-        argsList.add("--medaka")
-        argsList.add("--medaka-model ${params.medaka_model}")
-        // Medaka only no longshot
-        if ( params.no_longshot ) {
-            argsList.add("--no-longshot")
-        }
-        variantVersionCMD = "medaka: \$(echo \$(medaka --version | sed 's/medaka //'))"
-        modelVersionCMD = "medaka_model: ${params.medaka_model}"
-    } else {
-        argsList.add("--fast5-directory $fast5_dir")
-        argsList.add("--sequencing-summary $sequencing_summary")
-        variantVersionCMD = "nanopolish: \$(echo \$(nanopolish --version | grep nanopolish | sed 's/nanopolish version //'))"
-    }
     if ( params.normalise ) {
         argsList.add("--normalise ${params.normalise}")
     } else {
@@ -106,34 +90,24 @@ process articMinION {
         argsList.add("--no-frameshifts")
     }
     def finalArgsConfiguration = argsList.join(" ")
-
-    // Aligner
-    def alignerArg = "--minimap2"
-    if ( params.bwa ) {
-        alignerArg = "--bwa"
-    }
-    // Cmd
     """
     artic minion \\
         ${finalArgsConfiguration} \\
-        ${alignerArg} \\
+        --model ${params.medaka_model} \\
         --threads ${task.cpus} \\
+        --ref $reference \\
+        --bed $primer_bed \\
         --read-file $fastq \\
-        --scheme-version ${schemeVersion} \\
-        --scheme-directory $scheme \\
-        ${params.scheme} \\
         $sampleName
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
-        artic-tools: \$(artic-tools --version)
         bcftools: \$(echo \$(bcftools --version | grep bcftools | sed 's/bcftools //'))
         minimap2: \$(echo \$(minimap2 --version))
         samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
-        $variantVersionCMD
-        $modelVersionCMD
+        clair3: \$(echo \$(run_clair3.sh --version | sed 's/Clair3 v//g'))
     END_VERSIONS
     """
 }

@@ -366,7 +366,6 @@ process uploadIridaFiles {
     input:
     path fastq_folder
     path consensus_folder
-    path fast5_folder
     path irida_config
     path pipeline_data_csv
 
@@ -376,17 +375,9 @@ process uploadIridaFiles {
 
     script:
     """
-    # Always will be uploaded
-    # -----------------------
     irida-uploader --config $irida_config -d $fastq_folder
     irida-uploader --config $irida_config -d $consensus_folder --upload_mode=assemblies
     upload.py --config $irida_config --metadata_csv  $pipeline_data_csv
-
-    # Only if Nanopolish is run
-    # -----------------------
-    if [ -d "$fast5_folder" ]; then
-        irida-uploader --config $irida_config -d $fast5_folder --upload_mode=fast5
-    fi
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml

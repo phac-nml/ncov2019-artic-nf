@@ -30,46 +30,27 @@ def previousParams = [
     'sequencingTechnology',
     'csqAfThreshold',
     'csqDpThreshold',
+    'nanopolish',
+    'medaka',
+    'fast5_pass',
+    'sequencing_summary',
+    'bwa',
+    'no_longshot'
 ]
 
 def overlap = previousParams.intersect(params.keySet())
 if ( overlap != [] ) {
-    log.error("ERROR: Previous params: '$overlap' were given. Please resubmit with the new parameters that can be found when running the help command")
-    System.exit(1)
-}
-
-// Simple profile warning
-// ===============================
-if ( params.profile ) {
-    log.error("ERROR: Profile should have a single dash: -profile")
+    log.error("ERROR: Previous params: '$overlap' were given. Please resubmit with the new parameters (if there is an equivalent) that can be found when running the help command")
     System.exit(1)
 }
 
 // Pipeline required input checks
 // ===============================
-// Nanopolish
-if ( params.nanopolish ) {
-    if (! params.basecalled_fastq ) {
-        log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
-        System.exit(1)
-    } else if (! params.fast5_pass ) {
-        log.error("ERROR: Please supply a directory containing fast5 files with --fast5_pass (this is the fast5_pass directory)")
-        System.exit(1)
-    } else if (! params.sequencing_summary ) {
-        log.error("ERROR: Please supply the path to the sequencing_summary.txt file from your run with --sequencing_summary")
-        System.exit(1)
-    }
-// Medaka
-} else if ( params.medaka ) {
-    if (! params.basecalled_fastq ) {
-        log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
-        System.exit(1)
-    } else if (! params.medaka_model ) {
-        log.error("ERROR: Please supply a medaka model with `--medaka_model MODEL` to run the medaka pipeline")
-        System.exit(1)
-    }
-} else {
-    log.error("ERROR: Please select a workflow with --nanopolish or --medaka, or use --help to print help")
+if (! params.basecalled_fastq ) {
+    log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
+    System.exit(1)
+} else if (! params.medaka_model ) {
+    log.error("ERROR: Please supply a medaka model with `--medaka_model MODEL` to run the medaka pipeline")
     System.exit(1)
 }
 
