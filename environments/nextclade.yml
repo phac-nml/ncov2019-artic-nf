@@ -1,6 +1,5 @@
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
-  - nextclade=3.3.1
+  - nextclade=3.9.1
