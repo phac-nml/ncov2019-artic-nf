@@ -16,6 +16,7 @@ dependencies:
   - samtools
   - parasail-python
   - newick_utils
+  - python>=3.7
   - pip=19.3.1
   - minimap2
   - poppler
@@ -26,6 +27,8 @@ dependencies:
   - icu=68.1
   - boost-cpp=1.74.0
   - usher
+  - ucsc-fatovcf>=426
+  - git-lfs
   - pip:
       - dendropy>=4.4.0
       - pyvcf3
