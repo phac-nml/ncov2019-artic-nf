@@ -49,9 +49,6 @@ if ( overlap != [] ) {
 if (! params.basecalled_fastq ) {
     log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
     System.exit(1)
-} else if (! params.medaka_model ) {
-    log.error("ERROR: Please supply a medaka model with `--medaka_model MODEL` to run the medaka pipeline")
-    System.exit(1)
 }
 
 // Prefix existance and formatting check

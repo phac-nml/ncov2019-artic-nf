@@ -5,7 +5,9 @@
 // Modules to include
 include {
     articGuppyPlex ;
-    articMinION
+    articMinION ;
+    articgetmodels ;
+    check_model
 } from '../modules/artic.nf' 
 
 include {
@@ -129,10 +131,20 @@ workflow articNcovNanopore {
     // =============================== //
     // Artic nCoV Minion Pipleine
     // =============================== //
+    
+    // Fetch the R10 models
+    articgetmodels() 
+
+    // Check if the clair3 model has been selected, or can be selected from fastqs
+    check_model( 
+        ch_fastqs.pass,
+    )
+    
     articMinION(
         ch_fastqs.pass,
         ch_reference,
-        ch_primer_bed
+        ch_primer_bed,
+        check_model.out.check_done
     )
     ch_versions = ch_versions.mix(articMinION.out.versions)
 
