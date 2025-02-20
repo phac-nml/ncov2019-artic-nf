@@ -89,11 +89,13 @@ process articMinION {
     if ( params.no_frameshift ) {
         argsList.add("--no-frameshifts")
     }
+    if ( params.clair3_model && params.clair3_model != 'null') {
+        argsList.add("--model ${params.clair3_model}")
+    }
     def finalArgsConfiguration = argsList.join(" ")
     """
     artic minion \\
         ${finalArgsConfiguration} \\
-        ${params.clair3_model && params.clair3_model != 'null' ? "--model ${params.clair3_model}" : ""} \\
         --threads ${task.cpus} \\
         --ref $reference \\
         --bed $primer_bed \\
