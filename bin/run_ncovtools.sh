@@ -27,9 +27,8 @@ done
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
 
-# Remove the /ARTIC/nanopolish or /ARTIC/medaka from fasta file headers (for matching later)
-sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
-sed -i 's|/ARTIC/medaka||' *.consensus.fasta
+# Remove the /ARTIC/clair3 from fasta file headers (for matching later)
+sed -i 's|/MN908947.3/ARTIC/clair3||' *.consensus.fasta
 
 # Move files to their correct spot
 #  cp config to allow us to mess with its values

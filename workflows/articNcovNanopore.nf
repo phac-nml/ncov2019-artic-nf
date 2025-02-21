@@ -79,8 +79,16 @@ workflow articNcovNanopore {
     // =============================== //
     // Artic Size Filtering and Renaming
     // =============================== //
-    articGuppyPlex(
+    
+    // Check if the clair3 model has been selected, or can be selected from fastqs
+    check_model( 
         ch_fastqs
+    )
+
+    ch_fastqs_checked = check_model.out.check_done.join(ch_fastqs)
+
+    articGuppyPlex(
+        ch_fastqs_checked
     )
     ch_versions = ch_versions.mix(articGuppyPlex.out.versions)
     ch_fastqs = articGuppyPlex.out.fastq
@@ -134,17 +142,11 @@ workflow articNcovNanopore {
     
     // Fetch the R10 models
     articgetmodels() 
-
-    // Check if the clair3 model has been selected, or can be selected from fastqs
-    check_model( 
-        ch_fastqs.pass,
-    )
     
     articMinION(
         ch_fastqs.pass,
         ch_reference,
         ch_primer_bed,
-        check_model.out.check_done
     )
     ch_versions = ch_versions.mix(articMinION.out.versions)
 

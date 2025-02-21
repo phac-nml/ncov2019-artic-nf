@@ -7,7 +7,7 @@ process articGuppyPlex {
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${newSampleName}*.fastq", mode: "copy"
 
     input:
-    tuple val(sampleName), path(fastq)
+    tuple val(sampleName), val(check_done), path(fastq)
 
     output:
     tuple val(newSampleName), path("${newSampleName}.fastq"), emit: fastq
@@ -63,7 +63,6 @@ process articMinION {
     tuple val(sampleName), path(fastq)
     path reference
     path primer_bed
-    val check_done  // from check_model
 
     output:
     path "${sampleName}*", emit: all
@@ -126,12 +125,13 @@ process check_model {
     // Check if artic will be able to auto-detect the model from the fastq headers OR model parameter has been set
     label 'smallmem'
     tag { sampleName }
+    errorStrategy = 'terminate'
 
     input:
     tuple val(sampleName), path(fastq)
 
     output:
-    val(true), emit: check_done // Dummy output channel so artic won't run until this finishes
+    tuple val(sampleName), val(true), emit: check_done 
 
     script:
     """
@@ -142,9 +142,9 @@ process check_model {
     fi
 
     if [[ "\$header" == *"basecall_model_version_id"* ]] && [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
-        echo "FastQ header contains basecall model information for Clair3 model selection, artic will choose clair3 model automatically."
+        echo "FastQ header for $sampleName contains basecall model information for Clair3 model selection, artic will choose clair3 model automatically."
     elif [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
-        echo "ERROR: No Clair3 model provided and no basecall model found in the FastQ header!" >&2
+        echo "ERROR: No Clair3 model provided and no basecall model found in $sampleName FastQ header!" >&2
         echo "Please make sure your input files have basecall model information or specify which Clair3 model to use with --clair3_model." >&2
         exit 1
     else
