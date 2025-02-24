@@ -4,18 +4,16 @@
 */
 // Modules to include
 include {
+    checkFastqForModel ;
+    articDownloadModels ;
     articGuppyPlex ;
-    articMinION ;
-    articgetmodels ;
-    check_model
+    articMinION
 } from '../modules/artic.nf' 
-
 include {
     makeQCCSV ;
     writeQCSummaryCSV ;
     correctQCSummaryCSV
 } from '../modules/qc.nf'
-
 include {
     renameBarcodeSamples ;
     accountNoReadsInput ;
@@ -30,7 +28,6 @@ include {
     uploadCorrectN ;
     outputVersions
 } from '../modules/nml.nf'
-
 include {
     nextcladeDatasetGet ;
     nextcladeRun
@@ -79,12 +76,10 @@ workflow articNcovNanopore {
     // =============================== //
     // Artic Size Filtering and Renaming
     // =============================== //
-    
     // Check if the clair3 model has been selected, or can be selected from fastqs
-    check_model( 
+    checkFastqForModel( 
         ch_fastqs
     )
-
     ch_fastqs_checked = check_model.out.check_done.join(ch_fastqs)
 
     articGuppyPlex(
@@ -139,9 +134,8 @@ workflow articNcovNanopore {
     // =============================== //
     // Artic nCoV Minion Pipleine
     // =============================== //
-    
     // Fetch the R10 models
-    articgetmodels() 
+    articDownloadModels() 
     
     articMinION(
         ch_fastqs.pass,
@@ -324,5 +318,12 @@ workflow articNcovNanopore {
             ch_reference,
             ch_typing_yaml
         )
+    }
+
+    // =============================== //
+    // Completion
+    // =============================== //
+    workflow.onComplete {
+        log.info "Workflow complete"
     }
 }

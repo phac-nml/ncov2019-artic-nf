@@ -1,4 +1,45 @@
 // ARTIC processes
+process checkFastqForModel {
+    // Check if artic will be able to auto-detect the model from the fastq headers OR model parameter has been set
+    label 'smallmem'
+    tag { sampleName }
+    errorStrategy = 'terminate'
+
+    input:
+    tuple val(sampleName), path(fastq)
+
+    output:
+    tuple val(sampleName), val(true), emit: check_done 
+
+    script:
+    """
+    if [[ "$fastq" == *.gz ]]; then
+        header=\$(zgrep -m 1 '^@' "$fastq" || echo "")
+    else
+        header=\$(grep -m 1 '^@' "$fastq" || echo "")
+    fi
+
+    if [[ "\$header" == *"basecall_model_version_id"* ]] && [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
+        echo "FastQ header for $sampleName contains basecall model information for Clair3 model selection, artic will choose clair3 model automatically."
+    elif [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
+        echo "ERROR: No Clair3 model provided and no basecall model found in $sampleName FastQ header!" >&2
+        echo "Please make sure your input files have basecall model information or specify which Clair3 model to use with --clair3_model." >&2
+        exit 1
+    else
+        echo "Using Clair3 model: ${params.clair3_model}"
+    fi
+    """
+}
+
+process articDownloadModels {
+    // Pulls r10 models for clair3, models are saved here by default: $CONDA_PREFIX/bin/models
+    label 'smallmem'
+    script:
+    """
+    artic_get_models
+    """
+}
+
 process articGuppyPlex {
     // Filter reads based on given length
     //  Length should be based on amplicon size
@@ -110,46 +151,5 @@ process articMinION {
         samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
         clair3: \$(echo \$(run_clair3.sh --version | sed 's/Clair3 v//g'))
     END_VERSIONS
-    """
-}
-process articgetmodels {
-    // Pulls r10 models for clair3, models are saved here by default: $CONDA_PREFIX/bin/models
-    label 'smallmem'
-    script:
-    """
-    artic_get_models
-    """
-}
-
-process check_model {
-    // Check if artic will be able to auto-detect the model from the fastq headers OR model parameter has been set
-    label 'smallmem'
-    tag { sampleName }
-    errorStrategy = 'terminate'
-
-    input:
-    tuple val(sampleName), path(fastq)
-
-    output:
-    tuple val(sampleName), val(true), emit: check_done 
-
-    script:
-    """
-    if [[ "$fastq" == *.gz ]]; then
-        header=\$(zgrep -m 1 '^@' "$fastq" || echo "")
-    else
-        header=\$(grep -m 1 '^@' "$fastq" || echo "")
-    fi
-
-    if [[ "\$header" == *"basecall_model_version_id"* ]] && [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
-        echo "FastQ header for $sampleName contains basecall model information for Clair3 model selection, artic will choose clair3 model automatically."
-    elif [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
-        echo "ERROR: No Clair3 model provided and no basecall model found in $sampleName FastQ header!" >&2
-        echo "Please make sure your input files have basecall model information or specify which Clair3 model to use with --clair3_model." >&2
-        exit 1
-    else
-        echo "Using Clair3 model: ${params.clair3_model}"
-    fi
-
     """
 }

@@ -32,6 +32,7 @@ def previousParams = [
     'csqDpThreshold',
     'nanopolish',
     'medaka',
+    'medaka_model',
     'fast5_pass',
     'sequencing_summary',
     'bwa',
@@ -40,27 +41,30 @@ def previousParams = [
 
 def overlap = previousParams.intersect(params.keySet())
 if ( overlap != [] ) {
-    log.error("ERROR: Previous params: '$overlap' were given. Please resubmit with the new parameters (if there is an equivalent) that can be found when running the help command")
+    log.error """The following previously used params were given: "$overlap"
+    Please resubmit with the new parameters (if there is an equivalent) that can be found when running the --help command
+    """
     System.exit(1)
 }
 
 // Pipeline required input checks
 // ===============================
 if (! params.basecalled_fastq ) {
-    log.error("ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
+    log.error """Please supply a directory containing basecalled fastqs with `--basecalled_fastq`
+    This can either be:
+        - The output directory from guppy or dorado, usually fastq_pass, with directories called barcodeXX containing fastq-formatted
+        - A flat directory of named ".fastq" or ".fastq.gz" files
+    """.stripIndent()
     System.exit(1)
 }
 
 // Prefix existance and formatting check
 if ( ! params.prefix ) {
-    log.error("ERROR: Please supply a prefix for your output files with --prefix")
-    log.error("ERROR: For more information use --help to print help statement")
+    log.error """Please supply a run prefix for your output files with "--prefix <prefix>" """
     System.exit(1)
-} else {
-    if ( params.prefix =~ /\// ){
-        log.error("The --prefix that you supplied contains a \"/\", please replace it with another character")
-        System.exit(1)
-    }
+} else if ( params.prefix =~ /\// ) {
+    log.error "The --prefix that you supplied contains a \"/\", please replace it with another character"
+    System.exit(1)
 } 
 
 // Main Workflow
@@ -98,7 +102,10 @@ workflow {
             }.set{ ch_initial_fastq_dirs }
 
     } else {
-        log.error("ERROR: Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to either the guppy output directory or a directory of flat fastq files.")
+        log.error"""Couldn't detect whether your Nanopore data was in barcoded directories or flat directories
+        Please use "--basecalled_fastq <DIR>" to point to either a barcoded nanopore directory or a directory of flat fastq files
+        See the README for examples of each if needed
+        """
         System.exit(1)
     }
 

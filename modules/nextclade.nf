@@ -32,6 +32,7 @@ process nextcladeDatasetGet {
     END_VERSIONS
     """
 }
+
 process nextcladeRun {
     tag { sampleName }
     label 'smallmem'
