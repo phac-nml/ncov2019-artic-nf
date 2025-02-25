@@ -80,7 +80,7 @@ workflow articNcovNanopore {
     checkFastqForModel( 
         ch_fastqs
     )
-    ch_fastqs_checked = check_model.out.check_done.join(ch_fastqs)
+    ch_fastqs_checked = checkFastqForModel.out.check_done.join(ch_fastqs)
 
     articGuppyPlex(
         ch_fastqs_checked
