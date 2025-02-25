@@ -2,6 +2,7 @@
 Update from artic `1.2.4` to `1.6.0` which changes to using `clair3` from `medaka` and `nanopolish` along with updating the nextclade version from `3.3.1` to `3.9.1`
 
 Date: Feb 25th, 2025
+
 Author: Amber Papineau
 
 ---------------
@@ -64,21 +65,21 @@ Nextclade version nml's artic branch is using is 3.3.1. The current version avai
 
 **Artic 1.2.4 vs Artic 1.6.0 (with nextclade v3.3.1)**
 
-Quality scores: Slight QC score improvement identified (lower is better).
+*Quality Scores*: Slight QC score improvement identified (lower is better).
 
 ![density_qc_plot](./images/density_qc_plot.jpg)
 
 ![violin_qc_plot](./images/violin_qc_plot.jpg)
 
 
-Frameshifts: Number of frameshifts reported decreased when running with the newer artic version.
+*Frameshifts*: Number of frameshifts reported decreased when running with the newer artic version.
 
 | Treatment   | Number of framshifts |
 | ----------- | -------------------- |
 | Artic 1.2.4 | 24                   |
 | Artic 1.6.0 | 10                   |
 
-Substitutions, insertions and missing number: No or very small differences detected.
+*Substitutions, Insertions and Missing Data*: No or very small differences detected.
 
 ![violin_sub_plot](./images/violin_sub_plot.jpg)
 
@@ -88,7 +89,7 @@ Substitutions, insertions and missing number: No or very small differences detec
 
 ![violin_del_plot](./images/violin_del_plot.jpg)
 
-Deletions: Noticeable increase in deletions being called in the new artic results (v1.6.0 using clair3 in place of medaka). Below are some of the more extreme examples in the dataset. These deletions range in size from 26 to 134 bp and occur at the end of the genome, most commonly at ~29 kbp but a few were found at ~27 kbp. 208 (n=376) of the samples tested here had a deletion increase of 26 bp, which corresponds to a common deletion found at ~29 kbp.
+*Deletions*: Noticeable increase in deletions being called in the new artic results (v1.6.0 using clair3 in place of medaka). Below are some of the more extreme examples in the dataset. These deletions range in size from 26 to 134 bp and occur at the end of the genome, most commonly at ~29 kbp but a few were found at ~27 kbp. 208 (n=376) of the samples tested here had a deletion increase of 26 bp, which corresponds to a common deletion found at ~29 kbp.
  
 Also notable, two samples in this dataset with new deletions at ~27 kbp called by v1.6.0 both had frameshifts called by version 1.2.4 which were not called in version 1.6.0.
  
