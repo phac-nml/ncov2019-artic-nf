@@ -27,6 +27,8 @@ For full changes visit the [CHANGELOG](CHANGELOG.md)
 #### *v3.0.0*
 Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
 
+Full testing information can be [found here](./docs/update_testing.md)
+
 `Added`:
 - Modules:
     - `checkFastqForModel`: To check the fastq header for the model to use
@@ -35,7 +37,7 @@ Version 3.0.0 is a major, breaking release that updates to running `clair3` over
     - `clair3_model`: Optional parameter to specify `clair3` model to use
 
 `Changed`: 
-- Updated artic `1.4.x` --> `1.6.1`
+- Updated artic `1.2.4` --> `1.6.1`
     - Changes variant calling to `clair3`
     - Fixes some of the bugs reported
         - BCFTools one specifically
