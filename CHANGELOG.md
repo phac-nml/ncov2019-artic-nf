@@ -3,6 +3,37 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.0 - [2025-02-25]
+Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
+
+`Added`:
+- Modules:
+    - `checkFastqForModel`: To check the fastq header for the model to use
+    - `articDownloadModels`: To download `clair3` models
+- Parameters:
+    - `clair3_model`: Optional parameter to specify `clair3` model to use
+
+`Changed`: 
+- Updated artic `1.4.x` --> `1.6.1`
+    - Changes variant calling to `clair3`
+    - Fixes some of the bugs reported
+        - BCFTools one specifically
+- Formatting modules files to separate out processes a bit more
+- Formatting environment files to remove the `defaults` branch
+
+`Removed`:
+- Medaka and Nanopolish parameters and pipeline
+    - Parameters:
+        - `--nanopolish`
+        - `--medaka`
+        - `--fast5_pass`
+        - `--sequencing_summary`
+        - `--medaka_model`
+        - `--bwa`
+        - `--no_longshot`
+
+- Fast5 uploads script
+
 ## v2.0.2 - [2024-07-23]
 Version 2.0.2 adjusts internal retry resources
 
