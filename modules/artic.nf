@@ -13,10 +13,16 @@ process checkFastqForModel {
 
     script:
     """
-    if [[ "$fastq" == *.gz ]]; then
-        header=\$(zgrep -m 1 '^@' "$fastq" || echo "")
+    # Have to check if the input is a directory first
+    test_fastq_file="$fastq"
+    if [ -d $fastq ]; then
+        test_fastq_file="\$(find $fastq/ -type f -name *.fastq* | head -n 1)"
+    fi
+
+    if [[ "\$test_fastq_file" == *.gz ]]; then
+        header=\$(zgrep -m 1 '^@' "\$test_fastq_file" || echo "")
     else
-        header=\$(grep -m 1 '^@' "$fastq" || echo "")
+        header=\$(grep -m 1 '^@' "\$test_fastq_file" || echo "")
     fi
 
     if [[ "\$header" == *"basecall_model_version_id"* ]] && [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then

@@ -34,6 +34,13 @@ Nextclade version nml's artic branch is using is 3.3.1. The current version avai
 * reference tree node attribute `clade_membership` optional
 * CLI optimization
 
+### Summary
+Updating to artic 1.6.1 generates better quality final consensus genomes and includes many issue fixes including long deletion resolution and fixing the bcftools consensus bug.
+
+Updating to nextclade 3.9.1 has little impact on the final results.
+
+With this, both tools will be updated to these versions.
+
 ### Dataset
 - Total samples: 385
     - R9 flowcell: 183
@@ -93,7 +100,7 @@ Nextclade version nml's artic branch is using is 3.3.1. The current version avai
  
 Also notable, two samples in this dataset with new deletions at ~27 kbp called by v1.6.0 both had frameshifts called by version 1.2.4 which were not called in version 1.6.0.
  
-This is very likely an example of the reason `medaka` was removed from artic and replaced with `clair3`. From the update docs: "medaka has also been removed completely due to kicking out long indels".
+This is very likely an example of the reason `medaka` was removed from artic and replaced with `clair3`. From the update docs: "medaka has also been removed completely due to kicking out long indels". All of the deletions described were well supported and confirmed by looking at the pileup data.
 
 | Sample           | v1.2.4 deletion count | v1.6.0 deletion count | Number of deletions unique to clair3 | Location of new deletion (start) | Size of deletion | Quality score of the deletion |
 | ---------------- | --------------------- | --------------------- | ------------------------------------------- | ------------------------ | ---------------- | ----------------------------- |
