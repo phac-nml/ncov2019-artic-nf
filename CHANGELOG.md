@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v3.0.0 - [2025-02-25]
+## v3.0.0 - [2025-03-06]
 Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
 
 `Added`:
@@ -20,6 +20,9 @@ Version 3.0.0 is a major, breaking release that updates to running `clair3` over
         - BCFTools one specifically
 - Formatting modules files to separate out processes a bit more
 - Formatting environment files to remove the `defaults` branch
+- Minimum read thresholds
+    - Per barcode 100 -> 500
+    - After length trimming 10 -> 100
 
 `Removed`:
 - Medaka and Nanopolish parameters and pipeline

@@ -44,6 +44,9 @@ Full testing information can be [found here](./docs/update_testing.md)
         - BCFTools one specifically
 - Formatting modules files to separate out processes a bit more
 - Formatting environment files to remove the `defaults` branch
+- Minimum read thresholds
+    - Per barcode 100 -> 500
+    - After length trimming 10 -> 100
 
 `Removed`:
 - Medaka and Nanopolish parameters and pipeline
