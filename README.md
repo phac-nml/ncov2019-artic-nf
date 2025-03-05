@@ -15,6 +15,7 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
 - Bumping `artic` to v1.6.1
     - Switches to running [`clair3`](https://github.com/HKU-BAL/Clair3) over medaka or nanopolish
     - Validating fastq headers for the clair3 model or making sure one is provided if it can't be found
+        - The pipeline will try to select an appropriate model based upon the `basecall_model_version_id` flag in the read file header
 - Running [ncov-tools](https://github.com/jts/ncov-tools) for plots, sequence statistics, and sequence quality status
 - Addition of nextclade
 - Additional steps and checks for to the final output QC file
