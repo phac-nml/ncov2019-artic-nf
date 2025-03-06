@@ -69,7 +69,7 @@ process accountNoReadsInput {
                 fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' "!{samplesheet_tsv}")
                 ## No matches, skip line
                 if [ "$fileline" != "" ]; then
-                    echo "$fileline	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
+                    echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
                 fi
             fi
         done

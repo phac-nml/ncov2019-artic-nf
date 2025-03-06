@@ -30,36 +30,7 @@ Version 3.0.0 is a major, breaking release that updates to running `clair3` over
 
 Full testing information can be [found here](./docs/update_testing.md)
 
-`Added`:
-- Modules:
-    - `checkFastqForModel`: To check the fastq header for the model to use
-    - `articDownloadModels`: To download `clair3` models
-- Parameters:
-    - `clair3_model`: Optional parameter to specify `clair3` model to use
-
-`Changed`: 
-- Updated artic `1.2.4` --> `1.6.1`
-    - Changes variant calling to `clair3`
-    - Fixes some of the bugs reported
-        - BCFTools one specifically
-- Formatting modules files to separate out processes a bit more
-- Formatting environment files to remove the `defaults` branch
-- Minimum read thresholds
-    - Per barcode 100 -> 500
-    - After length trimming 10 -> 100
-
-`Removed`:
-- Medaka and Nanopolish parameters and pipeline
-    - Parameters:
-        - `--nanopolish`
-        - `--medaka`
-        - `--fast5_pass`
-        - `--sequencing_summary`
-        - `--medaka_model`
-        - `--bwa`
-        - `--no_longshot`
-
-- Fast5 uploads script
+Full update information can be found in [the changelog](./CHANGELOG.md)
 
 #### *v2.0.2*
 Version 2.0.2 adjusts internal retry resources

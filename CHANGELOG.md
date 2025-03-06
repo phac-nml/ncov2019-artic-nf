@@ -23,6 +23,7 @@ Version 3.0.0 is a major, breaking release that updates to running `clair3` over
 - Minimum read thresholds
     - Per barcode 100 -> 500
     - After length trimming 10 -> 100
+- Bugfixed in too few read filter tracking for fastq inputs
 
 `Removed`:
 - Medaka and Nanopolish parameters and pipeline
