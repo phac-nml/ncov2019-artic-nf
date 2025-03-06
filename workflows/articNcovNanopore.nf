@@ -1,20 +1,19 @@
 /*
     Main Pipeline Workflows
-        - ARTIC ncov nanopore nanopolish workflow
-        - ARTIC ncov nanopore medata workflow
+        - ARTIC ncov nanopore clair3 workflow
 */
 // Modules to include
 include {
+    checkFastqForModel ;
+    articDownloadModels ;
     articGuppyPlex ;
     articMinION
 } from '../modules/artic.nf' 
-
 include {
     makeQCCSV ;
     writeQCSummaryCSV ;
     correctQCSummaryCSV
 } from '../modules/qc.nf'
-
 include {
     renameBarcodeSamples ;
     accountNoReadsInput ;
@@ -29,7 +28,6 @@ include {
     uploadCorrectN ;
     outputVersions
 } from '../modules/nml.nf'
-
 include {
     nextcladeDatasetGet ;
     nextcladeRun
@@ -42,10 +40,6 @@ include { Genotyping } from './typing.nf'
 /*
     Initialize channels from params
 */
-// Nanopolish required channels, will be ignored when running medaka but still passed to the process
-ch_fast5s = params.fast5_pass ? file(params.fast5_pass, type: 'dir', checkIfExists: true) : []
-ch_seqsum = params.sequencing_summary ? file(params.sequencing_summary, type: 'file', checkIfExists: true) : []
-
 // ncov-tools config file channel
 ch_ncov_config = params.ncov ? file(params.ncov, type: 'file', checkIfExists: true) : []
 
@@ -82,8 +76,14 @@ workflow articNcovNanopore {
     // =============================== //
     // Artic Size Filtering and Renaming
     // =============================== //
-    articGuppyPlex(
+    // Check if the clair3 model has been selected, or can be selected from fastqs
+    checkFastqForModel( 
         ch_fastqs
+    )
+    ch_fastqs_checked = checkFastqForModel.out.check_done.join(ch_fastqs)
+
+    articGuppyPlex(
+        ch_fastqs_checked
     )
     ch_versions = ch_versions.mix(articGuppyPlex.out.versions)
     ch_fastqs = articGuppyPlex.out.fastq
@@ -134,11 +134,13 @@ workflow articNcovNanopore {
     // =============================== //
     // Artic nCoV Minion Pipleine
     // =============================== //
+    // Fetch the R10 models
+    articDownloadModels() 
+    
     articMinION(
         ch_fastqs.pass,
-        ch_fast5s,
-        ch_seqsum,
-        ch_scheme
+        ch_reference,
+        ch_primer_bed,
     )
     ch_versions = ch_versions.mix(articMinION.out.versions)
 
@@ -269,22 +271,9 @@ workflow articNcovNanopore {
 
         // Upload now if given a config
         if ( ch_irida_upload_conf ) {
-            // Fast5s made here as its slow and not needed for normal run tracking
-            ch_fast5_upload = Channel.empty()
-            if ( params.fast5_pass ) {
-                generateFast5IridaReport(
-                    ch_fast5s,
-                    ch_irida_metadata
-                )
-                ch_versions = ch_versions.mix(generateFast5IridaReport.out.versions)
-                ch_fast5_upload = generateFast5IridaReport.out.fast5_dir
-            }
-
             uploadIridaFiles(
                 generateFastqIridaReport.out.fastq_dir,
                 generateFastaIridaReport.out.fasta_dir,
-                ch_fast5_upload
-                    .ifEmpty([]),
                 ch_irida_upload_conf,
                 correctQCSummaryCSV.out.final_csv
             )
@@ -329,5 +318,12 @@ workflow articNcovNanopore {
             ch_reference,
             ch_typing_yaml
         )
+    }
+
+    // =============================== //
+    // Completion
+    // =============================== //
+    workflow.onComplete {
+        log.info "Workflow complete"
     }
 }

@@ -27,9 +27,8 @@ done
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
 
-# Remove the /ARTIC/nanopolish or /ARTIC/medaka from fasta file headers (for matching later)
-sed -i 's|/ARTIC/nanopolish||' *.consensus.fasta
-sed -i 's|/ARTIC/medaka||' *.consensus.fasta
+# Remove the /ARTIC/clair3 from fasta file headers (for matching later)
+sed -i 's|/MN908947.3/ARTIC/clair3||' *.consensus.fasta
 
 # Move files to their correct spot
 #  cp config to allow us to mess with its values
@@ -40,10 +39,14 @@ mv ${PRIMER_BED} ./ncov-tools/nCoV-2019.bed
 
 ## Adjust config for what we find
 # Add in negative control names if we find any matching our pattern
-if $(ls | grep -q -i "negative\|neg\|ntc\|water\|blank")
-then
-   negative_list=$(grep -i -e ntc -e negative -e water -e blank -e neg ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
-   echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/config.yaml
+if $(ls | grep -q -i "negative\|neg\|ntc\|water\|blank"); then
+    # Create list from the metadata if we can, otherwise use the folder
+    if [ -f "$METADATA" ]; then
+        negative_list=$(grep -i -e ntc -e negative -e water -e blank -e neg ${METADATA} | cut -f 1 | sed 's/^/"/g' | sed 's/$/"/g' | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
+    else
+        negative_list=$(ls | grep -i -e ntc -e negative -e water -e blank -e neg | cut -f 1 | cut -f 1 -d'.' | sed 's/^/"/g' | sed 's/$/"/g' | sort -u  | tr "\n" ',' | sed 's/^/[/' | sed 's/$/]/')
+    fi
+    echo "negative_control_samples: ${negative_list}" >> ./ncov-tools/config.yaml
 fi
 
 # Add in our primer prefix and run prefix

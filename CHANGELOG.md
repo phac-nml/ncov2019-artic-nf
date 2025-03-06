@@ -3,6 +3,42 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.0 - [2025-03-06]
+Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
+
+`Added`:
+- Modules:
+    - `checkFastqForModel`: To check the fastq headers for basecalling information to select clair3 mode
+    - `articDownloadModels`: To download `clair3` R10 models
+- Parameters:
+    - `clair3_model`: Optional parameter to specify `clair3` model to use
+
+`Changed`: 
+- Updated artic `1.2.4` --> `1.6.1`
+    - Changes variant calling to `clair3`
+    - Fixes some of the bugs reported
+        - bcftools consensus issue
+        - Long indel bumping issue
+- Formatting modules files to separate out processes a bit more
+- Formatting environment files to remove the `defaults` branch
+- Minimum read thresholds
+    - Per barcode 100 -> 500
+    - After length trimming 10 -> 100
+- Bugfixed in too few read filter tracking for fastq inputs
+
+`Removed`:
+- Medaka and Nanopolish parameters and pipeline
+    - Parameters:
+        - `--nanopolish`
+        - `--medaka`
+        - `--fast5_pass`
+        - `--sequencing_summary`
+        - `--medaka_model`
+        - `--bwa`
+        - `--no_longshot`
+
+- Fast5 uploads script
+
 ## v2.0.2 - [2024-07-23]
 Version 2.0.2 adjusts internal retry resources
 

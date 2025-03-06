@@ -26,6 +26,7 @@ process renameBarcodeSamples {
     END_VERSIONS
     """
 }
+
 process accountNoReadsInput {
     // Account for no reads in the input barcode folder and rename it --irida given
     publishDir "${params.outdir}/", pattern: "samples_failing_no_input_reads.tsv", mode: "copy"
@@ -68,7 +69,7 @@ process accountNoReadsInput {
                 fileline=$(awk -F'\t' -v col="$sample_col" -v filename="$filename"  '$col == filename' "!{samplesheet_tsv}")
                 ## No matches, skip line
                 if [ "$fileline" != "" ]; then
-                    echo "$fileline	TOO_FEW_SIZE_SELECTED_READS	FALSE" >> samples_failing_read_size_filter.tsv
+                    echo "$fileline	TOO_FEW_INPUT_READS	FALSE" >> samples_failing_no_input_reads.tsv
                 fi
             fi
         done
@@ -86,6 +87,7 @@ process accountNoReadsInput {
     fi
     '''
 }
+
 process accountReadFilterFailures {
     // Account for samples that fail after the read filtering step
     label 'smallmem'
@@ -135,6 +137,7 @@ process accountReadFilterFailures {
     fi
     '''
 }
+
 process generateFastqIridaReport {
     // Create directory for fastq files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_fastq", mode: "copy"
@@ -169,6 +172,7 @@ process generateFastqIridaReport {
     END_VERSIONS
     """
 }
+
 process generateFastaIridaReport {
     // Create directory for fasta files that can be uploaded to IRIDA if needed
     publishDir "${params.outdir}", pattern: "irida_consensus", mode: "copy"
@@ -203,6 +207,7 @@ process generateFastaIridaReport {
     END_VERSIONS
     """
 }
+
 process generateFast5IridaReport {
     // Create directory for fast5 files that can be uploaded to IRIDA.
     //  Only ran with --upload_irida as it is an intensive process
@@ -234,6 +239,7 @@ process generateFast5IridaReport {
     END_VERSIONS
     """
 }
+
 process correctFailNs {
     // Nanopore - Correct positions that are designated as an N but can be called a reference base based on bcftools
     tag { sampleName }
@@ -277,6 +283,7 @@ process correctFailNs {
     END_VERSIONS
     """
 }
+
 process runNcovTools {
     // Run ncov-tools with the bash script in the bin
     //  Script written to not have to escape a lot of variables
@@ -332,6 +339,7 @@ process runNcovTools {
     END_VERSIONS
     """
 }
+
 process snpDists {
     // Run snpDist check for samples in the analysis
     publishDir "${params.outdir}/", pattern: "matrix.tsv", mode: "copy"
@@ -355,6 +363,7 @@ process snpDists {
     END_VERSIONS
     """
 }
+
 process uploadIridaFiles {
     // Upload all data to IRIDA
     //  Includes: Fastq, Fasta, Fast5 (if nanopolish), and metadata 
@@ -366,7 +375,6 @@ process uploadIridaFiles {
     input:
     path fastq_folder
     path consensus_folder
-    path fast5_folder
     path irida_config
     path pipeline_data_csv
 
@@ -376,17 +384,9 @@ process uploadIridaFiles {
 
     script:
     """
-    # Always will be uploaded
-    # -----------------------
     irida-uploader --config $irida_config -d $fastq_folder
     irida-uploader --config $irida_config -d $consensus_folder --upload_mode=assemblies
     upload.py --config $irida_config --metadata_csv  $pipeline_data_csv
-
-    # Only if Nanopolish is run
-    # -----------------------
-    if [ -d "$fast5_folder" ]; then
-        irida-uploader --config $irida_config -d $fast5_folder --upload_mode=fast5
-    fi
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
@@ -395,6 +395,7 @@ process uploadIridaFiles {
     END_VERSIONS
     """
 }
+
 process uploadCorrectN {
     // Upload the N corrected consensus sequences to IRIDA
     //  If both --irida and --upload_irida params given
@@ -432,6 +433,7 @@ process uploadCorrectN {
     END_VERSIONS
     """
 }
+
 process outputVersions {
     // Output final version information into one file
     label 'smallmem'

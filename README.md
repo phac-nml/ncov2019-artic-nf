@@ -1,22 +1,23 @@
 # ncov2019-artic-nf
-A Nextflow pipeline for running the ARTIC network's fieldbioinformatics tools (https://github.com/artic-network/fieldbioinformatics) on nanopore SARS-CoV-2 data to create pileups, variant calls, consensus sequences, plots and stats
+A Nextflow pipeline for running the ARTIC network's fieldbioinformatics tools (https://github.com/artic-network/fieldbioinformatics) on Nanopore SARS-CoV-2 data to create pileups, variant calls, consensus sequences, plots and stats
 
 ### Introduction
 
 ------------
 
-This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus bioinformatics protocol](https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html "nCoV-2019 novel coronavirus bioinformatics protocol").
+This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus bioinformatics protocol](https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html) along with [`ncovtools`](https://github.com/jts/ncov-tools) for QC and reporting.
 
-**This fork** rewrites the pipeline to reorganize the analysis steps to better follow more current nextflow practices along with optimizing its usage for the NML Canada's *nanopore* infrastructure. Changes include:
+**This fork** rewrites the pipeline to reorganize the analysis steps to better follow more current nextflow practices along with optimizing its usage for the NML Canada's *Nanopore* infrastructure. Changes include:
 - Renaming input barcoded samples using a samplesheet
-- Allowing flat fastq directory input when running with Medaka
+- Allowing flat fastq directory inputs
 - Better tracking of samples with no/too few reads that are filtered out
 - Scheme input corrections/validation
-- Bumping `artic` to v1.2.4
-    - For Medaka version updates and models when running with Medaka
-    - Default medaka version is specified as "r941_min_hac_g507"
+- Bumping `artic` to v1.6.1
+    - Switches to running [`clair3`](https://github.com/HKU-BAL/Clair3) over medaka or nanopolish
+    - Validating fastq headers for the clair3 model or making sure one is provided if it can't be found
+        - The pipeline will try to select an appropriate model based upon the `basecall_model_version_id` flag in the read file header
 - Running [ncov-tools](https://github.com/jts/ncov-tools) for plots, sequence statistics, and sequence quality status
-- Addition of nextclade
+- Addition of nextclade v3.9.1 for its frameshift and stop codon detection
 - Additional steps and checks for to the final output QC file
 - Automating the upload of output data to [IRIDA](https://github.com/phac-nml/irida) for storage
 - Step tool version tracking
@@ -24,7 +25,14 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
 ### Release Notes
 For full changes visit the [CHANGELOG](CHANGELOG.md)
 
-#### *v2.0.2
+#### *v3.0.0*
+Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
+
+Full testing information can be [found here](./docs/update_testing.md)
+
+Full update information can be found in [the changelog](./CHANGELOG.md)
+
+#### *v2.0.2*
 Version 2.0.2 adjusts internal retry resources
 
 #### *v2.0.1*
@@ -66,7 +74,7 @@ Overall version 2.0.0 has the all the same outputs as version 1.1.0 but with som
 
 ------------
 
-An up-to-date version of Nextflow (`version >=22.10.0`) and Conda is required to run the pipeline.
+An up-to-date version of Nextflow (Minimum `version >=22.10.0`) and Conda is required to run the pipeline.
 
 You can either:
 1. Download and install [conda](https://docs.conda.io/en/latest/miniconda.html) and then install Nextflow and Mamba using conda (Recommended)
@@ -80,36 +88,30 @@ Nextflow controls the execution of the pipeline steps while conda controls the i
 
 ------------
 
-*Note 1*: Only `conda` is supported for dependency installation/containerization. It is required to have conda installed and use that when running this pipeline
+**Note 1**: Only `conda` is supported for dependency installation/containerization. It is required to have conda installed and use that when running this pipeline. This will hopefully be adjusted later on to include singularity and docker
 
-*Note 2:* When running this pipeline it is best to specify your conda cache directory with `--cache 'path/to/cacheDir'` as generation of the ncov-tools env can be extremly slow even with mamba. All environments should resolve with no issue provided there are enough resources for the main nextflow process to do so but if not, you will get an error that displays the command and env that failed. Using that command, you can manually create the env which can be reused if giving the cache directory.
+**Note 2:** When running this pipeline it is best to specify your conda cache directory with `--cache 'path/to/cacheDir'` or with the nextflow environment variable `export NXF_CACHE_DIR="path/to/cacheDir"`. Generation of the `artic` and `ncov-tools` env can be extremly slow even with mamba. All environments should resolve with no issue provided there are enough resources for the main nextflow process to do so but if not, you will get an error that displays the command and env that failed. Using that command, you can manually create the env which can be reused if giving the cache directory.
 
-#### **Method 1 - Nanopolish with Barcoded Reads**
+#### **Method 1 - Barcoded Reads**
 
 *Running*
 
-Base Minimum Command:
+Basic Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
-    --nanopolish \
-    --prefix "prefix_str" \
-    --basecalled_fastq /path/to/fastq_pass_dir \
-    --fast5_pass /path/to/fast5_pass_dir \ 
-    --sequencing_summary /path/to/sequencing_summary.txt
+    --prefix "prefix_for_outfiles"\
+    --basecalled_fastq /path/to/fastq_pass/
 ```
-This command will run on the input fastq directories using the default `freed` primer scheme to create output data named as `prefix_barcode##`.
+This command will run on the input fastq directories using the default `freed` primer scheme to create output data named as `"prefix"_barcode##`.
 
-Recommended Command:
+Recommended Full Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
     --cache /path/to/conda_cache_dir/ \
-    --nanopolish \
-    --prefix "prefix_str" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/fastq_pass_dir \
-    --fast5_pass /path/to/fast5_pass_dir \
-    --sequencing_summary /path/to/sequencing_summary.txt \
     --irida /path/to/samplesheet_with_names.tsv \
     --scheme_version "Wanted_Scheme" \
     --min_length Min_Scheme_Length_INT \
@@ -119,62 +121,25 @@ This command will run on the input fastq directories using the provided scheme a
 
 ------------
 
-#### **Method 2 - Medaka with Barcoded Reads**
+#### **Method 2 - Flat Directory Input**
 
 *Running*
 
-Basic command:
+Basic Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
-    --medaka \
-    --medaka_model "Model" \
-    --prefix "prefix_str" \
-    --basecalled_fastq /path/to/fastq_pass_dir
-```
-This command will run medaka on the input fastq_pass_dir and create the same outputs as the nanopolish side. Files will still be output named as `prefix_barcode##`
-
-Recommended Command:
-```bash
-nextflow run phac-nml/ncov2019-artic-nf \
-    -profile conda \
-    --cache /path/to/conda_cache_dir/ \
-    --medaka \
-    --medaka_model "Model" \
-    --prefix "prefix_str" \
-    --basecalled_fastq /path/to/fastq_pass_dir \
-    --irida /path/to/samplesheet_with_names.tsv \
-    --scheme_version "Wanted_Scheme" \
-    --min_length Min_Scheme_Length_INT \
-    --max_length Max_Scheme_Length_INT
-```
-This command will run on the input fastq directories using the provided scheme and filtering size options. It will rename the inputs based on the samplesheet to allow better data tracking. Input metadata will be added to the final results
-
-*EXTREMELY IMPORTANT NOTE:* The medaka model should be set to the one that most closely matches your data otherwise the variant calls may be inaccurate. More info available here: https://github.com/nanoporetech/medaka#models. The default model is currently "r941_min_hac_g507" which should work for anyone still running the R9.4.1 flowcells
-
-#### **Method 3 - Medaka with Flat Directory Input**
-
-*Running*
-
-Basic command:
-```bash
-nextflow run phac-nml/ncov2019-artic-nf \
-    -profile conda \
-    --medaka \
-    --medaka_model "Model"
-    --prefix "prefix_str" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/flat_fastq_dir
 ```
-This command will run medaka on the input flat_fastq_dir and create the same outputs as the other running methods. These files will retain their basename from the input directory.
+This command on the input flat_fastq_dir and create the same outputs as the other running methods. These files will retain their basename from the input directory.
 
-Recommended Command:
+Recommended Full Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
     --cache /path/to/conda_cache_dir/ \
-    --medaka \
-    --medaka_model "Model" \
-    --prefix "prefix_str" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/fastq_pass_dir \
     --irida /path/to/samplesheet_with_names.tsv \
     --scheme_version "Wanted_Scheme" \
@@ -183,12 +148,14 @@ nextflow run phac-nml/ncov2019-artic-nf \
 ```
 This command will run on the input flat directory of fastq files using the provided scheme and filtering size options and add the input metadata to the final results.
 
-*EXTREMELY IMPORTANT NOTE:* The medaka model should be set to the one that most closely matches your data otherwise the variant calls may be inaccurate. More info available here: https://github.com/nanoporetech/medaka#models. The default model is currently "r941_min_hac_g507" which should work for anyone still running the R9.4.1 flowcells
+**EXTREMELY IMPORTANT NOTE:** The clair3 model will be automatically detected from the fastq headers by default but if it cannot be found, time should be taken to select the best model for the data!
 
-#### **Optional Args**
-Arguments available for different aspects of the pipeline. The mandatory args are found above in the example commands
+### Optional Args
+Optional arguments available for different aspects of the pipeline. The mandatory args are found above in the example commands being:
+- `--prefix <STR>`: String name to prefix onto final summary results files
+- `--basecalled_fastq <PATH>`: Path to either the fastq_pass barcoded directory or a folder of flat `*.fastq*` files to run in the pipeline
 
-#### Help
+#### Help Command
 Run `nextflow run phac-nml/ncov2019-artic-nf --help` to get a list of all the supported pipeline arguments
 
 #### Schemes
@@ -222,13 +189,11 @@ primer-schemes
 #### Artic Minion
 `--normalise <INT>`: Normalize input reads for each amplicon to this value. Default: 500
 
-`--bwa`: Run BWA to align reads to reference sequence instead of minimap2. Default: False
-
 `--no_frameshift`: Add in VCF filter --no-frameshift argument that checks for %3==0 allele calls. Default: False
 
-`--no_longshot`: Run medaka variant over longshot for variant analysis in the medaka pipeline. Default: False
+`--clair3_model <STR/PATH>`: Name of or path to `clair3` model to use
 
-#### Metadata
+#### Metadata Input
 `--irida <PATH>`: Path to IRIDA samplesheet.tsv file to be used to rename samples and assist in IRIDA data uploads. The required columns are `sample`, `run`, and `barcode`. For uploads a `project_id` column is also required.
 
 Below is an example samplesheet:
@@ -240,26 +205,12 @@ Below is an example samplesheet:
 | Sample_name3 | run_name | 45 | 1422 | NA | NA |
 | Sample_name6 | run_name | 65 | 1422 | NA | 2020-08-22 |
 
-#### Uploads
-`--upload_irida <PATH>`: Path to IRIDA instance config file to which the data will be uploaded to. Must be set with a --irida samplesheet.tsv file as well to know which project each sample goes to.
-
-Format:
-```conf
-[Settings]
-client_id = uploader
-client_secret = <secret from IRIDA>
-username = test
-password = unsecure_password
-base_url = https://<your_irida_instance>/irida/api
-parser = directory
-```
-
 #### Nextclade
 Nextclade is currently run and output as a separate results TSV along with being used to confirm SnpEFF (from ncov-tools) frameshift calls
 
 `--nextclade_dataset <STR>`: Name of nextclade dataset to use. Default: 'sars-cov-2'
 
-`--nextclade_tag <STR>`: Nextclade dataset tag to use. Default: '2024-04-15--15-08-22Z'
+`--nextclade_tag <STR>`: Nextclade dataset tag to use. Default: 'latest'
 
 #### QC
 `--sequencing_technology <STR>`: Name of the sequencing technology used. Default: Nanopore
@@ -279,6 +230,20 @@ This will run the negative control module of ncov-tools to check if there is any
 *Negative Controls Limitations*
 
 Connecting ncov-tools to the pipeline means that the ncov-tools config file has to be mostly set before running. In an attempt to make automation easier, the negative control names are set based on the key words mentioned (`negative`, `water`, `blank`, `ntc`) and passed by the samplesheet before. In the future, we may set-up a flag where you can set your negative control names but for now this is the easiest way to get all our users to run the pipeline.
+
+#### Uploads
+`--upload_irida <PATH>`: Path to IRIDA instance config file to which the data will be uploaded to. Must be set with a --irida samplesheet.tsv file as well to know which project each sample goes to.
+
+Format:
+```conf
+[Settings]
+client_id = uploader
+client_secret = <secret from IRIDA>
+username = test
+password = unsecure_password
+base_url = https://<your_irida_instance>/irida/api
+parser = directory
+```
 
 ---------------
 

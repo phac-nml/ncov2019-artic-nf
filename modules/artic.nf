@@ -1,4 +1,51 @@
 // ARTIC processes
+process checkFastqForModel {
+    // Check if artic will be able to auto-detect the model from the fastq headers OR model parameter has been set
+    label 'smallmem'
+    tag { sampleName }
+    errorStrategy = 'terminate'
+
+    input:
+    tuple val(sampleName), path(fastq)
+
+    output:
+    tuple val(sampleName), val(true), emit: check_done 
+
+    script:
+    """
+    # Have to check if the input is a directory first
+    test_fastq_file="$fastq"
+    if [ -d $fastq ]; then
+        test_fastq_file="\$(find $fastq/ -type f -name *.fastq* | head -n 1)"
+    fi
+
+    if [[ "\$test_fastq_file" == *.gz ]]; then
+        header=\$(zgrep -m 1 '^@' "\$test_fastq_file" || echo "")
+    else
+        header=\$(grep -m 1 '^@' "\$test_fastq_file" || echo "")
+    fi
+
+    if [[ "\$header" == *"basecall_model_version_id"* ]] && [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
+        echo "FastQ header for $sampleName contains basecall model information for Clair3 model selection, artic will choose clair3 model automatically."
+    elif [[ -z "${params.clair3_model}" || "${params.clair3_model}" == "null" ]]; then
+        echo "ERROR: No Clair3 model provided and no basecall model found in $sampleName FastQ header!" >&2
+        echo "Please make sure your input files have basecall model information or specify which Clair3 model to use with --clair3_model." >&2
+        exit 1
+    else
+        echo "Using Clair3 model: ${params.clair3_model}"
+    fi
+    """
+}
+
+process articDownloadModels {
+    // Pulls r10 models for clair3, models are saved here by default: $CONDA_PREFIX/bin/models
+    label 'smallmem'
+    script:
+    """
+    artic_get_models
+    """
+}
+
 process articGuppyPlex {
     // Filter reads based on given length
     //  Length should be based on amplicon size
@@ -7,7 +54,7 @@ process articGuppyPlex {
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${newSampleName}*.fastq", mode: "copy"
 
     input:
-    tuple val(sampleName), path(fastq)
+    tuple val(sampleName), val(check_done), path(fastq)
 
     output:
     tuple val(newSampleName), path("${newSampleName}.fastq"), emit: fastq
@@ -61,9 +108,8 @@ process articMinION {
 
     input:
     tuple val(sampleName), path(fastq)
-    path fast5_dir
-    path sequencing_summary
-    tuple val(schemeVersion), path(scheme)
+    path reference
+    path primer_bed
 
     output:
     path "${sampleName}*", emit: all
@@ -78,25 +124,9 @@ process articMinION {
     path "versions.yml", emit: versions
 
     script:
-    // Setup args for medaka vs nanopolish
+    // Clair3 model is added conditonally if it's been set
+    // Nextflow parameters to minion args
     def argsList = []
-    def variantVersionCMD = ""
-    def modelVersionCMD = ""
-
-    if ( params.medaka ) {
-        argsList.add("--medaka")
-        argsList.add("--medaka-model ${params.medaka_model}")
-        // Medaka only no longshot
-        if ( params.no_longshot ) {
-            argsList.add("--no-longshot")
-        }
-        variantVersionCMD = "medaka: \$(echo \$(medaka --version | sed 's/medaka //'))"
-        modelVersionCMD = "medaka_model: ${params.medaka_model}"
-    } else {
-        argsList.add("--fast5-directory $fast5_dir")
-        argsList.add("--sequencing-summary $sequencing_summary")
-        variantVersionCMD = "nanopolish: \$(echo \$(nanopolish --version | grep nanopolish | sed 's/nanopolish version //'))"
-    }
     if ( params.normalise ) {
         argsList.add("--normalise ${params.normalise}")
     } else {
@@ -105,35 +135,27 @@ process articMinION {
     if ( params.no_frameshift ) {
         argsList.add("--no-frameshifts")
     }
-    def finalArgsConfiguration = argsList.join(" ")
-
-    // Aligner
-    def alignerArg = "--minimap2"
-    if ( params.bwa ) {
-        alignerArg = "--bwa"
+    if ( params.clair3_model && params.clair3_model != 'null') {
+        argsList.add("--model ${params.clair3_model}")
     }
-    // Cmd
+    def finalArgsConfiguration = argsList.join(" ")
     """
     artic minion \\
         ${finalArgsConfiguration} \\
-        ${alignerArg} \\
         --threads ${task.cpus} \\
+        --ref $reference \\
+        --bed $primer_bed \\
         --read-file $fastq \\
-        --scheme-version ${schemeVersion} \\
-        --scheme-directory $scheme \\
-        ${params.scheme} \\
         $sampleName
 
     # Versions #
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         artic: \$(echo \$(artic --version 2>&1) | sed 's/artic //')
-        artic-tools: \$(artic-tools --version)
         bcftools: \$(echo \$(bcftools --version | grep bcftools | sed 's/bcftools //'))
         minimap2: \$(echo \$(minimap2 --version))
         samtools: \$(echo \$(samtools --version | head -n 1 | grep samtools | sed 's/samtools //'))
-        $variantVersionCMD
-        $modelVersionCMD
+        clair3: \$(echo \$(run_clair3.sh --version | sed 's/Clair3 v//g'))
     END_VERSIONS
     """
 }
