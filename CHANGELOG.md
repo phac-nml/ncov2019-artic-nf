@@ -8,8 +8,8 @@ Version 3.0.0 is a major, breaking release that updates to running `clair3` over
 
 `Added`:
 - Modules:
-    - `checkFastqForModel`: To check the fastq header for the model to use
-    - `articDownloadModels`: To download `clair3` models
+    - `checkFastqForModel`: To check the fastq headers for basecalling information to select clair3 mode
+    - `articDownloadModels`: To download `clair3` R10 models
 - Parameters:
     - `clair3_model`: Optional parameter to specify `clair3` model to use
 
@@ -17,7 +17,8 @@ Version 3.0.0 is a major, breaking release that updates to running `clair3` over
 - Updated artic `1.2.4` --> `1.6.1`
     - Changes variant calling to `clair3`
     - Fixes some of the bugs reported
-        - BCFTools one specifically
+        - bcftools consensus issue
+        - Long indel bumping issue
 - Formatting modules files to separate out processes a bit more
 - Formatting environment files to remove the `defaults` branch
 - Minimum read thresholds

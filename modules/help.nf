@@ -39,8 +39,9 @@ def printHelp() {
       --max_length             Maximum read length for artic guppyplex (Default: 1600)
 
       ## Artic Minion Args ##
-      --clair3_model          Specify the string name or directory of the clair3 model to use
-                               (Default: Null, clair3 checks fastq header for info, will error if not found)
+      --clair3_model          Specify the string name or directory of the Clair3 model to use
+                                Clair3 checks the fastq header for model info which if not found AND this parameter is not set will error
+                                (Default: Null)
       --normalise             Normalise input reads for each amplicon. Set to 0 to not run normalization
                                (Default: 500)
       --no_frameshift         Add in VCF filter --no-frameshift argument that checks for %3==0 allele calls

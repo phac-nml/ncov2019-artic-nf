@@ -17,7 +17,7 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
     - Validating fastq headers for the clair3 model or making sure one is provided if it can't be found
         - The pipeline will try to select an appropriate model based upon the `basecall_model_version_id` flag in the read file header
 - Running [ncov-tools](https://github.com/jts/ncov-tools) for plots, sequence statistics, and sequence quality status
-- Addition of nextclade
+- Addition of nextclade v3.9.1 for its frameshift and stop codon detection
 - Additional steps and checks for to the final output QC file
 - Automating the upload of output data to [IRIDA](https://github.com/phac-nml/irida) for storage
 - Step tool version tracking
@@ -100,17 +100,17 @@ Basic Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
-    --prefix "prefix" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/fastq_pass/
 ```
-This command will run on the input fastq directories using the default `freed` primer scheme to create output data named as `prefix_barcode##`.
+This command will run on the input fastq directories using the default `freed` primer scheme to create output data named as `"prefix"_barcode##`.
 
 Recommended Full Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
     --cache /path/to/conda_cache_dir/ \
-    --prefix "prefix" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/fastq_pass_dir \
     --irida /path/to/samplesheet_with_names.tsv \
     --scheme_version "Wanted_Scheme" \
@@ -129,7 +129,7 @@ Basic Command:
 ```bash
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
-    --prefix "prefix" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/flat_fastq_dir
 ```
 This command on the input flat_fastq_dir and create the same outputs as the other running methods. These files will retain their basename from the input directory.
@@ -139,7 +139,7 @@ Recommended Full Command:
 nextflow run phac-nml/ncov2019-artic-nf \
     -profile conda \
     --cache /path/to/conda_cache_dir/ \
-    --prefix "prefix" \
+    --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/fastq_pass_dir \
     --irida /path/to/samplesheet_with_names.tsv \
     --scheme_version "Wanted_Scheme" \
@@ -151,7 +151,9 @@ This command will run on the input flat directory of fastq files using the provi
 **EXTREMELY IMPORTANT NOTE:** The clair3 model will be automatically detected from the fastq headers by default but if it cannot be found, time should be taken to select the best model for the data!
 
 ### Optional Args
-Optional arguments available for different aspects of the pipeline. The mandatory args are found above in the example commands being `--prefix <STR>` and `--basecalled_fastq <PATH>`.
+Optional arguments available for different aspects of the pipeline. The mandatory args are found above in the example commands being:
+- `--prefix <STR>`: String name to prefix onto final summary results files
+- `--basecalled_fastq <PATH>`: Path to either the fastq_pass barcoded directory or a folder of flat `*.fastq*` files to run in the pipeline
 
 #### Help Command
 Run `nextflow run phac-nml/ncov2019-artic-nf --help` to get a list of all the supported pipeline arguments

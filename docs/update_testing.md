@@ -27,7 +27,7 @@ Author: Amber Papineau
 * supports segmented viruses and amplicon panels
 
 #### Updates to Nextclade
-Nextclade version nml's artic branch is using is 3.3.1. The current version available is 3.9.1. Some relevant [updates](https://github.com/nextstrain/nextclade/releases?page=2):
+Nextclade version nml's artic branch is using 3.3.1. The current version available is 3.9.1. Some relevant [updates](https://github.com/nextstrain/nextclade/releases?page=2):
 * crash fixes
 * Detect loss of amino acid motifs correctly
 * Auspice upgrade
