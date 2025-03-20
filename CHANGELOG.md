@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.1 - [2025-03-19]
+`Bugfix`:
+- Fixed a bug where qc was not able to pull out the data from the nextclade TSV due to the adjustment to the header line with the clair3 update
+
 ## v3.0.0 - [2025-03-06]
 Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
 

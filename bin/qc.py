@@ -358,7 +358,7 @@ def compare_nextclade_fs_to_ncovtools_fs(sample: str, nextclade_df: pd.DataFrame
     
     # Filter down nextclade df to just the wanted sample
     #  It should only be 1 sample but just in case
-    nextclade_df = nextclade_df.loc[nextclade_df['seqName'] == sample]
+    nextclade_df = nextclade_df.loc[nextclade_df['seqName'].str.contains(sample)]
     if nextclade_df.empty:
         return
 
