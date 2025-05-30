@@ -135,8 +135,19 @@ process articMinION {
     if ( params.no_frameshift ) {
         argsList.add("--no-frameshifts")
     }
+    // If no model, then will detect and use builtin one if it can and fail if not
+    //  Otherwise if we have a directory as the model, we split the path
+    //  and if we don't we use it as a model
     if ( params.clair3_model && params.clair3_model != 'null') {
-        argsList.add("--model ${params.clair3_model}")
+        def modelFile = new File(params.clair3_model)
+        if ( modelFile.isDirectory() ) {
+            def modelPath = modelFile.getParent()
+            def modelDir  = modelFile.getName()
+            argsList.add("--model-dir ${modelPath}")
+            argsList.add("--model ${modelDir}")
+        } else {
+            argsList.add("--model ${params.clair3_model}")
+        }
     }
     def finalArgsConfiguration = argsList.join(" ")
     """
