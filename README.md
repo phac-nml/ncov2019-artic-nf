@@ -25,7 +25,7 @@ This Nextflow pipeline automates the ARTIC network [nCoV-2019 novel coronavirus 
 ### Release Notes
 For full changes visit the [CHANGELOG](CHANGELOG.md)
 
-#### *v3.0.0*
+#### *v3.0.2*
 Version 3.0.0 is a major, breaking release that updates to running `clair3` over `medaka` or `nanopolish` along with fixing some of the bugs that had been identified over the years.
 
 Full testing information can be [found here](./docs/update_testing.md)
