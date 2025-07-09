@@ -142,11 +142,14 @@ nextflow run phac-nml/ncov2019-artic-nf \
     --prefix "prefix_for_outfiles"\
     --basecalled_fastq /path/to/fastq_pass_dir \
     --irida /path/to/samplesheet_with_names.tsv \
+    --clair3_model /path/to/c3_model/ | c3_model_str \
     --scheme_version "Wanted_Scheme" \
     --min_length Min_Scheme_Length_INT \
     --max_length Max_Scheme_Length_INT
 ```
-This command will run on the input flat directory of fastq files using the provided scheme and filtering size options and add the input metadata to the final results.
+This command will run on the input flat directory of fastq files using the provided clair3 model, scheme, filtering size options, and add the input metadata to the final results.
+
+For the `--clair3_model` you can provide either a path to a directory of a downloaded model or a model string. Note that not all model strings will work so its recommended to download your model beforehand.
 
 **EXTREMELY IMPORTANT NOTE:** The clair3 model will be automatically detected from the fastq headers by default but if it cannot be found, time should be taken to select the best model for the data!
 
