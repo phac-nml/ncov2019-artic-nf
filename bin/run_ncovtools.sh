@@ -23,6 +23,15 @@ for corrected_consensus in *.corrected.consensus.fasta; do
     mv $corrected_consensus ${name}.consensus.fasta
 done
 
+# Have to remove RefCall from VCFs or it breaks both ncov-watch and snpeff vcf-2-tsv parsing
+for vcf in *.pass.vcf.gz; do
+    name="${vcf%%.pass.vcf.gz}"
+    if zcat $vcf | grep -q $'\tRefCall\t'; then
+        zcat $vcf | grep -v $'\tRefCall\t' | bgzip > $name.pass.vcf.gz
+        tabix $name.pass.vcf.gz
+    fi
+done
+
 ## Setup
 # Clone in ncov-tools
 git clone https://github.com/jts/ncov-tools.git
