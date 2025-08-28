@@ -3,6 +3,11 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.3 - [2025-08-28]
+`Bugfix`:
+- Fixed a bug where RefCall in the vcf outputs from clair3 were breaking ncov-tools
+- Adjusted qc.py to skip these RefCall spots in variant list reporting
+
 ## v3.0.2 - [2025-05-30]
 `Bugfix`:
 - Fixed a bug where running with a clair3 model path failed

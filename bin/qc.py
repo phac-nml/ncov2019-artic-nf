@@ -130,6 +130,9 @@ def get_vcf_variants(variants_vcf: str):
         # Removal of N variants
         elif rec.ALT[0] == 'N':
             pass
+        # Removal of RefCall variants
+        elif rec.ALT[0] == None:
+            pass
         else:
             variants_list.append(variant)
             locations.append(rec.POS)
