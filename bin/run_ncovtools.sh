@@ -27,8 +27,9 @@ done
 for vcf in *.pass.vcf.gz; do
     name="${vcf%%.pass.vcf.gz}"
     if zcat $vcf | grep -q $'\tRefCall\t'; then
-        zcat $vcf | grep -v $'\tRefCall\t' | bgzip > $name.pass.vcf.gz
-        tabix $name.pass.vcf.gz
+        mv $vcf $name.og.pass.vcf.gz
+        zcat $name.og.pass.vcf.gz | grep -v $'\tRefCall\t' | bgzip > $vcf
+        tabix $vcf
     fi
 done
 
