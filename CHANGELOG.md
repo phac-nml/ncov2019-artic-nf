@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.4 - [2025-09-11]
+`Adjustments`:
+- Add in `--group` param to custom config for cluster options
+
 ## v3.0.3 - [2025-08-28]
 `Bugfix`:
 - Fixed a bug where RefCall in the vcf outputs from clair3 were breaking ncov-tools
